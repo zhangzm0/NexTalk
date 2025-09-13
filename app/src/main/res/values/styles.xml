@@ -1,0 +1,11 @@
+<resources>
+    <style name="NexTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="colorPrimary">@color/bg</item>
+        <item name="colorPrimaryDark">@color/bg</item>
+        <item name="android:textColorPrimary">@color/fg</item>
+        <item name="android:textColorSecondary">@color/fg2</item>
+        <item name="android:windowContentTransitions">false</item>
+    </style>
+</resources>
+
