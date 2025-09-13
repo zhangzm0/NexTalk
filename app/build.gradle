@@ -1,13 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion "28.0.3"
+    compileSdkVersion 33
 
     defaultConfig {
         applicationId "com.techstar.nexchat"
         minSdkVersion 21
-        targetSdkVersion 28
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
 
@@ -38,14 +37,14 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support:recyclerview-v7:28.0.0'
 
-    // 网络：OkHttp 3.14.9 保持不变，但**强制 okio 2.10.0（Java 8 版）**
+    // 网络：OkHttp 3.14.9
     implementation('com.squareup.okhttp3:okhttp:3.14.9')
     
 
     // JSON
     implementation 'com.google.code.gson:gson:2.8.9'
 
-    // Markdown：Markwon 4.6.2 不变，只去 Kotlin
+    // Markdown：Markwon 4.6.2
     implementation('io.noties.markwon:core:4.6.2') {
         exclude group: 'org.jetbrains.kotlin'
     }
