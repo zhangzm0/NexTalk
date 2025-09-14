@@ -30,39 +30,43 @@
         android:layout_height="48dp"/>
 
     <!-- 3. 底部图标栏 -->
-    <LinearLayout
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginTop="8dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+    <!-- 底部图标栏：水平居中 -->
+	<LinearLayout
+		android:orientation="horizontal"
+		android:gravity="center"
+		android:layout_marginTop="8dp"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content">
 
-        <!-- 切换模型 -->
-        <ImageButton
-            android:id="@+id/btn_model"
-            android:src="@drawable/ic_model"
-            android:background="?selectableItemBackgroundBorderless"
-            android:layout_width="40dp"
-            android:layout_height="40dp"/>
+		<!-- 1. 切换模型 -->
+		<ImageButton
+			android:id="@+id/btn_model"
+			android:src="@drawable/ic_model"
+			android:background="?selectableItemBackgroundBorderless"
+			android:tint="@color/fg"
+			android:layout_width="40dp"
+			android:layout_height="40dp"/>
 
-        <!-- 联网开关 -->
-        <ToggleButton
-            android:id="@+id/toggle_net"
-            android:textOn="联网"
-            android:textOff="断网"
-            android:textColor="@color/fg"
-            android:layout_marginStart="12dp"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"/>
+		<!-- 2. 联网图标按钮 -->
+		<ImageButton
+			android:id="@+id/btn_net"
+			android:src="@drawable/ic_network"
+			android:background="?selectableItemBackgroundBorderless"
+			android:tint="@color/fg"
+			android:layout_marginStart="16dp"
+			android:layout_width="40dp"
+			android:layout_height="40dp"/>
 
-        <!-- 附件选择 -->
-        <ImageButton
-            android:id="@+id/btn_attach"
-            android:src="@drawable/ic_attach"
-            android:background="?selectableItemBackgroundBorderless"
-            android:layout_marginStart="12dp"
-            android:layout_width="40dp"
-            android:layout_height="40dp"/>
-    </LinearLayout>
+		<!-- 3. 附件 -->
+		<ImageButton
+			android:id="@+id/btn_attach"
+			android:src="@drawable/ic_attach"
+			android:background="?selectableItemBackgroundBorderless"
+			android:tint="@color/fg"
+			android:layout_marginStart="16dp"
+			android:layout_width="40dp"
+			android:layout_height="40dp"/>
+	</LinearLayout>
+	
 </LinearLayout>
 

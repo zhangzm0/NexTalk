@@ -9,8 +9,8 @@ import android.widget.*;
 
 public class InputFragment extends Fragment {
     private EditText inputEdit;
-    private ImageButton btnSend, btnModel, btnAttach;
-    private ToggleButton toggleNet;
+    private ImageButton btnSend, btnModel, btnAttach, btnNet;
+    
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -20,7 +20,7 @@ public class InputFragment extends Fragment {
         btnSend   = (ImageButton) v.findViewById(R.id.btn_send);
         btnModel  = (ImageButton) v.findViewById(R.id.btn_model);
         btnAttach = (ImageButton) v.findViewById(R.id.btn_attach);
-        toggleNet = (ToggleButton) v.findViewById(R.id.toggle_net);
+        btnNet    = (ImageButton) v.findViewById(R.id.btn_net);
 
         btnSend.setOnClickListener(new View.OnClickListener() {
 				public void onClick(View v) { sendText(); }
@@ -31,8 +31,11 @@ public class InputFragment extends Fragment {
         btnAttach.setOnClickListener(new View.OnClickListener() {
 				public void onClick(View v) { pickFile(); }
 			});
-        toggleNet.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-				public void onCheckedChanged(CompoundButton btn, boolean isOn) {
+        btnNet.setOnClickListener(new View.OnClickListener() {
+				boolean isOn = false;
+				public void onClick(View v) {
+					isOn = !isOn;
+					btnNet.setColorFilter(isOn ? 0xFF00F8EA : 0xFFE0E0E0); // 开=accent 关=fg
 					setNetEnabled(isOn);
 				}
 			});
