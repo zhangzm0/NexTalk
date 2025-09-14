@@ -47,5 +47,14 @@ public void onUserInput(String text) { /* 发到 ViewModel / 网络 */ }
 public void onChooseModel() { /* 弹出模型选择对话框 */ }
 public void onNetToggle(boolean on) { /* 记录联网开关 */ }
 public void onFilePicked(Uri uri) { /* 上传文件 */ }
+
+	public void openChat(long sessionId) {
+		ChatFragment cf = ChatFragment.newInstance(sessionId);
+		getSupportFragmentManager()
+			.beginTransaction()
+			.replace(R.id.pager, cf)   // 你之前 ViewPager 的容器 id
+			.addToBackStack(null)
+			.commit();
+	}
 }
 
