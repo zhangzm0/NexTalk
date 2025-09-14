@@ -9,7 +9,7 @@ android {
         targetSdkVersion 33
         versionCode 1
         versionName "1.0"
-
+		setProperty("archivesBaseName", "NexChat-${versionName}-${getDate()}")
         // 仅 32 位
         ndk {
             abiFilters "armeabi-v7a"
@@ -28,7 +28,10 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 }
-
+// 时间戳函数
+static def getDate() {
+    return new Date().format('yyyyMMdd-HHmm')
+}
 /* -------------------------------------------------
  * 依赖声明：全部使用“无 Kotlin”坐标
  * ------------------------------------------------- */

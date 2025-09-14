@@ -1,5 +1,6 @@
 package com.techstar.nexchat;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -40,5 +41,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+
+public void onUserInput(String text) { /* 发到 ViewModel / 网络 */ }
+public void onChooseModel() { /* 弹出模型选择对话框 */ }
+public void onNetToggle(boolean on) { /* 记录联网开关 */ }
+public void onFilePicked(Uri uri) { /* 上传文件 */ }
 }
 

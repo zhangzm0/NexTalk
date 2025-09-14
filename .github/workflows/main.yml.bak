@@ -10,12 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 6858069      # 7.0，schema 版本 2
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
