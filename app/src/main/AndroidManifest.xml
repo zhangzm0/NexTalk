@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.techstar.nexchat"
-	android:icon="@drawable/ic_launcher">
+    package="com.techstar.nexchat">
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -9,7 +8,8 @@
         android:allowBackup="false"
         android:label="NexChat"
         android:theme="@style/NexTheme"
-        android:supportsRtl="false">
+        android:supportsRtl="false"
+		android:icon="@mipmap/ic_launcher">
         <activity android:name=".MainActivity"
             android:screenOrientation="portrait"
             android:exported="true">
