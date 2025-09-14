@@ -48,13 +48,14 @@ public void onChooseModel() { /* 弹出模型选择对话框 */ }
 public void onNetToggle(boolean on) { /* 记录联网开关 */ }
 public void onFilePicked(Uri uri) { /* 上传文件 */ }
 
-	public void openChat(long sessionId) {
-		ChatFragment cf = ChatFragment.newInstance(sessionId);
-		getSupportFragmentManager()
-			.beginTransaction()
-			.replace(R.id.pager, cf)   // 你之前 ViewPager 的容器 id
-			.addToBackStack(null)
-			.commit();
-	}
+public void openChat(long sessionId) {
+    // 把参数塞进 ChatFragment
+    ChatFragment cf = ChatFragment.newInstance(sessionId);
+
+    // 通知 ViewPager 切到第 1 页
+    ViewPager vp = (ViewPager) findViewById(R.id.pager);
+    if (vp != null) vp.setCurrentItem(1, true);   // 1 是 ChatFragment 索引
+}
+
 }
 

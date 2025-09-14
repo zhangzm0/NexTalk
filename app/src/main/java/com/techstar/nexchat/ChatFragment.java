@@ -18,8 +18,10 @@ public class ChatFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater i, ViewGroup c, Bundle b) {
-        // 空布局，后面再填
-        return i.inflate(R.layout.frag_chat, c, false);
-    }
+		long sessionId = getArguments() == null ? -1 : getArguments().getLong("sid", -1);
+		// TODO 用 sessionId 加载聊天
+		return i.inflate(R.layout.frag_chat, c, false);
+	}
+	
 }
 
