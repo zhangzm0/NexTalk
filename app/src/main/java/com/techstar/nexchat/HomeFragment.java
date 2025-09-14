@@ -39,10 +39,13 @@ public class HomeFragment extends Fragment {
     }
 
     private void reload() {
-        android.database.Cursor c = SessionDAO.queryAll(getContext());
-        adapter.reload(c);
-        c.close();
-    }
+		android.database.Cursor c = SessionDAO.queryAll(getContext());
+		if (c != null) {
+			adapter.reload(c);
+			c.close();
+		}
+	}
+	
 }
 
 
