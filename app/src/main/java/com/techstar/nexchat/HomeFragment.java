@@ -1,46 +1,53 @@
 package com.techstar.nexchat;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.support.v7.widget.*;
+import android.view.*;
+import android.widget.TextView;
 
-public class HomeFragment extends Fragment {
-    private SessionAdapter adapter;
-    private RecyclerView list;
+public class ChatFragment extends Fragment {
+    private View appBar;
+    private boolean isBarShow = true;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.frag_home, container, false);
-        list = (RecyclerView) v.findViewById(R.id.list);
+    public View onCreateView(LayoutInflater i, ViewGroup c, Bundle b) {
+        View root = i.inflate(R.layout.frag_chat, c, false);
+        appBar = root.findViewById(R.id.appbar);
+        RecyclerView list = root.findViewById(R.id.list);
         list.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new SessionAdapter(getContext());
-        list.setAdapter(adapter);
-
-        reload(); // 首次加载
-
-        adapter.setOnItemClickListener(new SessionAdapter.OnItemClickListener() {
-				public void onItemClick(Session s) {
-					((MainActivity) getActivity()).openChat(s.id);
+        list.setAdapter(new EmptyAdapter()); // 占位
+        list.addOnScrollListener(new RecyclerView.OnScrollListener() {
+				@Override
+				public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+					if (dy > 5 && isBarShow) hideBar();
+					if (dy < -5 && !isBarShow) showBar();
 				}
 			});
-        adapter.setOnItemLongListener(new SessionAdapter.OnItemLongListener() {
-				public boolean onItemLongClick(Session s) {
-					SessionDAO.delete(getContext(), s.id);
-					reload(); // 刷新
-					return true;
-				}
-			});
-        return v;
+        return root;
     }
 
-    private void reload() {
-        android.database.Cursor c = SessionDAO.queryAll(getContext());
-        adapter.reload(c);
-        c.close();
+    private void hideBar() {
+        isBarShow = false;
+        appBar.animate().translationY(-appBar.getHeight()).alpha(0f).setDuration(100).start();
+    }
+
+    private void showBar() {
+        isBarShow = true;
+        appBar.animate().translationY(0).alpha(1f).setDuration(100).start();
+    }
+
+    /* 占位 Adapter，后续替换为真实消息 Adapter */
+    private static class EmptyAdapter extends RecyclerView.Adapter<EmptyAdapter.H> {
+        static class H extends RecyclerView.ViewHolder {
+            H(View v) { super(v); }
+        }
+        @Override public int getItemCount() { return 0; }
+        @Override public H onCreateViewHolder(ViewGroup p, int t) {
+            return new H(new TextView(p.getContext()));
+        }
+        @Override public void onBindViewHolder(H h, int p) {}
     }
 }
 

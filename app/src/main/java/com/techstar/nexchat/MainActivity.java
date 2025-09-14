@@ -48,14 +48,12 @@ public void onChooseModel() { /* 弹出模型选择对话框 */ }
 public void onNetToggle(boolean on) { /* 记录联网开关 */ }
 public void onFilePicked(Uri uri) { /* 上传文件 */ }
 
+// 供 HomeFragment 调用
 public void openChat(long sessionId) {
-    // 把参数塞进 ChatFragment
-    ChatFragment cf = ChatFragment.newInstance(sessionId);
-
-    // 通知 ViewPager 切到第 1 页
-    ViewPager vp = (ViewPager) findViewById(R.id.pager);
-    if (vp != null) vp.setCurrentItem(1, true);   // 1 是 ChatFragment 索引
+    // TODO: 跳转到聊天页（后面再实现）
+    Toast.makeText(this, "打开会话 ID=" + sessionId, Toast.LENGTH_SHORT).show();
 }
+
 
 }
 
