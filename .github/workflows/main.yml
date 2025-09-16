@@ -22,7 +22,7 @@ jobs:
       # 1. 还原 keystore
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_FILE_BASE64 }}" | base64 -d > keystore.jks
+          echo "${{ secrets.KEYSTORE_FILE_BASE64 }}" | base64 -d > app/keystore.jks
 
       # 2. 打包（assembleRelease 会自动走签名配置）
       - name: Build signed APK
