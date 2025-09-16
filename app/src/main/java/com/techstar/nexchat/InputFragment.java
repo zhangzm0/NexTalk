@@ -2,7 +2,9 @@ package com.techstar.nexchat;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
@@ -12,14 +14,11 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.ToggleButton;
-
+import com.techstar.nexchat.api.StreamingApiClient;
 import com.techstar.nexchat.data.ChatRepo;
-import com.techstar.nexchat.api.ApiClient;
-
+import java.io.IOException;
 import java.util.Arrays;
 
 public class InputFragment extends Fragment {
@@ -79,34 +78,50 @@ public class InputFragment extends Fragment {
 		final String text = editText.getText().toString().trim();
 		if (text.isEmpty()) return;
 
-		/* 1 会话检查 */
 		long sid = ChatRepo.get(getContext()).currentSession();
 		if (sid == -1) {
 			String title = text.length() > 20 ? text.substring(0, 20) : text;
 			sid = ChatRepo.get(getContext()).createSession(title);
 		}
-
-		/* 2 用户消息入库 */
 		ChatRepo.get(getContext()).addUser(text);
 		LocalBroadcastManager.getInstance(getContext())
             .sendBroadcast(new Intent("chat_changed"));
-
-		/* 3 清空输入框 & 回聊天页 */
 		editText.setText("");
 		((MainActivity) getActivity()).setPage(1);
 
-		/* 4 异步请求 AI */
-		new android.os.AsyncTask<Void, Void, String>() {
-			@Override protected String doInBackground(Void... voids) {
-				return new ApiClient(getContext()).send(text);
+		/* 流式请求 */
+		new android.os.AsyncTask<Void, String, Void>() {
+			@Override
+			protected Void doInBackground(Void... voids) {
+				SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+				String url = sp.getString("custom_url",  "https://api.openai.com/v1/chat/completions");
+				String key = sp.getString("custom_key",  "");
+				try {
+					new StreamingApiClient(getContext(), url, key).stream(text,
+						new StreamingApiClient.DeltaListener() {
+							@Override
+							public void onDelta(String current) {
+								publishProgress(current);
+							}
+							@Override
+							public void onDone(String full) {}
+						});
+				} catch (IOException e) {
+					publishProgress("网络错误: " + e.getMessage());
+				}
+				return null;
 			}
-			@Override protected void onPostExecute(String reply) {
-				ChatRepo.get(getContext()).addAssistant(reply);
-				LocalBroadcastManager.getInstance(getContext())
-                    .sendBroadcast(new Intent("chat_changed"));
+
+			@Override
+			protected void onProgressUpdate(String... values) {
+				/* 每次 delta 直接替换最后一条 assistant 消息 */
+				Intent i = new Intent("stream_delta");
+				i.putExtra("delta", values[0]);
+				LocalBroadcastManager.getInstance(getContext()).sendBroadcast(i);
 			}
 		}.execute();
 	}
+	
 	
 }
 

@@ -61,6 +61,13 @@ dependencies {
     // JSON 解析，纯 Java，无 so
     implementation 'com.google.code.gson:gson:2.8.5'
 
+	
+    implementation 'io.noties.markwon:core:4.6.2'
+    implementation 'io.noties.markwon:ext-latex:4.6.2'   // 数学/化学公式
+    implementation 'io.noties.markwon:ext-tables:4.6.2'  // 表格
+    implementation 'io.noties.markwon:ext-strikethrough:4.6.2'
+
+	
     // 测试
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

@@ -7,49 +7,52 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.techstar.nexchat.R;
 import com.techstar.nexchat.model.Message;
 
+import java.util.ArrayList;
 import java.util.List;
-import android.support.annotation.Nullable;
-import android.support.annotation.NonNull;
+
+import io.noties.markwon.Markwon;
 
 public class MessageAdapter extends ArrayAdapter<Message> {
 
-    private static final int TYPE_USER = 0;
-    private static final int TYPE_BOT  = 1;
+    private final Markwon markwon;
 
-    MessageAdapter(Context ctx) {
+    public MessageAdapter(Context ctx, Markwon markwon) {
         super(ctx, 0);
+        this.markwon = markwon;
     }
 
-    void replace(List<Message> list) {
+    public void replace(List<Message> list) {
         clear();
         addAll(list);
         notifyDataSetChanged();
     }
 
     @Override
-    public int getViewTypeCount() { return 2; }
+	public int getViewTypeCount() { return 2; }
 
-    @Override
-    public int getItemViewType(int position) {
-        return getItem(position).role.equals("user") ? TYPE_USER : TYPE_BOT;
-    }
+	@Override
+	public int getItemViewType(int position) {
+		return "user".equals(getItem(position).role) ? 1 : 0;
+	}
 
-    @NonNull
-    @Override
-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        Message msg = getItem(position);
-        int type = getItemViewType(position);
-        if (convertView == null) {
-            int layout = (type == TYPE_USER)
-                    ? R.layout.item_msg_right
-                    : R.layout.item_msg_left;
-            convertView = LayoutInflater.from(getContext()).inflate(layout, parent, false);
-        }
-        TextView tv = convertView.findViewById(R.id.tv_text);
-        tv.setText(msg.content);
-        return convertView;
+	@Override
+	public View getView(int pos, View convertView, ViewGroup parent) {
+		int type = getItemViewType(pos);
+		if (convertView == null) {
+			convertView = LayoutInflater.from(getContext())
+                .inflate(type == 1 ? R.layout.item_msg_right : R.layout.item_msg_left,
+                         parent, false);
+		}
+		TextView tv = (TextView) convertView.findViewById(R.id.tv_text);
+		markwon.setMarkdown(tv, getItem(pos).content);
+		return convertView;
+	}
+	
+
+    private static class ViewHolder {
+        TextView text;
     }
 }
+
