@@ -20,6 +20,9 @@ import com.techstar.nexchat.api.StreamingApiClient;
 import com.techstar.nexchat.data.ChatRepo;
 import java.io.IOException;
 import java.util.Arrays;
+import android.os.AsyncTask;
+import java.util.List;
+import com.techstar.nexchat.model.Message;
 
 public class InputFragment extends Fragment {
 
@@ -90,37 +93,45 @@ public class InputFragment extends Fragment {
 		((MainActivity) getActivity()).setPage(1);
 
 		/* 流式请求 */
-		new android.os.AsyncTask<Void, String, Void>() {
-			@Override
-			protected Void doInBackground(Void... voids) {
+		/* 1. 预先插一条空 assistant */
+		ChatRepo.get(getContext()).addAssistant("");   // 占位
+		LocalBroadcastManager.getInstance(getContext())
+			.sendBroadcast(new Intent("chat_changed"));
+
+		/* 2. 流式更新这条占位 */
+		new AsyncTask<Void, String, Void>() {
+			@Override protected Void doInBackground(Void... voids) {
 				try {
 					SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
-					String url = sp.getString("custom_url", "https://api.moonshot.cn/v1/chat/completions");
-					String key = sp.getString("custom_key", "sk-TZZzEeuEGYZbnbhQVofJlP1CPuzqOTfTJoUO5qTQmIHMriE3");
+					String url = sp.getString("custom_url",  "");
+					String key = sp.getString("custom_key",  "");
 					new StreamingApiClient(getContext(), url, key).stream(text,
 						new StreamingApiClient.DeltaListener() {
-							@Override
-							public void onDelta(String current) {
+							@Override public void onDelta(String current) {
 								publishProgress(current);
 							}
-							@Override
-							public void onDone(String full) {}
+							@Override public void onDone(String full) {}
 						});
 				} catch (Exception e) {
-					publishProgress("异常：" + e.getMessage());
-					e.printStackTrace();
+					publishProgress("错误：" + e.getMessage());
 				}
 				return null;
 			}
 
-			@Override
-			protected void onProgressUpdate(String... values) {
-				/* 直接把错误当 assistant 消息插进去 */
-				ChatRepo.get(getContext()).addAssistant(values[0]);
-				LocalBroadcastManager.getInstance(getContext())
-					.sendBroadcast(new Intent("chat_changed"));
+			@Override protected void onProgressUpdate(String... values) {
+				/* 只更新最后一条 assistant */
+				List<Message> list = ChatRepo.get(getContext()).getCurrentMessages();
+				if (!list.isEmpty()) {
+					Message last = list.get(list.size() - 1);
+					if ("assistant".equals(last.role)) {
+						last.content = values[0];          // 替换内容
+						LocalBroadcastManager.getInstance(getContext())
+							.sendBroadcast(new Intent("chat_changed"));
+					}
+				}
 			}
 		}.execute();
+		
 		
 	}
 	

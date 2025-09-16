@@ -47,6 +47,7 @@ public class MessageAdapter extends ArrayAdapter<Message> {
 		}
 		TextView tv = (TextView) convertView.findViewById(R.id.tv_text);
 		markwon.setMarkdown(tv, getItem(pos).content);
+		
 		return convertView;
 	}
 	
