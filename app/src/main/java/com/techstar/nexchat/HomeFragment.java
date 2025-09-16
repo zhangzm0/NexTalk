@@ -15,6 +15,7 @@ import android.widget.ListView;
 import com.techstar.nexchat.data.ChatRepo;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class HomeFragment extends Fragment {
 
@@ -79,19 +80,21 @@ public class HomeFragment extends Fragment {
 
     /* 把会话标题重新倒进 ListView */
     private void refreshSessionList() {
-        List<String> titles = ChatRepo.get(getContext()).getSessionTitles();
-        if (adapter == null) {
-            adapter = new ArrayAdapter<String>(
-				getContext(),
-				android.R.layout.simple_list_item_1,
-				titles);
-            listView.setAdapter(adapter);
-        } else {
-            adapter.clear();
-            adapter.addAll(titles);
-            adapter.notifyDataSetChanged();
-        }
-    }
+		List<String> titles = ChatRepo.get(getContext()).getSessionTitles();
+
+		if (adapter == null) {
+			adapter = new ArrayAdapter<String>(
+                getContext(),
+                android.R.layout.simple_list_item_1,
+                new ArrayList<String>(titles));   // ① 新列表
+			listView.setAdapter(adapter);
+		} else {
+			adapter.clear();                          // ② 先清
+			adapter.addAll(titles);                   // ③ 再倒
+			adapter.notifyDataSetChanged();           // ④ 刷新
+		}
+	}
+	
 
     /* 根据 ListView position 取 session id（简易版） */
     private long getSessionIdByPosition(int position) {
