@@ -67,9 +67,10 @@ public class ChatFragment extends Fragment {
 
     /* 公开方法，供外部立即刷新 */
     public void refresh() {
-        List<Message> data = ChatRepo.get(getContext()).getAll();
-        adapter.replace(data);
-        listView.setSelection(data.size() - 1); // 自动滚到底
-    }
+		List<Message> data = ChatRepo.get(getContext()).getCurrentMessages();
+		adapter.replace(data);
+		listView.setSelection(data.size() - 1);
+	}
+	
 }
 

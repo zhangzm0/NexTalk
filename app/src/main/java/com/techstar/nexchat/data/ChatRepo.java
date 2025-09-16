@@ -31,18 +31,6 @@ public class ChatRepo {
         return INSTANCE;
     }
 
-    /* ======== 会话相关 ======== */
-    public long createSession(String title) {
-        ContentValues cv = new ContentValues();
-        cv.put("title", title);
-        cv.put("updated", System.currentTimeMillis());
-        long id = db.insert("session", null, cv);
-        sp.edit().putLong("current_session", id).apply();
-        return id;
-    }
-    public void switchSession(long sessionId) {
-        sp.edit().putLong("current_session", sessionId).apply();
-    }
     public long currentSession() {
         return sp.getLong("current_session", -1);
     }
@@ -76,17 +64,26 @@ public class ChatRepo {
     }
 
     /* ======== 消息相关 ======== */
-    public void addUser(String text) {
-        ensureSession();
-        db.execSQL("INSERT INTO chat(session_id,role,content,ts) VALUES(?,?,?,?)",
-                new Object[]{currentSession(), "user", text, System.currentTimeMillis()});
-        touchSession();
-    }
-    public void addAssistant(String text) {
-        db.execSQL("INSERT INTO chat(session_id,role,content,ts) VALUES(?,?,?,?)",
-                new Object[]{currentSession(), "assistant", text, System.currentTimeMillis()});
-        touchSession();
-    }
+    private void ensureSession() {
+		if (currentSession() == -1) {
+			createSession("新对话");
+		}
+	}
+
+	public void addUser(String text) {
+		ensureSession();
+		db.execSQL("INSERT INTO chat(session_id,role,content,ts) VALUES(?,?,?,?)",
+				   new Object[]{currentSession(), "user", text, System.currentTimeMillis()});
+		touchSession();
+	}
+
+	public void addAssistant(String text) {
+		ensureSession();
+		db.execSQL("INSERT INTO chat(session_id,role,content,ts) VALUES(?,?,?,?)",
+				   new Object[]{currentSession(), "assistant", text, System.currentTimeMillis()});
+		touchSession();
+	}
+	
     public List<Message> getAll() {
         List<Message> list = new ArrayList<>();
         long sid = currentSession();
@@ -105,10 +102,7 @@ public class ChatRepo {
         }
     }
 
-    /* 如果没有会话就新建一个 */
-    private void ensureSession() {
-        if (currentSession() == -1) createSession("新对话");
-    }
+    
 
     /* SQLiteOpenHelper */
     private static class Helper extends SQLiteOpenHelper {
@@ -124,5 +118,39 @@ public class ChatRepo {
             onCreate(db);
         }
     }
+	/* 1. 创建新会话并切换 */
+	public long createSession(String title) {
+		ContentValues cv = new ContentValues();
+		cv.put("title", title);
+		cv.put("updated", System.currentTimeMillis());
+		long id = db.insert("session", null, cv);
+		switchSession(id);          // 立即切到新会话
+		return id;
+	}
+
+	/* 2. 切换会话 */
+	public void switchSession(long sessionId) {
+		sp.edit().putLong("current_session", sessionId).apply();
+	}
+
+	/* 3. 把指定会话的消息一次性搬出来 */
+	public List<Message> getMessages(long sessionId) {
+		List<Message> list = new ArrayList<>();
+		Cursor c = db.rawQuery(
+            "SELECT role,content FROM chat WHERE session_id=? ORDER BY ts",
+            new String[]{String.valueOf(sessionId)});
+		while (c.moveToNext()) {
+			list.add(new Message(c.getString(0), c.getString(1)));
+		}
+		c.close();
+		return list;
+	}
+
+	/* 4. 快捷读“当前会话”消息 */
+	public List<Message> getCurrentMessages() {
+		return getMessages(currentSession());
+	}
+	
+	
 }
 
