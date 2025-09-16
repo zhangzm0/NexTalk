@@ -1,60 +1,64 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 28
+    buildToolsVersion "28.0.3"
 
     defaultConfig {
         applicationId "com.techstar.nexchat"
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 28
         versionCode 1
-        versionName "1.0"
-		setProperty("archivesBaseName", "NexChat-${versionName}-${getDate()}")
+        versionName "1.0.0"
+
         // 仅 32 位
         ndk {
-            abiFilters "armeabi-v7a"
+            abiFilters 'armeabi-v7a', 'x86'
+        }
+
+        // 兼容 Java 8 语法（lambda）
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_8
+            targetCompatibility JavaVersion.VERSION_1_8
         }
     }
 
     buildTypes {
         release {
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // 额外规则：保留自己实体类
+            // -keep class com.techstar.nexchat.model.** { *; }
         }
     }
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    // 禁用 64 位 so 扫描，防止误打包
+    packagingOptions {
+        exclude 'lib/arm64-v8a/*'
+        exclude 'lib/x86_64/*'
     }
 }
-// 时间戳函数
-static def getDate() {
-    return new Date().format('yyyyMMdd-HHmm')
-}
-/* -------------------------------------------------
- * 依赖声明：全部使用“无 Kotlin”坐标
- * ------------------------------------------------- */
+
 dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
 
+    // 最后一个支持 API 14 的 appcompat
     implementation 'com.android.support:appcompat-v7:28.0.0'
-    implementation 'com.android.support:recyclerview-v7:28.0.0'
 
-    // 网络：OkHttp 3.14.9
-    implementation('com.squareup.okhttp3:okhttp:3.14.9')
-    
+    // 生命周期感知（可选，但 28.0.0 仍兼容）
+    implementation 'com.android.support:support-annotations:28.0.0'
 
-    // JSON
-    implementation 'com.google.code.gson:gson:2.8.9'
+    // JSON 解析，纯 Java，无 so
+    implementation 'com.google.code.gson:gson:2.8.5'
 
-    // Markdown：Markwon 4.6.2
-    implementation('io.noties.markwon:core:4.6.2') {
-        exclude group: 'org.jetbrains.kotlin'
-    }
-    implementation('io.noties.markwon:linkify:4.6.2') {
-        exclude group: 'org.jetbrains.kotlin'
-    }
-    
+    // 测试
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
-
 

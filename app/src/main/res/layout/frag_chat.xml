@@ -1,43 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<ListView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/chat_list"
+    android:background="@color/background"
+    android:divider="@null"
+    android:transcriptMode="alwaysScroll"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <!-- 顶栏，高 48 dp -->
-    <LinearLayout
-        android:id="@+id/appbar"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="#ff1e1e1e"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="12dp">
-
-        <TextView
-            android:id="@+id/title"
-            android:text="新对话"
-            android:textSize="16sp"
-            android:textColor="@color/fg"
-            android:singleLine="true"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"/>
-
-        <ImageButton
-            android:id="@+id/btn_more"
-            android:src="@drawable/ic_more"
-            android:background="?selectableItemBackgroundBorderless"
-            android:layout_width="32dp"
-            android:layout_height="32dp"/>
-    </LinearLayout>
-
-    <!-- 消息列表 -->
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/list"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="4dp"
-        android:clipToPadding="false"/>
-</LinearLayout>
+    android:layout_height="match_parent"/>
 

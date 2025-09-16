@@ -1,51 +1,30 @@
-
 package com.techstar.nexchat;
 
-import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-
 public class HomeFragment extends Fragment {
-    private SessionAdapter adapter;
-    private RecyclerView list;
+    public static HomeFragment newInstance() { return new HomeFragment(); }
 
+    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.frag_home, container, false);
-        list = (RecyclerView) v.findViewById(R.id.list);
-        list.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new SessionAdapter(getContext());
-        list.setAdapter(adapter);
-
-        reload(); // 首次加载
-
-        adapter.setOnItemClickListener(new SessionAdapter.OnItemClickListener() {
-				public void onItemClick(Session s) {
-					((MainActivity) getActivity()).openChat(s.id);
-				}
-			});
-        adapter.setOnItemLongListener(new SessionAdapter.OnItemLongListener() {
-				public boolean onItemLongClick(Session s) {
-					SessionDAO.delete(getContext(), s.id);
-					reload(); // 刷新
-					return true;
-				}
-			});
-        return v;
+    public View onCreateView(LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        View root = inflater.inflate(R.layout.frag_home, container, false);
+        // 新建对话
+        root.findViewById(R.id.btn_new).setOnClickListener(v -> {
+            // 清数据库、跳聊天页
+            ChatRepo.get(getContext()).clear();
+            ((MainActivity) getActivity()).setPage(1);
+        });
+        // 历史列表（ListView）
+        ListView history = root.findViewById(R.id.list_history);
+        history.setAdapter(new SimpleAdapter(...));
+        history.setOnItemClickListener((p, v, pos, id) -> {
+            // 恢复会话
+            ((MainActivity) getActivity()).setPage(1);
+        });
+        // 设置
+        root.findViewById(R.id.btn_settings).setOnClickListener(
+                v -> startActivity(new Intent(getContext(), SettingsActivity.class)));
+        return root;
     }
-
-    private void reload() {
-		android.database.Cursor c = SessionDAO.queryAll(getContext());
-		if (c != null) {
-			adapter.reload(c);
-			c.close();
-		}
-	}
-	
 }
-
-

@@ -1,15 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
-    android:background="@color/bg"
-    android:gravity="center"
+    android:background="@color/background"
+    android:padding="8dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:text="主页\n(会话列表/设置)"
-        android:textColor="@color/fg2"
-        android:textSize="18sp"
-        android:layout_width="wrap_content"
+    <Button
+        android:id="@+id/btn_new"
+        android:text="新建对话"
+        android:textColor="@color/text_primary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <ListView
+        android:id="@+id/list_history"
+        android:divider="@color/divider"
+        android:dividerHeight="1dp"
+        android:layout_weight="1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"/>
+
+    <Button
+        android:id="@+id/btn_settings"
+        android:text="设置"
+        android:textColor="@color/text_primary"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 </LinearLayout>
 
