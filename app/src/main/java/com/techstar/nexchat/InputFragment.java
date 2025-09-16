@@ -75,21 +75,37 @@ public class InputFragment extends Fragment {
     }
 
     private void doSend() {
-        String text = editText.getText().toString().trim();
-        if (text.isEmpty()) return;
+		final String text = editText.getText().toString().trim();
+		if (text.isEmpty()) return;
 
-        long sid = ChatRepo.get(getContext()).currentSession();
-        if (sid == -1) {
-            String title = text.length() > 20 ? text.substring(0, 20) : text;
-            sid = ChatRepo.get(getContext()).createSession(title);
-        }
+		/* 1 会话检查 */
+		long sid = ChatRepo.get(getContext()).currentSession();
+		if (sid == -1) {
+			String title = text.length() > 20 ? text.substring(0, 20) : text;
+			sid = ChatRepo.get(getContext()).createSession(title);
+		}
 
-        ChatRepo.get(getContext()).addUser(text);
-        LocalBroadcastManager.getInstance(getContext())
-                .sendBroadcast(new Intent("chat_changed"));
+		/* 2 用户消息入库 */
+		ChatRepo.get(getContext()).addUser(text);
+		LocalBroadcastManager.getInstance(getContext())
+            .sendBroadcast(new Intent("chat_changed"));
 
-        editText.setText("");
-        ((MainActivity) getActivity()).setPage(1);   // 回到聊天页
-    }
+		/* 3 清空输入框 & 回聊天页 */
+		editText.setText("");
+		((MainActivity) getActivity()).setPage(1);
+
+		/* 4 异步请求 AI */
+		new android.os.AsyncTask<Void, Void, String>() {
+			@Override protected String doInBackground(Void... voids) {
+				return new ApiClient(getContext()).send(text);
+			}
+			@Override protected void onPostExecute(String reply) {
+				ChatRepo.get(getContext()).addAssistant(reply);
+				LocalBroadcastManager.getInstance(getContext())
+                    .sendBroadcast(new Intent("chat_changed"));
+			}
+		}.execute();
+	}
+	
 }
 
