@@ -18,6 +18,7 @@ import android.widget.Spinner;
 import android.widget.ToggleButton;
 
 import com.techstar.nexchat.data.ChatRepo;
+import com.techstar.nexchat.api.ApiClient;
 
 import java.util.Arrays;
 
