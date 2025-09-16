@@ -5,19 +5,26 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.ToggleButton;
+
 import com.techstar.nexchat.data.ChatRepo;
+
+import java.util.Arrays;
 
 public class InputFragment extends Fragment {
 
     private EditText editText;
+    private Button   btnSend;
 
     public static InputFragment newInstance() {
         return new InputFragment();
@@ -28,56 +35,61 @@ public class InputFragment extends Fragment {
                              ViewGroup container,
                              Bundle savedInstanceState) {
 
-        View root = inflater.inflate(R.layout.frag_input, container, false);
-        editText = (EditText) root.findViewById(R.id.edit);
+        LinearLayout root = (LinearLayout) inflater.inflate(R.layout.frag_input, container, false);
 
-        // 弹出软键盘
+        editText = (EditText) root.findViewById(R.id.edit);
+        btnSend  = (Button)   root.findViewById(R.id.btn_send);
+
+        // 发送按钮
+        btnSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                doSend();
+            }
+        });
+
+        // 工具行壳子事件
+        root.findViewById(R.id.toggle_net).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { /* TODO */ }
+        });
+        root.findViewById(R.id.btn_upload).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { /* TODO */ }
+        });
+
+        // 模型下拉假数据
+        Spinner spinner = (Spinner) root.findViewById(R.id.spinner_model);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                getContext(),
+                android.R.layout.simple_spinner_item,
+                Arrays.asList("moonshot-v1-128k", "kimi-thinking-preview"));
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+
+        // 弹键盘
         editText.requestFocus();
         InputMethodManager imm = (InputMethodManager) getActivity()
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
 
-        // 按“完成”键也触发发送
-        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    sendAndBack();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        // 拦截物理返回键
-        root.setFocusableInTouchMode(true);
-        root.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
-                    sendAndBack();
-                    return true;
-                }
-                return false;
-            }
-        });
-
         return root;
     }
 
-    private void sendAndBack() {
+    private void doSend() {
         String text = editText.getText().toString().trim();
-        if (!text.isEmpty()) {
-            // 1. 入库
-            ChatRepo.get(getContext()).addUser(text);
-            // 2. 通知聊天页刷新
-            LocalBroadcastManager.getInstance(getContext())
-                    .sendBroadcast(new Intent("chat_changed"));
-            // 3. 清输入框
-            editText.setText("");
+        if (text.isEmpty()) return;
+
+        long sid = ChatRepo.get(getContext()).currentSession();
+        if (sid == -1) {
+            String title = text.length() > 20 ? text.substring(0, 20) : text;
+            sid = ChatRepo.get(getContext()).createSession(title);
         }
-        // 4. 回到聊天页
-        ((MainActivity) getActivity()).setPage(1);
+
+        ChatRepo.get(getContext()).addUser(text);
+        LocalBroadcastManager.getInstance(getContext())
+                .sendBroadcast(new Intent("chat_changed"));
+
+        editText.setText("");
+        ((MainActivity) getActivity()).setPage(1);   // 回到聊天页
     }
 }
 
