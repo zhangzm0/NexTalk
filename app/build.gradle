@@ -13,41 +13,42 @@ android {
         minSdkVersion 21
         targetSdkVersion 28
         versionCode 1
-        versionName "1.0.0"
+        versionName "1.0"
         setProperty("archivesBaseName", "NexChat-${versionName}-${getDate()}")
 
         // 仅 32 位
         ndk {
             abiFilters 'armeabi-v7a', 'x86'
         }
-
-        // 兼容 Java 8 语法（lambda）
-        compileOptions {
-            sourceCompatibility JavaVersion.VERSION_1_8
-            targetCompatibility JavaVersion.VERSION_1_8
-        }
     }
 
+    // 签名配置
     signingConfigs {
         release {
-            storeFile file("keystore.jks")          // 文件名固定
+            storeFile file("keystore.jks")
             storePassword System.getenv("KEYSTORE_PASSWORD")
             keyAlias System.getenv("KEY_ALIAS")
             keyPassword System.getenv("KEY_PASSWORD")
         }
     }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.release    // 挂上签名
+            signingConfig signingConfigs.release
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+
         debug {
-            // 如果想让 debug 也走同一套签名，就写 signingConfig signingConfigs.release
+            // 如果想让 debug 也走同一套签名，打开下一行
+            // signingConfig signingConfigs.release
         }
-    
-            // 额外规则：保留自己实体类
-            // -keep class com.techstar.nexchat.model.** { *; }
-        }
+    }
+
+    // Java 8 语法兼容（必须放在 android 闭包里）
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     lintOptions {
@@ -55,7 +56,6 @@ android {
         abortOnError false
     }
 
-    // 禁用 64 位 so 扫描，防止误打包
     packagingOptions {
         exclude 'lib/arm64-v8a/*'
         exclude 'lib/x86_64/*'
@@ -65,22 +65,19 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    // 最后一个支持 API 14 的 appcompat
+    // 28.0.0 是 support-library 最后一个版本
     implementation 'com.android.support:appcompat-v7:28.0.0'
-
-    // 生命周期感知（可选，但 28.0.0 仍兼容）
     implementation 'com.android.support:support-annotations:28.0.0'
 
-    // JSON 解析，纯 Java，无 so
+    // JSON
     implementation 'com.google.code.gson:gson:2.8.5'
 
-	
+    // Markdown + 数学公式 + 表格
     implementation 'io.noties.markwon:core:4.6.2'
-    implementation 'io.noties.markwon:ext-latex:4.6.2'   // 数学/化学公式
-    implementation 'io.noties.markwon:ext-tables:4.6.2'  // 表格
+    implementation 'io.noties.markwon:ext-latex:4.6.2'
+    implementation 'io.noties.markwon:ext-tables:4.6.2'
     implementation 'io.noties.markwon:ext-strikethrough:4.6.2'
 
-	
     // 测试
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
