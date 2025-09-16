@@ -78,7 +78,7 @@ public final class StreamingApiClient {
     }
 
     private String buildBody(String text) {
-        return "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"" +
+        return "{\"model\":\"moonshot-v1-8k\",\"messages\":[{\"role\":\"user\",\"content\":\"" +
                escape(text) + "\"}],\"stream\":true}";
     }
 

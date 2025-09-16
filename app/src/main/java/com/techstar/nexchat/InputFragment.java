@@ -94,8 +94,8 @@ public class InputFragment extends Fragment {
 			@Override
 			protected Void doInBackground(Void... voids) {
 				SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
-				String url = sp.getString("custom_url",  "https://api.openai.com/v1/chat/completions");
-				String key = sp.getString("custom_key",  "");
+				String url = sp.getString("custom_url",  "https://api.moonshot.cn/v1/chat/completions");
+				String key = sp.getString("custom_key",  "sk-TZZzEeuEGYZbnbhQVofJlP1CPuzqOTfTJoUO5qTQmIHMriE3");
 				try {
 					new StreamingApiClient(getContext(), url, key).stream(text,
 						new StreamingApiClient.DeltaListener() {
