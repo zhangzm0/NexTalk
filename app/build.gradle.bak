@@ -32,7 +32,9 @@ android {
             // -keep class com.techstar.nexchat.model.** { *; }
         }
     }
-
+static def getDate() {
+    return new Date().format('yyyyMMdd-HHmm')
+}
     lintOptions {
         checkReleaseBuilds false
         abortOnError false

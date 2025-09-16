@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+static def getDate() {
+    return new Date().format('yyyyMMdd-HHmm')
+}
+
 android {
     compileSdkVersion 28
     buildToolsVersion "28.0.3"
@@ -32,9 +36,7 @@ android {
             // -keep class com.techstar.nexchat.model.** { *; }
         }
     }
-static def getDate() {
-    return new Date().format('yyyyMMdd-HHmm')
-}
+
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
