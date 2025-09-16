@@ -93,10 +93,10 @@ public class InputFragment extends Fragment {
 		new android.os.AsyncTask<Void, String, Void>() {
 			@Override
 			protected Void doInBackground(Void... voids) {
-				SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
-				String url = sp.getString("custom_url",  "https://api.moonshot.cn/v1/chat/completions");
-				String key = sp.getString("custom_key",  "sk-TZZzEeuEGYZbnbhQVofJlP1CPuzqOTfTJoUO5qTQmIHMriE3");
 				try {
+					SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+					String url = sp.getString("custom_url", "https://api.openai.com/v1/chat/completions");
+					String key = sp.getString("custom_key", "");
 					new StreamingApiClient(getContext(), url, key).stream(text,
 						new StreamingApiClient.DeltaListener() {
 							@Override
@@ -106,20 +106,22 @@ public class InputFragment extends Fragment {
 							@Override
 							public void onDone(String full) {}
 						});
-				} catch (IOException e) {
-					publishProgress("网络错误: " + e.getMessage());
+				} catch (Exception e) {
+					publishProgress("异常：" + e.getMessage());
+					e.printStackTrace();
 				}
 				return null;
 			}
 
 			@Override
 			protected void onProgressUpdate(String... values) {
-				/* 每次 delta 直接替换最后一条 assistant 消息 */
-				Intent i = new Intent("stream_delta");
-				i.putExtra("delta", values[0]);
-				LocalBroadcastManager.getInstance(getContext()).sendBroadcast(i);
+				/* 直接把错误当 assistant 消息插进去 */
+				ChatRepo.get(getContext()).addAssistant(values[0]);
+				LocalBroadcastManager.getInstance(getContext())
+					.sendBroadcast(new Intent("chat_changed"));
 			}
 		}.execute();
+		
 	}
 	
 	
