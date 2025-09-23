@@ -13,12 +13,12 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="NexChat"
-		android:exported="true"
         android:theme="@style/AppTheme">
 
         <activity
             android:name=".MainActivity"
-            android:label="NexChat">
+            android:label="NexChat"
+			android:exported="true">
 
             <intent-filter>
 
