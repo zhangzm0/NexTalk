@@ -11,6 +11,7 @@ buildscript {
         google()
         mavenLocal()
         mavenCentral()
+        gradlePluginPortal()
     }
     dependencies {
         classpath "com.android.tools.build:gradle:$build_gradle_version"
