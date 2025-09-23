@@ -1,10 +1,8 @@
 package com.techstar.nexchat;
 
 import android.os.AsyncTask;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -13,26 +11,41 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FetchModelsTask extends AsyncTask<Void, Void, String> {
-
+public class FetchModelsTask extends AsyncTask<Void, Void, FetchModelsTask.Result> {
+    
+    public interface FetchModelsCallback {
+        void onSuccess(List<String> models);
+        void onError(String error);
+    }
+    
+    public static class Result {
+        public boolean success;
+        public List<String> models;
+        public String error;
+        
+        public Result(boolean success, List<String> models, String error) {
+            this.success = success;
+            this.models = models;
+            this.error = error;
+        }
+    }
+    
     private String apiUrl;
     private String apiKey;
     private ProgressBar progressBar;
     private Button btnFetch;
-    private List<String> models;
-    private boolean success;
-
-    public FetchModelsTask(String apiUrl, String apiKey, ProgressBar progressBar, Button btnFetch) {
+    private FetchModelsCallback callback;
+    
+    public FetchModelsTask(String apiUrl, String apiKey, ProgressBar progressBar, Button btnFetch, FetchModelsCallback callback) {
         this.apiUrl = apiUrl;
         this.apiKey = apiKey;
         this.progressBar = progressBar;
         this.btnFetch = btnFetch;
-        this.models = new ArrayList<String>();
-        this.success = false;
+        this.callback = callback;
     }
-
+    
     @Override
-    protected String doInBackground(Void... voids) {
+    protected Result doInBackground(Void... voids) {
         try {
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()
@@ -40,46 +53,40 @@ public class FetchModelsTask extends AsyncTask<Void, Void, String> {
                 .addHeader("Authorization", "Bearer " + apiKey)
                 .addHeader("Content-Type", "application/json")
                 .build();
-
+            
             Response response = client.newCall(request).execute();
             String responseBody = response.body().string();
-
+            
             if (response.isSuccessful()) {
                 JSONObject json = new JSONObject(responseBody);
                 JSONArray data = json.getJSONArray("data");
-
+                List<String> models = new ArrayList<>();
+                
                 for (int i = 0; i < data.length(); i++) {
                     JSONObject model = data.getJSONObject(i);
                     String modelId = model.getString("id");
                     models.add(modelId);
                 }
-                success = true;
-                return "成功获取 " + models.size() + " 个模型";
+                return new Result(true, models, null);
             } else {
-                return "错误: " + response.code() + " - " + responseBody;
+                return new Result(false, null, "HTTP " + response.code() + ": " + responseBody);
             }
-
+            
         } catch (Exception e) {
-            return "异常: " + e.getMessage();
+            return new Result(false, null, "异常: " + e.getMessage());
         }
     }
-
+    
     @Override
-    protected void onPostExecute(String result) {
-        progressBar.setVisibility(View.GONE);
-        btnFetch.setEnabled(true);
-        btnFetch.setText("获取模型列表");
-
-        if (success) {
-            Toast.makeText(btnFetch.getContext(), result, Toast.LENGTH_LONG).show();
-            // 保存模型列表到当前正在添加的供应商
+    protected void onPostExecute(Result result) {
+        if (result.success) {
+            if (callback != null) {
+                callback.onSuccess(result.models);
+            }
         } else {
-            // 显示错误对话框
-            showErrorDialog(result);
+            if (callback != null) {
+                callback.onError(result.error);
+            }
         }
-    }
-
-    private void showErrorDialog(String error) {
-        // 实现错误对话框显示
     }
 }
