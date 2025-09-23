@@ -10,6 +10,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import java.util.ArrayList;
+import android.content.Intent;
+import android.widget.Toast;
 
 public class HomeFragment extends Fragment {
 
@@ -71,8 +73,13 @@ public class HomeFragment extends Fragment {
     }
 
     private void openSettings() {
-        // 实现打开设置逻辑
-    }
+		try {
+			Intent intent = new Intent(getActivity(), SettingsActivity.class);
+			startActivity(intent);
+		} catch (Exception e) {
+			Toast.makeText(getActivity(), "打开设置失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
 
     private void loadChat(int position) {
         // 实现加载聊天记录逻辑

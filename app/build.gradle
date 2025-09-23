@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 33
     buildToolsVersion "33.0.0"
 
     defaultConfig {
         applicationId "com.techstar.nexchat"
         minSdkVersion 16
-        targetSdkVersion 30
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
     }
@@ -22,8 +22,9 @@ android {
 dependencies {
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support:design:28.0.0'
+    implementation 'com.android.support:recyclerview-v7:28.0.0'
+    implementation 'com.android.support:cardview-v7:28.0.0'
     implementation 'com.squareup.okhttp3:okhttp:3.12.12' // 兼容安卓5的版本
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'io.noties.markwon:core:4.6.2' // Markdown渲染
-    implementation 'io.noties.markwon:html:4.6.2'
 }
