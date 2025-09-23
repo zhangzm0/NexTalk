@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager.widget.ViewPager;
+import android.view.WindowManager;
 
 public class MainActivity extends FragmentActivity {
 
@@ -13,6 +14,10 @@ public class MainActivity extends FragmentActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+		// 在MainActivity的onCreate中添加
+		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -46,4 +51,12 @@ public class MainActivity extends FragmentActivity {
         viewPager.setAdapter(pagerAdapter);
         viewPager.setCurrentItem(1);
     }
+
+
+	public void switchToChatPage() {
+		if (viewPager != null) {
+			viewPager.setCurrentItem(1); // 切换到聊天页面
+		}
+	}
+	
 }

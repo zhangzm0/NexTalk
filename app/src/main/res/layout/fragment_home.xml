@@ -4,52 +4,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#121212"
-    android:padding="16dp">
+    android:background="#121212">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="20dp">
-
-        <Button
-            android:id="@+id/btnNewChat"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="新建对话"
-            android:textColor="#FFFFFF"
-            android:background="#2196F3"
-            android:layout_marginEnd="8dp"/>
-
-        <Button
-            android:id="@+id/btnSettings"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="设置"
-            android:textColor="#FFFFFF"
-            android:background="#FF9800"
-            android:layout_marginStart="8dp"/>
-
-    </LinearLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="聊天历史"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:layout_marginBottom="10dp"/>
-
-    <ListView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/chatHistoryList"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#1E1E1E"
-        android:divider="#333333"
-        android:dividerHeight="1dp"/>
+        android:layout_height="match_parent"/>
 
 </LinearLayout>
