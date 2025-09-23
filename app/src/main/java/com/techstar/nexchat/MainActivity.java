@@ -44,6 +44,6 @@ public class MainActivity extends FragmentActivity {
         };
 
         viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(1); // 默认显示聊天页面
+        viewPager.setCurrentItem(1);
     }
 }

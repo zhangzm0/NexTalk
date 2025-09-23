@@ -4,9 +4,9 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.appcompat.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import com.techstar.nexchat.model.ApiProvider;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,11 @@ public class ApiProvidersActivity extends AppCompatActivity {
                 finish();
             }
         });
+        
+        // 显示返回箭头
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
     }
     
     private void initRecyclerView() {
@@ -67,7 +73,6 @@ public class ApiProvidersActivity extends AppCompatActivity {
     
     private void loadProviders() {
         // 从SharedPreferences或数据库加载已保存的供应商
-        // 这里先添加一些示例数据
         ApiProvider provider1 = new ApiProvider("OpenAI", "https://api.openai.com/v1", "sk-...");
         provider1.getModels().add("gpt-3.5-turbo");
         provider1.getModels().add("gpt-4");
@@ -108,9 +113,6 @@ public class ApiProvidersActivity extends AppCompatActivity {
                     return;
                 }
                 
-                // 检查是否已经获取了模型列表
-                // 这里需要根据实际情况判断
-                
                 ApiProvider provider = new ApiProvider(name, url, key);
                 providers.add(provider);
                 adapter.notifyDataSetChanged();
@@ -139,23 +141,11 @@ public class ApiProvidersActivity extends AppCompatActivity {
         btnFetch.setEnabled(false);
         btnFetch.setText("获取中...");
         
-        // 这里实现获取模型列表的逻辑
-        // 使用OkHttp发送请求到API供应商
         new FetchModelsTask(apiUrl, apiKey, progressBar, btnFetch).execute();
     }
     
     private void showError(String message) {
-        new AlertDialog.Builder(this)
-            .setTitle("错误")
-            .setMessage(message)
-            .setPositiveButton("复制", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    // 实现复制错误信息到剪贴板
-                }
-            })
-            .setNegativeButton("确定", null)
-            .show();
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
     
     // RecyclerView Adapter
@@ -193,7 +183,7 @@ public class ApiProvidersActivity extends AppCompatActivity {
         }
         
         @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
             if (holder.getItemViewType() == TYPE_ADD_NEW) {
                 ((AddNewViewHolder) holder).bind();
             } else {
@@ -250,7 +240,6 @@ public class ApiProvidersActivity extends AppCompatActivity {
             btnEdit.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    // 编辑供应商
                     editProvider(provider);
                 }
             });
@@ -258,7 +247,6 @@ public class ApiProvidersActivity extends AppCompatActivity {
             btnDelete.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    // 删除供应商
                     deleteProvider(provider);
                 }
             });
@@ -267,6 +255,7 @@ public class ApiProvidersActivity extends AppCompatActivity {
     
     private void editProvider(ApiProvider provider) {
         // 实现编辑逻辑
+        Toast.makeText(this, "编辑功能待实现", Toast.LENGTH_SHORT).show();
     }
     
     private void deleteProvider(final ApiProvider provider) {
@@ -278,6 +267,7 @@ public class ApiProvidersActivity extends AppCompatActivity {
                 public void onClick(DialogInterface dialog, int which) {
                     providers.remove(provider);
                     adapter.notifyDataSetChanged();
+                    Toast.makeText(ApiProvidersActivity.this, "已删除", Toast.LENGTH_SHORT).show();
                 }
             })
             .setNegativeButton("取消", null)
