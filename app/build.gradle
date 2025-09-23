@@ -2,21 +2,35 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 33
-    buildToolsVersion "33.0.0"
 
     defaultConfig {
         applicationId "com.techstar.nexchat"
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode 1
         versionName "1.0"
-    }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+		setProperty("archivesBaseName", "NexChat-${versionName}-${getDate()}")
+        // 仅 32 位
+        ndk {
+            abiFilters "armeabi-v7a"
         }
     }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+// 时间戳函数
+static def getDate() {
+    return new Date().format('yyyyMMdd-HHmm')
 }
 
 dependencies {
