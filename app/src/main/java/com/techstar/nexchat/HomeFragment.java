@@ -1,9 +1,7 @@
 package com.techstar.nexchat;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,98 +9,79 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-
-import com.techstar.nexchat.data.ChatRepo;
-
-import java.util.List;
 import java.util.ArrayList;
 
 public class HomeFragment extends Fragment {
 
-    private ListView listView;
-    private ArrayAdapter<String> adapter;
-
-    public static HomeFragment newInstance() {
-        return new HomeFragment();
-    }
+    private Button btnNewChat, btnSettings;
+    private ListView chatHistoryList;
+    private ArrayAdapter<String> historyAdapter;
+    private ArrayList<String> chatHistory;
 
     @Override
-    public View onCreateView(LayoutInflater inflater,
-                             ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        View root = inflater.inflate(R.layout.frag_home, container, false);
+        initViews(view);
+        setupClickListeners();
+        loadChatHistory();
 
-        /* 会话列表 */
-        listView = (ListView) root.findViewById(R.id.list_history);
-        refreshSessionList();          // 第一次加载
+        return view;
+    }
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-				@Override
-				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-					/* 拿到 session id */
-					long sessionId = getSessionIdByPosition(position);
-					ChatRepo.get(getContext()).switchSession(sessionId);
+    private void initViews(View view) {
+        btnNewChat = (Button) view.findViewById(R.id.btnNewChat);
+        btnSettings = (Button) view.findViewById(R.id.btnSettings);
+        chatHistoryList = (ListView) view.findViewById(R.id.chatHistoryList);
 
-					/* 通知 ChatFragment 刷新 */
-					LocalBroadcastManager.getInstance(getContext())
-                        .sendBroadcast(new Intent("chat_changed"));
+        chatHistory = new ArrayList<String>();
+        historyAdapter = new ArrayAdapter<String>(getActivity(), 
+												  android.R.layout.simple_list_item_1, chatHistory);
+        chatHistoryList.setAdapter(historyAdapter);
+    }
 
-					/* 跳到聊天页 */
-					((MainActivity) getActivity()).setPage(1);
-				}
-			});
-
-        /* 新建对话按钮 */
-        Button btnNew = (Button) root.findViewById(R.id.btn_new);
-        btnNew.setOnClickListener(new View.OnClickListener() {
+    private void setupClickListeners() {
+        btnNewChat.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
-					/* 创建并自动切换新会话 */
-					ChatRepo.get(getContext()).createSession("新对话");
-					LocalBroadcastManager.getInstance(getContext())
-                        .sendBroadcast(new Intent("chat_changed"));
-					((MainActivity) getActivity()).setPage(1);
+					// 新建对话逻辑
+					createNewChat();
 				}
 			});
 
-        /* 设置按钮 */
-        Button btnSettings = (Button) root.findViewById(R.id.btn_settings);
         btnSettings.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
-					startActivity(new Intent(getContext(), SettingsActivity.class));
+					// 打开设置
+					openSettings();
 				}
 			});
 
-        return root;
+        chatHistoryList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+				@Override
+				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+					// 加载选中的聊天记录
+					loadChat(position);
+				}
+			});
     }
 
-    /* 把会话标题重新倒进 ListView */
-    private void refreshSessionList() {
-		List<String> titles = ChatRepo.get(getContext()).getSessionTitles();
-
-		/* 每次都 new 适配器，保证引用最新数据 */
-		adapter = new ArrayAdapter<String>(
-            getContext(),
-            android.R.layout.simple_list_item_1,
-            new ArrayList<String>(titles));
-		listView.setAdapter(adapter);
-	}
-	
-	
-
-    /* 根据 ListView position 取 session id（简易版） */
-    private long getSessionIdByPosition(int position) {
-        /* 跟 getSessionTitles() 顺序一致 */
-        return ChatRepo.get(getContext()).getSessions().get(position).id;
+    private void createNewChat() {
+        // 实现新建对话逻辑
     }
 
-    /* 从别的页回来可能新建了会话，刷新一下 */
-    @Override
-    public void onResume() {
-        super.onResume();
-        refreshSessionList();
+    private void openSettings() {
+        // 实现打开设置逻辑
+    }
+
+    private void loadChat(int position) {
+        // 实现加载聊天记录逻辑
+    }
+
+    private void loadChatHistory() {
+        // 从数据库加载聊天历史
+        chatHistory.add("示例对话 1");
+        chatHistory.add("示例对话 2");
+        historyAdapter.notifyDataSetChanged();
     }
 }
-
