@@ -13,6 +13,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="NexChat"
+		android:exported="true"
         android:theme="@style/AppTheme">
 
         <activity
@@ -29,9 +30,11 @@
 
         </activity>
 
-        <activity android:name=".SettingsActivity"/>
+        <activity android:name=".SettingsActivity"
+			android:exported="true"/>
 
-        <activity android:name=".ApiProvidersActivity"/>
+        <activity android:name=".ApiProvidersActivity"
+			android:exported="true"/>
 
     </application>
 
