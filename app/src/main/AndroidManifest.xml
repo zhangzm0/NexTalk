@@ -12,6 +12,9 @@
     <!-- 读取您的SD卡中的内容 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
+    <!-- 在其他应用之上显示内容 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -40,13 +43,13 @@
 
         <activity android:name=".AddProviderActivity"/>
 
-        <activity 
-			android:name=".CrashActivity"
-			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
-			android:launchMode="singleInstance"
-			android:excludeFromRecents="true"
-			android:taskAffinity=""
-			android:allowTaskReparenting="false"/>
+        <activity
+            android:name=".CrashActivity"
+            android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:allowTaskReparenting="false"/>
 
     </application>
 

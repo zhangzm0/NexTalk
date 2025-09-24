@@ -1,42 +1,47 @@
 package com.techstar.nexchat;
 
 import android.os.Bundle;
+import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager.widget.ViewPager;
-import androidx.appcompat.app.AppCompatDelegate;
 
 public class MainActivity extends FragmentActivity {
-
+    
     private ViewPager viewPager;
     private FragmentPagerAdapter pagerAdapter;
-
-
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		// 初始化异常捕获
-		CrashHandler.getInstance().init(this);
-
-		// 启用矢量图兼容
-		AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
-
-		setContentView(R.layout.activity_main);
-		initViewPager();
-	}
-	
-
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        // 确保异常捕获最先初始化
+        try {
+            CrashHandler.getInstance().init(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        // 启用矢量图兼容
+        androidx.appcompat.app.AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+        
+        setContentView(R.layout.activity_main);
+        initViewPager();
+        
+        // 测试异常捕获是否工作
+        testCrashHandler();
+    }
+    
     private void initViewPager() {
         viewPager = findViewById(R.id.viewPager);
-
+        
         pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
             @Override
             public int getCount() {
                 return 3;
             }
-
+            
             @Override
             public Fragment getItem(int position) {
                 switch (position) {
@@ -51,14 +56,26 @@ public class MainActivity extends FragmentActivity {
                 }
             }
         };
-
+        
         viewPager.setAdapter(pagerAdapter);
         viewPager.setCurrentItem(1); // 默认显示聊天页面
     }
-
+    
     public void switchToChatPage() {
         if (viewPager != null) {
             viewPager.setCurrentItem(1); // 切换到聊天页面
         }
+    }
+    
+    // 测试异常捕获的方法（可以删除）
+    private void testCrashHandler() {
+        // 添加一个测试按钮或延迟测试
+        viewPager.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // 测试代码：取消注释下面这行可以测试崩溃捕获是否工作
+                throw new RuntimeException("测试崩溃捕获");
+            }
+        }, 5000);
     }
 }
