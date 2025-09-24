@@ -99,22 +99,44 @@
                 android:padding="12dp"
                 android:layout_marginBottom="16dp"/>
 
-            <Button
-                android:id="@+id/btnFetchModels"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="获取模型列表"
-                android:textColor="#FFFFFF"
-                android:background="#2196F3"
-                android:layout_marginBottom="8dp"/>
+            <!-- 在获取模型按钮下面添加模型显示区域 -->
+			<Button
+				android:id="@+id/btnFetchModels"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="获取模型列表"
+				android:textColor="#FFFFFF"
+				android:background="#2196F3"
+				android:layout_marginBottom="8dp"/>
 
-            <ProgressBar
-                android:id="@+id/progressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:visibility="gone"
-                android:layout_marginBottom="16dp"/>
+			<ProgressBar
+				android:id="@+id/progressBar"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_gravity="center"
+				android:visibility="gone"
+				android:layout_marginBottom="16dp"/>
+
+			<!-- 模型显示区域 -->
+			<TextView
+				android:id="@+id/tvModelsTitle"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="获取到的模型: 0个"
+				android:textColor="#E0E0E0"
+				android:textSize="14sp"
+				android:layout_marginBottom="8dp"/>
+
+			<LinearLayout
+				android:id="@+id/modelsLayout"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical"
+				android:background="#1A1A1A"
+				android:padding="12dp"
+				android:layout_marginBottom="16dp"/>
+
+			
 
             <LinearLayout
                 android:layout_width="match_parent"

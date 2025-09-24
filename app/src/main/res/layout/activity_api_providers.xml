@@ -7,29 +7,33 @@
 	android:background="#121212">
 
 	<LinearLayout
-		android:orientation="horizontal"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:background="#FF333333"
-		android:gravity="center_vertical">
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:background="#1E1E1E"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="16dp">
 
-		<ImageButton
-			android:id="@+id/btnApiBack"
-			android:layout_width="40dp"
-			android:layout_height="40dp"
-			android:src="@drawable/ic_arrow_back_24dp"
-			android:background="?attr/selectableItemBackground"
-			android:tint="#FFFFFF"
-			android:contentDescription="返回"/>
+        <ImageButton
+            android:id="@+id/btnApiBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_arrow_back_24dp"
+            android:background="?attr/selectableItemBackground"
+            android:tint="#FFFFFF"
+            android:contentDescription="返回"/>
 
-		<TextView
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:text="API供应商管理"
-			android:textColor="#FFFFFFFF"
-			android:gravity="center"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="API供应商管理"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:gravity="center"/>
 
-	</LinearLayout>
+    </LinearLayout>
 
 	<androidx.recyclerview.widget.RecyclerView
 		android:id="@+id/recyclerViewProviders"

@@ -60,15 +60,73 @@ public class ApiProvidersActivity extends AppCompatActivity {
     }
 
     private void loadProviders() {
-        // 从数据库加载已保存的供应商
-        // 这里先添加一些示例数据
-        ApiProvider provider1 = new ApiProvider("OpenAI", "https://api.openai.com/v1", "sk-...");
-        provider1.getModels().add("gpt-3.5-turbo");
-        provider1.getModels().add("gpt-4");
-        providers.add(provider1);
+        providers.clear();
+
+        // 添加"添加新供应商"项
+        providers.add(createAddNewItem());
+
+        // 从SharedPreferences加载已保存的供应商
+        List<ApiProvider> savedProviders = loadProvidersFromPrefs();
+        providers.addAll(savedProviders);
 
         adapter.notifyDataSetChanged();
     }
+
+    private List<ApiProvider> loadProvidersFromPrefs() {
+        List<ApiProvider> providerList = new ArrayList<>();
+
+        try {
+            String providerIds = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString("provider_ids", "");
+
+            if (!providerIds.isEmpty()) {
+                String[] ids = providerIds.split(",");
+                for (String id : ids) {
+                    ApiProvider provider = loadProviderById(id);
+                    if (provider != null) {
+                        providerList.add(provider);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return providerList;
+    }
+
+    private ApiProvider loadProviderById(String providerId) {
+        try {
+            String name = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_name", "");
+            String url = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_url", "");
+            String key = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_key", "");
+            int modelCount = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getInt(providerId + "_model_count", 0);
+
+            if (!name.isEmpty()) {
+                ApiProvider provider = new ApiProvider(name, url, key);
+                provider.setId(providerId);
+
+                // 加载模型列表
+                for (int i = 0; i < modelCount; i++) {
+                    String model = getSharedPreferences("api_providers", MODE_PRIVATE)
+                        .getString(providerId + "_model_" + i, "");
+                    if (!model.isEmpty()) {
+                        provider.getModels().add(model);
+                    }
+                }
+
+                return provider;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
 
     private void startAddProviderActivity() {
         try {
