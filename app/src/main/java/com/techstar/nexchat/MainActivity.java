@@ -78,4 +78,14 @@ public class MainActivity extends FragmentActivity {
             viewPager.setCurrentItem(1); // 切换到聊天页面
         }
     }
-}
+	
+		// ... 其他代码不变
+
+		public void sendChatMessage(String message, String providerId, String model) {
+			// 获取ChatFragment实例并发送消息
+			Fragment chatFragment = getSupportFragmentManager().findFragmentByTag("chat");
+			if (chatFragment instanceof ChatFragment) {
+				((ChatFragment) chatFragment).sendMessage(message, providerId, model);
+			}
+		}
+	}

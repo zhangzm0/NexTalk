@@ -88,7 +88,7 @@ public class InputFragment extends Fragment {
 		modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		spinnerModel.setAdapter(modelAdapter);
 	}
-	
+
 
     private void setupClickListeners() {
         btnSend.setOnClickListener(new View.OnClickListener() {
@@ -113,19 +113,7 @@ public class InputFragment extends Fragment {
 			});
     }
 
-    private void sendMessage() {
-        String message = etMessage.getText().toString().trim();
-        if (!message.isEmpty()) {
-            // 实现发送消息逻辑
-            etMessage.setText("");
-
-            // 更新聊天页面
-            if (getActivity() instanceof MainActivity) {
-                MainActivity mainActivity = (MainActivity) getActivity();
-                // 这里需要实现消息发送和接收的逻辑
-            }
-        }
-    }
+    
 
     private void uploadFile() {
         // 实现文件上传逻辑
@@ -150,4 +138,28 @@ public class InputFragment extends Fragment {
         modelList.add("GPT-4");
         modelAdapter.notifyDataSetChanged();
     }
+	
+	// ... 其他代码不变
+
+	private void sendMessage() {
+		String message = etMessage.getText().toString().trim();
+		if (!message.isEmpty()) {
+			// 获取当前选择的模型和供应商
+			String selectedModel = (String) spinnerModel.getSelectedItem();
+			String providerId = getSelectedProviderId(); // 需要实现这个方法
+
+			// 发送消息到ChatFragment
+			if (getActivity() instanceof MainActivity) {
+				MainActivity mainActivity = (MainActivity) getActivity();
+				mainActivity.sendChatMessage(message, providerId, selectedModel);
+			}
+
+			etMessage.setText("");
+		}
+	}
+
+	private String getSelectedProviderId() {
+		// 实现获取当前选择的供应商ID
+		return "default_provider";
+	}
 }
