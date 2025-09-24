@@ -36,7 +36,7 @@ public class InputFragment extends Fragment {
         etMessage = (EditText) view.findViewById(R.id.etMessage);
         btnSend = (Button) view.findViewById(R.id.btnSend);
         btnUpload = (Button) view.findViewById(R.id.btnUpload);
-        cbNetwork = (CheckBox) view.findViewById(R.id.cbNetwork);
+        cbNetwork = (CheckBox) view.findViewById(R.id.btnNetwork);
         spinnerModel = (Spinner) view.findViewById(R.id.spinnerModel);
 
         modelList = new ArrayList<String>();
