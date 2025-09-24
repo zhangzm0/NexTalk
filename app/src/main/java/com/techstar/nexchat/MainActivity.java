@@ -45,47 +45,55 @@ public class MainActivity extends FragmentActivity {
 			});
     }
 
-    private void initViewPager() {
-        viewPager = findViewById(R.id.viewPager);
-
-        pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
-            @Override
-            public int getCount() {
-                return 3;
-            }
-
-            @Override
-            public Fragment getItem(int position) {
-                switch (position) {
-                    case 0:
-                        return new HomeFragment();
-                    case 1:
-                        return new ChatFragment();
-                    case 2:
-                        return new InputFragment();
-                    default:
-                        return null;
-                }
-            }
-        };
-
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(1); // 默认显示聊天页面
-    }
+    
 
     public void switchToChatPage() {
         if (viewPager != null) {
             viewPager.setCurrentItem(1); // 切换到聊天页面
         }
     }
-	
-		// ... 其他代码不变
 
-		public void sendChatMessage(String message, String providerId, String model) {
-			// 获取ChatFragment实例并发送消息
-			Fragment chatFragment = getSupportFragmentManager().findFragmentByTag("chat");
-			if (chatFragment instanceof ChatFragment) {
-				((ChatFragment) chatFragment).sendMessage(message, providerId, model);
+
+
+	
+	// ... 其他代码不变
+
+	private ChatFragment chatFragment;
+
+	private void initViewPager() {
+		viewPager = findViewById(R.id.viewPager);
+
+		pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
+			@Override
+			public int getCount() {
+				return 3;
 			}
+
+			@Override
+			public Fragment getItem(int position) {
+				switch (position) {
+					case 0:
+						return new HomeFragment();
+					case 1:
+						chatFragment = new ChatFragment();
+						return chatFragment;
+					case 2:
+						return new InputFragment();
+					default:
+						return null;
+				}
+			}
+		};
+
+		viewPager.setAdapter(pagerAdapter);
+		viewPager.setCurrentItem(1); // 默认显示聊天页面
+	}
+
+	public void sendChatMessage(String message, String providerId, String model) {
+		if (chatFragment != null) {
+			chatFragment.sendMessage(message, providerId, model);
+		} else {
+			Toast.makeText(this, "聊天页面未初始化", Toast.LENGTH_SHORT).show();
 		}
 	}
+}

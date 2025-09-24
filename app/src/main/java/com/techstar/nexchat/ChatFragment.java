@@ -75,47 +75,9 @@ public class ChatFragment extends Fragment {
             .build();
     }
 
-    private void loadOrCreateConversation() {
-        // 尝试加载当前对话，如果没有则创建新对话
-        currentConversation = loadCurrentConversation();
-        if (currentConversation == null) {
-            currentConversation = new ChatConversation("新对话");
-            saveConversation(currentConversation);
-        }
+    
 
-        messages.clear();
-        messages.addAll(currentConversation.getMessages());
-        adapter.notifyDataSetChanged();
-
-        tvChatTitle.setText(currentConversation.getTitle());
-        scrollToBottom();
-    }
-
-    public void sendMessage(String messageText, String providerId, String model) {
-        if (TextUtils.isEmpty(messageText)) return;
-
-        // 创建用户消息
-        ChatMessage userMessage = new ChatMessage(ChatMessage.TYPE_USER, messageText);
-        messages.add(userMessage);
-        currentConversation.addMessage(userMessage);
-        adapter.notifyItemInserted(messages.size() - 1);
-        scrollToBottom();
-
-        // 创建AI消息（流式响应）
-        ChatMessage aiMessage = new ChatMessage(ChatMessage.TYPE_ASSISTANT, "");
-        aiMessage.setStreaming(true);
-        aiMessage.setModel(model);
-        messages.add(aiMessage);
-        currentConversation.addMessage(aiMessage);
-        adapter.notifyItemInserted(messages.size() - 1);
-        scrollToBottom();
-
-        // 显示加载
-        progressBar.setVisibility(View.VISIBLE);
-
-        // 发送API请求
-        sendChatRequest(messageText, providerId, model, aiMessage);
-    }
+    
 
     private void sendChatRequest(String message, String providerId, String model, final ChatMessage aiMessage) {
         try {
@@ -290,12 +252,7 @@ public class ChatFragment extends Fragment {
 			}, 100);
     }
 
-    // 数据持久化方法
-    private ChatConversation loadCurrentConversation() {
-        // 从SharedPreferences加载当前对话
-        // 简化实现，实际应该支持多个对话
-        return null;
-    }
+    
 
     private void saveConversation(ChatConversation conversation) {
         // 保存对话到SharedPreferences
@@ -382,4 +339,104 @@ public class ChatFragment extends Fragment {
             }
         }
     }
+	
+	// ... 其他代码不变
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		// 确保数据正确加载
+		loadOrCreateConversation();
+	}
+
+	private void loadOrCreateConversation() {
+		// 从SharedPreferences加载当前对话
+		currentConversation = loadCurrentConversation();
+		if (currentConversation == null) {
+			currentConversation = new ChatConversation("新对话");
+			saveConversation(currentConversation);
+		}
+
+		if (messages == null) {
+			messages = new ArrayList<>();
+		} else {
+			messages.clear();
+		}
+		messages.addAll(currentConversation.getMessages());
+
+		if (adapter == null) {
+			adapter = new MessageAdapter(messages);
+			recyclerView.setAdapter(adapter);
+		} else {
+			adapter.notifyDataSetChanged();
+		}
+
+		if (tvChatTitle != null) {
+			tvChatTitle.setText(currentConversation.getTitle());
+		}
+		scrollToBottom();
+	}
+
+	public void sendMessage(String messageText, String providerId, String model) {
+		if (TextUtils.isEmpty(messageText)) return;
+
+		// 确保数据初始化
+		if (messages == null) messages = new ArrayList<>();
+		if (currentConversation == null) loadOrCreateConversation();
+
+		// 创建用户消息
+		ChatMessage userMessage = new ChatMessage(ChatMessage.TYPE_USER, messageText);
+		messages.add(userMessage);
+		currentConversation.addMessage(userMessage);
+
+		if (adapter != null) {
+			adapter.notifyItemInserted(messages.size() - 1);
+		}
+		scrollToBottom();
+
+		// 创建AI消息（流式响应）
+		ChatMessage aiMessage = new ChatMessage(ChatMessage.TYPE_ASSISTANT, "");
+		aiMessage.setStreaming(true);
+		aiMessage.setModel(model);
+		messages.add(aiMessage);
+		currentConversation.addMessage(aiMessage);
+
+		if (adapter != null) {
+			adapter.notifyItemInserted(messages.size() - 1);
+		}
+		scrollToBottom();
+
+		// 显示加载
+		if (progressBar != null) {
+			progressBar.setVisibility(View.VISIBLE);
+		}
+
+		// 发送API请求
+		sendChatRequest(messageText, providerId, model, aiMessage);
+	}
+
+	// 修复数据持久化方法
+	private ChatConversation loadCurrentConversation() {
+		try {
+			String conversationId = getActivity().getSharedPreferences("chat", android.content.Context.MODE_PRIVATE)
+				.getString("current_conversation_id", "");
+
+			if (!conversationId.isEmpty()) {
+				String conversationJson = getActivity().getSharedPreferences("chat", android.content.Context.MODE_PRIVATE)
+					.getString(conversationId, "");
+
+				if (!conversationJson.isEmpty()) {
+					JSONObject json = new JSONObject(conversationJson);
+					ChatConversation conversation = new ChatConversation();
+					conversation.setId(json.getString("id"));
+					conversation.setTitle(json.getString("title"));
+					// ... 加载其他字段和消息
+					return conversation;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 }
