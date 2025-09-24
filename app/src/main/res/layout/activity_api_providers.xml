@@ -1,22 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#121212">
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	android:background="#121212">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="#1E1E1E"
-        android:titleTextColor="#FFFFFF"
-        android:title="API供应商管理"/>
+	<LinearLayout
+		android:orientation="horizontal"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="#FF333333"
+		android:gravity="center_vertical">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewProviders"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+		<ImageButton
+			android:id="@+id/btnApiBack"
+			android:layout_width="40dp"
+			android:layout_height="40dp"
+			android:src="@drawable/ic_arrow_back_24dp"
+			android:background="?attr/selectableItemBackground"
+			android:tint="#FFFFFF"
+			android:contentDescription="返回"/>
+
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="API供应商管理"
+			android:textColor="#FFFFFFFF"
+			android:gravity="center"/>
+
+	</LinearLayout>
+
+	<androidx.recyclerview.widget.RecyclerView
+		android:id="@+id/recyclerViewProviders"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"/>
 
 </LinearLayout>
+

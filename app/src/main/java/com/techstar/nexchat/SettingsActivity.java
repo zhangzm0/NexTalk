@@ -15,7 +15,7 @@ public class SettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_settings);
         
         // 设置返回按钮
-        findViewById(R.id.btnBack).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btnSettingBack).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 finish();

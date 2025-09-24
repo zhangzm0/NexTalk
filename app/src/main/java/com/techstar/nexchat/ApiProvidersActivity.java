@@ -28,7 +28,7 @@ public class ApiProvidersActivity extends AppCompatActivity {
         setContentView(R.layout.activity_api_providers);
 
         // 设置返回按钮
-        findViewById(R.id.btnBack).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btnApiBack).setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
 					finish();

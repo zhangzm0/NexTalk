@@ -18,7 +18,7 @@
         android:paddingEnd="16dp">
 
         <ImageButton
-            android:id="@+id/btnBack"
+            android:id="@+id/btnSettingBack"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:src="@drawable/ic_arrow_back_24dp"
