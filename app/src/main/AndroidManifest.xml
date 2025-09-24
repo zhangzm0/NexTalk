@@ -23,6 +23,7 @@
 
         <activity
             android:name=".MainActivity"
+			android:icon="@mipmap/ic_launcher"
             android:label="NexChat"
             android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
             android:exported="true">

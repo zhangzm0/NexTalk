@@ -1,91 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#121212"
-    android:padding="8dp">
+<ScrollView
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
 
-    <!-- 使用NestedScrollView支持滑动 -->
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:orientation="vertical"
+		android:background="#121212"
+		android:padding="8dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="0dp"
+			android:layout_weight="1"
+			android:orientation="vertical"
+			android:gravity="bottom">
 
-            <!-- 聊天框 -->
-            <EditText
-                android:id="@+id/etMessage"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="输入消息..."
-                android:textColor="#FFFFFF"
-                android:textColorHint="#888888"
-                android:background="#1E1E1E"
-                android:padding="16dp"
-                android:gravity="top"
-                android:minHeight="120dp"
-                android:maxHeight="240dp"
-                android:maxLines="10"
-                android:scrollbars="vertical"
-                android:focusableInTouchMode="true"
-                android:focusable="true"/>
+			<EditText
+				android:id="@+id/etMessage"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:hint="输入消息..."
+				android:textColor="#FFFFFF"
+				android:textColorHint="#888888"
+				android:background="#1E1E1E"
+				android:padding="12dp"
+				android:gravity="top"
+				android:minHeight="80dp"
+				android:maxHeight="120dp"
+				android:maxLines="5"
+				android:scrollbars="vertical"/>
 
-        </LinearLayout>
+			<ImageButton
+				android:id="@+id/btnSend"
+				android:layout_width="48dp"
+				android:layout_height="48dp"
+				android:src="@drawable/ic_send_blue_24dp"
+				android:background="?attr/selectableItemBackground"
+				android:layout_marginStart="8dp"
+				android:contentDescription="发送"
+				android:layout_gravity="right"/>
 
-    </androidx.core.widget.NestedScrollView>
+		</LinearLayout>
 
-    <!-- 底部功能栏 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="8dp">
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:gravity="center_vertical"
+			android:paddingTop="8dp">
 
-        <Spinner
-            android:id="@+id/spinnerModel"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:background="#1E1E1E"
-            android:popupBackground="#1E1E1E"
-            android:dropDownVerticalOffset="40dp"
-            android:spinnerMode="dropdown"/>
+			<Spinner
+				android:id="@+id/spinnerModel"
+				android:layout_width="0dp"
+				android:layout_height="40dp"
+				android:layout_weight="1"
+				android:background="#1E1E1E"
+				android:popupBackground="#1E1E1E"
+				android:dropDownVerticalOffset="40dp"
+				android:spinnerMode="dropdown"/>
 
-        <ImageButton
-            android:id="@+id/btnNetwork"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_search_green_24dp"
-            android:background="?attr/selectableItemBackground"
-            android:layout_marginStart="8dp"
-            android:contentDescription="联网搜索"/>
+			<ImageButton
+				android:id="@+id/btnNetwork"
+				android:layout_width="40dp"
+				android:layout_height="40dp"
+				android:src="@drawable/ic_search_green_24dp"
+				android:background="?attr/selectableItemBackground"
+				android:layout_marginStart="8dp"
+				android:contentDescription="联网搜索"/>
 
-        <ImageButton
-            android:id="@+id/btnUpload"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_upload_orange_24dp"
-            android:background="?attr/selectableItemBackground"
-            android:layout_marginStart="8dp"
-            android:contentDescription="上传文件"/>
+			<ImageButton
+				android:id="@+id/btnUpload"
+				android:layout_width="40dp"
+				android:layout_height="40dp"
+				android:src="@drawable/ic_upload_orange_24dp"
+				android:background="?attr/selectableItemBackground"
+				android:layout_marginStart="8dp"
+				android:contentDescription="上传文件"/>
 
-        <ImageButton
-            android:id="@+id/btnSend"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_send_blue_24dp"
-            android:background="?attr/selectableItemBackground"
-            android:layout_marginStart="8dp"
-            android:contentDescription="发送"/>
+		</LinearLayout>
 
-    </LinearLayout>
+	</LinearLayout>
 
-</LinearLayout>
+</ScrollView>
+
