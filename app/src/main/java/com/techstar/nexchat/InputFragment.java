@@ -31,16 +31,7 @@ public class InputFragment extends Fragment {
     private String currentProviderId = "";
     private String currentModel = "";
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_input, container, false);
-
-        initViews(view);
-        setupClickListeners();
-        loadAvailableModels();
-
-        return view;
-    }
+    
 
     private void initViews(View view) {
         etMessage = view.findViewById(R.id.etMessage);
@@ -162,33 +153,7 @@ public class InputFragment extends Fragment {
         setDialogStyle(dialog);
     }
 
-    private void showModelSelectorForProvider(final ApiProvider provider) {
-        if (provider.getModels().isEmpty()) {
-            Toast.makeText(getActivity(), "该供应商没有可用模型", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        final String[] models = provider.getModels().toArray(new String[0]);
-
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-        builder.setTitle("选择模型 - " + provider.getName())
-			.setItems(models, new android.content.DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(android.content.DialogInterface dialog, int which) {
-					currentProviderId = provider.getId();
-					currentModel = models[which];
-					updateModelSpinner();
-					Toast.makeText(getActivity(), "已选择: " + currentModel, Toast.LENGTH_SHORT).show();
-				}
-			})
-			.setNegativeButton("取消", null);
-
-        android.app.AlertDialog dialog = builder.create();
-        dialog.show();
-
-        // 设置对话框暗色主题
-        setDialogStyle(dialog);
-    }
+    
 
     private void setDialogStyle(android.app.AlertDialog dialog) {
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
@@ -208,22 +173,9 @@ public class InputFragment extends Fragment {
 			});
     }
 
-    private void updateModelSpinner() {
-        if (spinnerModel == null) return;
+    
 
-        // 清空原有列表，添加当前选择的模型
-        modelList.clear();
-        modelList.add(currentModel);
-        modelAdapter.notifyDataSetChanged();
-    }
-
-    private void loadAvailableModels() {
-        // 初始加载默认模型
-        if (currentModel.isEmpty()) {
-            currentModel = "gpt-3.5-turbo";
-            updateModelSpinner();
-        }
-    }
+    
 
     private void sendMessage() {
         String message = etMessage.getText().toString().trim();
@@ -328,12 +280,145 @@ public class InputFragment extends Fragment {
         return null;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        // 页面显示时自动获取焦点
-        if (etMessage != null) {
-            etMessage.requestFocus();
-        }
-    }
+    
+	
+	// ... 其他代码不变
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		View view = inflater.inflate(R.layout.fragment_input, container, false);
+
+		initViews(view);
+		setupClickListeners();
+		loadAvailableModels(); // 确保模型显示
+
+		return view;
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		// 每次页面显示时刷新模型显示
+		refreshModelDisplay();
+
+		// 自动获取焦点
+		if (etMessage != null) {
+			etMessage.requestFocus();
+		}
+	}
+
+	public void refreshModelDisplay() {
+		if (spinnerModel != null && modelAdapter != null) {
+			// 如果当前有选择的模型，确保显示正确
+			if (!currentModel.isEmpty()) {
+				updateModelSpinner();
+			} else {
+				// 如果没有选择模型，加载默认模型
+				loadAvailableModels();
+			}
+		}
+	}
+
+	// 修改模型更新方法，确保UI线程安全
+	private void updateModelSpinner() {
+		if (getActivity() == null || spinnerModel == null || modelAdapter == null) return;
+
+		getActivity().runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						String displayText = currentModel;
+						if (displayText.length() > 15) {
+							displayText = displayText.substring(0, 15) + "...";
+						}
+
+						// 清空并重新添加模型
+						modelList.clear();
+						modelList.add(displayText);
+						modelAdapter.notifyDataSetChanged();
+
+						// 确保Spinner显示正确
+						spinnerModel.setSelection(0);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			});
+	}
+
+	// 修改模型加载方法
+	private void loadAvailableModels() {
+		if (currentModel.isEmpty()) {
+			currentModel = "gpt-3.5-turbo";
+		}
+		updateModelSpinner();
+	}
+
+	// 修改模型选择确认后的处理
+	private void showModelSelectorForProvider(final ApiProvider provider) {
+		if (provider.getModels().isEmpty()) {
+			Toast.makeText(getActivity(), "该供应商没有可用模型", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		final String[] models = provider.getModels().toArray(new String[0]);
+
+		android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+		builder.setTitle("选择模型 - " + provider.getName())
+			.setItems(models, new android.content.DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(android.content.DialogInterface dialog, int which) {
+					currentProviderId = provider.getId();
+					currentModel = models[which];
+
+					// 保存选择到SharedPreferences，避免滑动后丢失
+					saveModelSelection(currentProviderId, currentModel);
+
+					updateModelSpinner();
+					Toast.makeText(getActivity(), "已选择: " + currentModel, Toast.LENGTH_SHORT).show();
+				}
+			})
+			.setNegativeButton("取消", null);
+
+		android.app.AlertDialog dialog = builder.create();
+		dialog.show();
+		setDialogStyle(dialog);
+	}
+
+	// 保存模型选择到SharedPreferences
+	private void saveModelSelection(String providerId, String model) {
+		try {
+			getActivity().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+				.edit()
+				.putString("last_provider_id", providerId)
+				.putString("last_model", model)
+				.apply();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	// 加载保存的模型选择
+	private void loadSavedModelSelection() {
+		try {
+			String savedProviderId = getActivity().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+				.getString("last_provider_id", "");
+			String savedModel = getActivity().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+				.getString("last_model", "");
+
+			if (!savedProviderId.isEmpty() && !savedModel.isEmpty()) {
+				currentProviderId = savedProviderId;
+				currentModel = savedModel;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		super.onActivityCreated(savedInstanceState);
+		// 加载保存的模型选择
+		loadSavedModelSelection();
+	}
 }

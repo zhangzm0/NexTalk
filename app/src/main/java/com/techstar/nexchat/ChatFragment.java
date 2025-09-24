@@ -43,16 +43,7 @@ public class ChatFragment extends Fragment {
     private Markwon markwon;
     private OkHttpClient client;
 
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_chat, container, false);
-
-        initViews(view);
-        initMarkwon();
-        loadOrCreateConversation();
-
-        return view;
-    }
+    
 
     private void initViews(View view) {
         recyclerView = view.findViewById(R.id.recyclerViewMessages);
@@ -378,12 +369,18 @@ public class ChatFragment extends Fragment {
 	}
 
 	public void sendMessage(String messageText, String providerId, String model) {
-		if (TextUtils.isEmpty(messageText)) return;
+		
+		if (!isInitialized) {
+            ensureInitialized();
+        }
 
-		// 确保数据初始化
-		if (messages == null) messages = new ArrayList<>();
-		if (currentConversation == null) loadOrCreateConversation();
+        if (TextUtils.isEmpty(messageText)) return;
 
+        // 确保数据初始化
+        if (messages == null) messages = new ArrayList<>();
+        if (currentConversation == null) loadOrCreateConversation();
+		
+		
 		// 创建用户消息
 		ChatMessage userMessage = new ChatMessage(ChatMessage.TYPE_USER, messageText);
 		messages.add(userMessage);
@@ -439,4 +436,25 @@ public class ChatFragment extends Fragment {
 		}
 		return null;
 	}
+	
+	private boolean isInitialized = false;
+    
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_chat, container, false);
+        initViews(view);
+        initMarkwon();
+        loadOrCreateConversation();
+        isInitialized = true;
+        return view;
+    }
+    
+    public void ensureInitialized() {
+        if (!isInitialized && getView() != null) {
+            initViews(getView());
+            initMarkwon();
+            loadOrCreateConversation();
+            isInitialized = true;
+        }
+    }
 }

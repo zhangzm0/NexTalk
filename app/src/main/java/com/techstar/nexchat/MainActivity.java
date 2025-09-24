@@ -12,90 +12,126 @@ import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 public class MainActivity extends FragmentActivity {
-
+    
     private ViewPager viewPager;
     private FragmentPagerAdapter pagerAdapter;
-
+    private ChatFragment chatFragment;
+    private InputFragment inputFragment;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        
         // 初始化异常捕获
         CrashHandler.getInstance().init(this);
-
+        
         setContentView(R.layout.activity_main);
         initViewPager();
     }
-
+    
     private void initViewPager() {
         viewPager = findViewById(R.id.viewPager);
-
+        
+        // 预先创建Fragment实例
+        chatFragment = new ChatFragment();
+        inputFragment = new InputFragment();
+        
         pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
             @Override
             public int getCount() {
                 return 3;
             }
-
+            
             @Override
             public Fragment getItem(int position) {
-                // 简化Fragment创建，避免复杂初始化
                 switch (position) {
                     case 0:
                         return new HomeFragment();
                     case 1:
-                        return new ChatFragment();
+                        return chatFragment;
                     case 2:
-                        return new InputFragment();
+                        return inputFragment;
                     default:
-                        return new Fragment(); // 返回空Fragment作为备用
+                        return new Fragment();
                 }
             }
-
+            
             @Override
             public Object instantiateItem(ViewGroup container, int position) {
-                // 添加错误处理
                 try {
                     return super.instantiateItem(container, position);
                 } catch (Exception e) {
-                    // 如果Fragment初始化失败，返回一个简单的Fragment
-                    Fragment fragment = new Fragment() {
-                        @Override
-                        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-                            TextView textView = new TextView(getActivity());
-                            textView.setText("Fragment加载失败");
-                            textView.setTextColor(0xFFFFFFFF);
-                            textView.setBackgroundColor(0xFF000000);
-                            return textView;
-                        }
-                    };
-                    return fragment;
+                    // 备用方案
+                    return createFallbackFragment();
                 }
             }
         };
-
+        
         viewPager.setAdapter(pagerAdapter);
         viewPager.setCurrentItem(1); // 默认显示聊天页面
+        
+        // 添加页面切换监听，确保Fragment正确初始化
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+            
+            @Override
+            public void onPageSelected(int position) {
+                // 当切换到聊天页面时，确保聊天Fragment已初始化
+                if (position == 1 && chatFragment != null) {
+                    chatFragment.ensureInitialized();
+                }
+                // 当切换到输入页面时，确保模型显示正确
+                if (position == 2 && inputFragment != null) {
+                    inputFragment.refreshModelDisplay();
+                }
+            }
+            
+            @Override
+            public void onPageScrollStateChanged(int state) {}
+        });
     }
-
-
-
-
-
-    public void switchToChatPage() {
-        if (viewPager != null) {
-            viewPager.setCurrentItem(1); // 切换到聊天页面
+    
+    public void sendChatMessage(final String message, final String providerId, final String model) {
+        if (chatFragment != null && chatFragment.isAdded()) {
+            chatFragment.sendMessage(message, providerId, model);
+        } else {
+            // 如果聊天页面未初始化，尝试重新初始化
+            Toast.makeText(this, "正在初始化聊天页面...", Toast.LENGTH_SHORT).show();
+            if (chatFragment == null) {
+                chatFragment = new ChatFragment();
+            }
+            // 延迟发送消息
+            new android.os.Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (chatFragment != null) {
+                        chatFragment.sendMessage(message, providerId, model);
+                        // 切换到聊天页面查看回复
+                        viewPager.setCurrentItem(1);
+                    }
+                }
+            }, 500);
         }
     }
-	
-	private ChatFragment chatFragment;
-
-	
-
-	public void sendChatMessage(String message, String providerId, String model) {
-		if (chatFragment != null) {
-			chatFragment.sendMessage(message, providerId, model);
-		} else {
-			Toast.makeText(this, "聊天页面未初始化", Toast.LENGTH_SHORT).show();
-		}
-	}
+    
+    public void switchToChatPage() {
+        if (viewPager != null) {
+            viewPager.setCurrentItem(1);
+        }
+    }
+    
+    private Fragment createFallbackFragment() {
+        return new Fragment() {
+            @Override
+            public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+                TextView textView = new TextView(getActivity());
+                textView.setText("页面加载中...");
+                textView.setTextColor(0xFFFFFFFF);
+                textView.setBackgroundColor(0xFF121212);
+                textView.setGravity(android.view.Gravity.CENTER);
+                return textView;
+            }
+        };
+    }
 }
