@@ -28,10 +28,10 @@ public class CrashHandler implements UncaughtExceptionHandler {
     }
 
     public void init(Context context) {
-        this.context = context;
+        this.context = context.getApplicationContext();
         this.defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler(this);
-        Log.d(TAG, "CrashHandler initialized");
+        Log.d(TAG, "崩溃捕获已初始化");
     }
 
     @Override
@@ -42,22 +42,18 @@ public class CrashHandler implements UncaughtExceptionHandler {
             // 获取错误信息
             String errorInfo = getErrorInfo(ex);
 
-            // 在主线程显示错误对话框
+            // 显示错误对话框
             showCrashDialog(errorInfo);
 
             // 等待对话框显示
-            Thread.sleep(2000);
+            Thread.sleep(3000);
 
         } catch (Exception e) {
-            Log.e(TAG, "处理崩溃时发生错误", e);
+            Log.e(TAG, "处理崩溃时出错", e);
         } finally {
-            // 调用默认处理程序
-            if (defaultHandler != null) {
-                defaultHandler.uncaughtException(thread, ex);
-            } else {
-                Process.killProcess(Process.myPid());
-                System.exit(10);
-            }
+            // 退出应用
+            Process.killProcess(Process.myPid());
+            System.exit(10);
         }
     }
 
@@ -67,53 +63,49 @@ public class CrashHandler implements UncaughtExceptionHandler {
         ex.printStackTrace(pw);
         pw.close();
 
-        return "错误类型: " + ex.getClass().getName() + 
-			"\n错误信息: " + ex.getMessage() + 
-			"\n堆栈跟踪:\n" + sw.toString();
+        return "设备: " + Build.MANUFACTURER + " " + Build.MODEL + 
+			"\nAndroid: " + Build.VERSION.RELEASE + 
+			"\nSDK: " + Build.VERSION.SDK_INT +
+			"\n\n错误详情:\n" + sw.toString();
     }
 
     private void showCrashDialog(final String errorInfo) {
-        // 确保在主线程运行
-        if (android.os.Looper.getMainLooper().getThread() == Thread.currentThread()) {
-            showDialog(errorInfo);
-        } else {
-            new android.os.Handler(context.getMainLooper()).post(new Runnable() {
-					@Override
-					public void run() {
-						showDialog(errorInfo);
-					}
-				});
-        }
-    }
-
-    private void showDialog(final String errorInfo) {
-        try {
-            AlertDialog.Builder builder = new AlertDialog.Builder(getValidContext());
-            builder.setTitle("程序崩溃");
-            builder.setMessage("应用遇到错误即将关闭。错误信息已复制到剪贴板。");
-            builder.setPositiveButton("查看详情", new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						// 启动崩溃详情页面
+        // 必须在主线程显示对话框
+        new android.os.Handler(context.getMainLooper()).post(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						// 尝试启动崩溃Activity
 						Intent intent = new Intent(context, CrashActivity.class);
 						intent.putExtra("error_info", errorInfo);
 						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 						context.startActivity(intent);
+					} catch (Exception e) {
+						// 如果启动Activity失败，显示系统对话框
+						showSimpleDialog(errorInfo);
 					}
-				});
-            builder.setNegativeButton("直接退出", new DialogInterface.OnClickListener() {
+				}
+			});
+    }
+
+    private void showSimpleDialog(String errorInfo) {
+        try {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getValidContext());
+            builder.setTitle("程序崩溃");
+            builder.setMessage("应用遇到错误，即将退出。\n错误信息已复制到剪贴板。");
+            builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						System.exit(0);
+						// 什么都不做，直接退出
 					}
 				});
             builder.setCancelable(false);
 
             AlertDialog dialog = builder.create();
-            dialog.getWindow().setType(android.view.WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+            dialog.getWindow().setType(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
             dialog.show();
 
-            // 复制错误信息到剪贴板
+            // 复制错误信息
             copyToClipboard(errorInfo);
 
         } catch (Exception e) {
@@ -126,7 +118,7 @@ public class CrashHandler implements UncaughtExceptionHandler {
         if (context != null) {
             return context;
         }
-        // 如果context无效，尝试其他方式
+        // 如果ApplicationContext不可用，尝试其他方式
         try {
             Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
             Object activityThread = activityThreadClass.getMethod("currentActivityThread").invoke(null);
@@ -140,7 +132,7 @@ public class CrashHandler implements UncaughtExceptionHandler {
     private void copyToClipboard(String text) {
         try {
             ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("错误信息", text);
+            ClipData clip = ClipData.newPlainText("崩溃信息", text);
             if (clipboard != null) {
                 clipboard.setPrimaryClip(clip);
             }
