@@ -1,22 +1,21 @@
 package com.techstar.nexchat;
 
 import android.os.Bundle;
-import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
+import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 
 public class InputFragment extends Fragment {
 
     private EditText etMessage;
-    private Button btnSend, btnUpload;
-    private CheckBox cbNetwork;
+    private ImageButton btnSend, btnUpload, btnNetwork;
     private Spinner spinnerModel;
     private ArrayAdapter<String> modelAdapter;
     private ArrayList<String> modelList;
@@ -33,11 +32,11 @@ public class InputFragment extends Fragment {
     }
 
     private void initViews(View view) {
-        etMessage = (EditText) view.findViewById(R.id.etMessage);
-        btnSend = (Button) view.findViewById(R.id.btnSend);
-        btnUpload = (Button) view.findViewById(R.id.btnUpload);
-        cbNetwork = (CheckBox) view.findViewById(R.id.btnNetwork);
-        spinnerModel = (Spinner) view.findViewById(R.id.spinnerModel);
+        etMessage = view.findViewById(R.id.etMessage);
+        btnSend = view.findViewById(R.id.btnSend);
+        btnUpload = view.findViewById(R.id.btnUpload);
+        btnNetwork = view.findViewById(R.id.btnNetwork); // 修正这里
+        spinnerModel = view.findViewById(R.id.spinnerModel);
 
         modelList = new ArrayList<String>();
         modelAdapter = new ArrayAdapter<String>(getActivity(), 
@@ -60,6 +59,13 @@ public class InputFragment extends Fragment {
 					uploadFile();
 				}
 			});
+
+        btnNetwork.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					toggleNetworkSearch();
+				}
+			});
     }
 
     private void sendMessage() {
@@ -67,11 +73,30 @@ public class InputFragment extends Fragment {
         if (!message.isEmpty()) {
             // 实现发送消息逻辑
             etMessage.setText("");
+
+            // 更新聊天页面
+            if (getActivity() instanceof MainActivity) {
+                MainActivity mainActivity = (MainActivity) getActivity();
+                // 这里需要实现消息发送和接收的逻辑
+            }
         }
     }
 
     private void uploadFile() {
         // 实现文件上传逻辑
+        // 这里可以打开文件选择器
+    }
+
+    private void toggleNetworkSearch() {
+        // 切换联网搜索状态
+        boolean isEnabled = btnNetwork.getTag() == null || !(boolean) btnNetwork.getTag();
+        btnNetwork.setTag(isEnabled);
+
+        if (isEnabled) {
+            btnNetwork.setColorFilter(0xFF4CAF50); // 绿色表示启用
+        } else {
+            btnNetwork.setColorFilter(0xFF666666); // 灰色表示禁用
+        }
     }
 
     private void loadModels() {
