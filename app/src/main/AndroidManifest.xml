@@ -25,7 +25,6 @@
             android:name=".MainActivity"
 			android:icon="@mipmap/ic_launcher"
             android:label="NexChat"
-            
             android:exported="true">
 
             <intent-filter>
