@@ -13,8 +13,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.techstar.nexchat.model.ApiProvider;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.json.JSONObject;
 
 public class ApiProvidersActivity extends AppCompatActivity {
 
@@ -95,37 +102,7 @@ public class ApiProvidersActivity extends AppCompatActivity {
         return providerList;
     }
 
-    private ApiProvider loadProviderById(String providerId) {
-        try {
-            String name = getSharedPreferences("api_providers", MODE_PRIVATE)
-                .getString(providerId + "_name", "");
-            String url = getSharedPreferences("api_providers", MODE_PRIVATE)
-                .getString(providerId + "_url", "");
-            String key = getSharedPreferences("api_providers", MODE_PRIVATE)
-                .getString(providerId + "_key", "");
-            int modelCount = getSharedPreferences("api_providers", MODE_PRIVATE)
-                .getInt(providerId + "_model_count", 0);
-
-            if (!name.isEmpty()) {
-                ApiProvider provider = new ApiProvider(name, url, key);
-                provider.setId(providerId);
-
-                // 加载模型列表
-                for (int i = 0; i < modelCount; i++) {
-                    String model = getSharedPreferences("api_providers", MODE_PRIVATE)
-                        .getString(providerId + "_model_" + i, "");
-                    if (!model.isEmpty()) {
-                        provider.getModels().add(model);
-                    }
-                }
-
-                return provider;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+    
     
 
     private void startAddProviderActivity() {
@@ -218,43 +195,6 @@ public class ApiProvidersActivity extends AppCompatActivity {
         }
     }
 
-    private class ProviderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvUrl, tvModels;
-        Button btnEdit, btnDelete;
-
-        public ProviderViewHolder(View itemView) {
-            super(itemView);
-            tvName = itemView.findViewById(R.id.tvProviderName);
-            tvUrl = itemView.findViewById(R.id.tvApiUrl);
-            tvModels = itemView.findViewById(R.id.tvModels);
-            btnEdit = itemView.findViewById(R.id.btnEdit);
-            btnDelete = itemView.findViewById(R.id.btnDelete);
-        }
-
-        public void bind(final ApiProvider provider) {
-            tvName.setText(provider.getName());
-            tvUrl.setText(provider.getApiUrl());
-            tvModels.setText("模型: " + provider.getModels().size() + "个");
-
-            btnEdit.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						editProvider(provider);
-					}
-				});
-
-            btnDelete.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						deleteProvider(provider);
-					}
-				});
-        }
-    }
-
-    private void editProvider(ApiProvider provider) {
-        Toast.makeText(this, "编辑功能开发中", Toast.LENGTH_SHORT).show();
-    }
 
     private void deleteProvider(final ApiProvider provider) {
         new android.app.AlertDialog.Builder(this)
@@ -270,5 +210,181 @@ public class ApiProvidersActivity extends AppCompatActivity {
             })
             .setNegativeButton("取消", null)
             .show();
+    }
+  // ... 其他代码不变
+    
+    private class ProviderViewHolder extends RecyclerView.ViewHolder {
+        TextView tvName, tvUrl, tvModels, tvBalance;
+        Button btnEdit, btnDelete, btnBalance;
+        
+        public ProviderViewHolder(View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvProviderName);
+            tvUrl = itemView.findViewById(R.id.tvApiUrl);
+            tvModels = itemView.findViewById(R.id.tvModels);
+            tvBalance = itemView.findViewById(R.id.tvBalance);
+            btnEdit = itemView.findViewById(R.id.btnEdit);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
+            btnBalance = itemView.findViewById(R.id.btnBalance);
+        }
+        
+        public void bind(final ApiProvider provider) {
+            tvName.setText(provider.getName());
+            tvUrl.setText(provider.getApiUrl());
+            tvModels.setText("模型: " + provider.getModels().size() + "个");
+            tvBalance.setText("余额: " + provider.getBalance());
+            
+            btnBalance.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    fetchBalance(provider);
+                }
+            });
+            
+            btnEdit.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    editProvider(provider);
+                }
+            });
+            
+            btnDelete.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    deleteProvider(provider);
+                }
+            });
+        }
+    }
+    
+    private void editProvider(ApiProvider provider) {
+        Intent intent = new Intent(this, AddProviderActivity.class);
+        intent.putExtra("provider_id", provider.getId());
+        startActivityForResult(intent, 1);
+    }
+    
+    private void fetchBalance(final ApiProvider provider) {
+        // 显示加载中
+        provider.setBalance("查询中...");
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+        
+        // 构建余额查询请求（OpenAI格式）
+        String balanceUrl = provider.getApiUrl().endsWith("/") ? 
+            provider.getApiUrl() + "dashboard/billing/credit_grants" :
+            provider.getApiUrl() + "/dashboard/billing/credit_grants";
+            
+        Request request = new Request.Builder()
+            .url(balanceUrl)
+            .addHeader("Authorization", "Bearer " + provider.getApiKey())
+            .build();
+            
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, final IOException e) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        provider.setBalance("查询失败");
+                        if (adapter != null) {
+                            adapter.notifyDataSetChanged();
+                        }
+                        Toast.makeText(ApiProvidersActivity.this, "余额查询失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+                final String responseBody = response.body().string();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (response.isSuccessful()) {
+                                JSONObject json = new JSONObject(responseBody);
+                                if (json.has("total_available")) {
+                                    double balance = json.getDouble("total_available");
+                                    provider.setBalance(String.format("$%.2f", balance));
+                                } else if (json.has("total_granted") && json.has("total_used")) {
+                                    double granted = json.getDouble("total_granted");
+                                    double used = json.getDouble("total_used");
+                                    double available = granted - used;
+                                    provider.setBalance(String.format("$%.2f", available));
+                                } else {
+                                    provider.setBalance("格式不支持");
+                                }
+                            } else {
+                                // 尝试其他API格式
+                                try {
+                                    JSONObject json = new JSONObject(responseBody);
+                                    if (json.has("available")) {
+                                        double balance = json.getDouble("available");
+                                        provider.setBalance(String.format("$%.2f", balance));
+                                    } else {
+                                        provider.setBalance("API错误: " + response.code());
+                                    }
+                                } catch (Exception e) {
+                                    provider.setBalance("查询失败: " + response.code());
+                                }
+                            }
+                        } catch (Exception e) {
+                            provider.setBalance("解析失败");
+                        }
+                        
+                        if (adapter != null) {
+                            adapter.notifyDataSetChanged();
+                        }
+                        
+                        // 保存余额信息
+                        saveProviderBalance(provider.getId(), provider.getBalance());
+                    }
+                });
+            }
+        });
+    }
+    
+    private void saveProviderBalance(String providerId, String balance) {
+        getSharedPreferences("api_providers", MODE_PRIVATE)
+            .edit()
+            .putString(providerId + "_balance", balance)
+            .apply();
+    }
+    
+    // 修改加载方法，加载保存的余额信息
+    private ApiProvider loadProviderById(String providerId) {
+        try {
+            String name = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_name", "");
+            String url = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_url", "");
+            String key = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_key", "");
+            String balance = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_balance", "未查询");
+            int modelCount = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getInt(providerId + "_model_count", 0);
+                
+            if (!name.isEmpty()) {
+                ApiProvider provider = new ApiProvider(name, url, key);
+                provider.setId(providerId);
+                provider.setBalance(balance);
+                
+                // 加载模型列表
+                for (int i = 0; i < modelCount; i++) {
+                    String model = getSharedPreferences("api_providers", MODE_PRIVATE)
+                        .getString(providerId + "_model_" + i, "");
+                    if (!model.isEmpty()) {
+                        provider.getModels().add(model);
+                    }
+                }
+                
+                return provider;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
