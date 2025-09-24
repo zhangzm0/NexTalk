@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,13 +30,19 @@ public class ApiProvidersActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_api_providers);
 
-        // 设置返回按钮
-        findViewById(R.id.btnBack).setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					finish();
-				}
-			});
+        // 修复：先检查view是否存在
+        View backButton = findViewById(R.id.btnBack);
+        if (backButton != null) {
+            backButton.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						finish();
+					}
+				});
+        } else {
+            // 如果找不到按钮，添加日志
+            Toast.makeText(this, "返回按钮未找到", Toast.LENGTH_SHORT).show();
+        }
 
         initRecyclerView();
         loadProviders();
@@ -43,6 +50,11 @@ public class ApiProvidersActivity extends AppCompatActivity {
 
     private void initRecyclerView() {
         recyclerView = findViewById(R.id.recyclerViewProviders);
+        if (recyclerView == null) {
+            Toast.makeText(this, "RecyclerView未找到", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         providers = new ArrayList<ApiProvider>();
@@ -69,106 +81,108 @@ public class ApiProvidersActivity extends AppCompatActivity {
         provider1.getModels().add("gpt-4");
         providers.add(provider1);
 
-        adapter.notifyDataSetChanged();
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
     private void showAddProviderDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("添加API供应商");
+        try {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("添加API供应商");
 
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_provider, null);
-        builder.setView(dialogView);
+            View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_provider, null);
+            if (dialogView == null) {
+                Toast.makeText(this, "对话框布局加载失败", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        final EditText etName = dialogView.findViewById(R.id.etProviderName);
-        final EditText etUrl = dialogView.findViewById(R.id.etApiUrl);
-        final EditText etKey = dialogView.findViewById(R.id.etApiKey);
-        final Button btnFetch = dialogView.findViewById(R.id.btnFetchModels);
-        final ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
+            final EditText etName = dialogView.findViewById(R.id.etProviderName);
+            final EditText etUrl = dialogView.findViewById(R.id.etApiUrl);
+            final EditText etKey = dialogView.findViewById(R.id.etApiKey);
+            final Button btnFetch = dialogView.findViewById(R.id.btnFetchModels);
+            final ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
 
-        builder.setPositiveButton("保存", null);
-        builder.setNegativeButton("取消", null);
+            builder.setPositiveButton("保存", null);
+            builder.setNegativeButton("取消", null);
 
-        final AlertDialog dialog = builder.create();
-        dialog.show();
+            final AlertDialog dialog = builder.create();
+            dialog.show();
 
-        // 重写保存按钮的点击事件
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					String name = etName.getText().toString().trim();
-					String url = etUrl.getText().toString().trim();
-					String key = etKey.getText().toString().trim();
+            // 重写保存按钮的点击事件
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						String name = etName.getText().toString().trim();
+						String url = etUrl.getText().toString().trim();
+						String key = etKey.getText().toString().trim();
 
-					if (name.isEmpty() || url.isEmpty() || key.isEmpty()) {
-						showError("请填写所有字段");
-						return;
+						if (name.isEmpty() || url.isEmpty() || key.isEmpty()) {
+							showError("请填写所有字段");
+							return;
+						}
+
+						ApiProvider provider = new ApiProvider(name, url, key);
+						providers.add(provider);
+						if (adapter != null) {
+							adapter.notifyDataSetChanged();
+						}
+						dialog.dismiss();
+						Toast.makeText(ApiProvidersActivity.this, "供应商添加成功", Toast.LENGTH_SHORT).show();
 					}
+				});
 
-					ApiProvider provider = new ApiProvider(name, url, key);
-					providers.add(provider);
-					adapter.notifyDataSetChanged();
-					dialog.dismiss();
-					Toast.makeText(ApiProvidersActivity.this, "供应商添加成功", Toast.LENGTH_SHORT).show();
-				}
-			});
+            if (btnFetch != null) {
+                btnFetch.setOnClickListener(new View.OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							String url = etUrl.getText().toString().trim();
+							String key = etKey.getText().toString().trim();
 
-        btnFetch.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					String url = etUrl.getText().toString().trim();
-					String key = etKey.getText().toString().trim();
+							if (url.isEmpty() || key.isEmpty()) {
+								showError("请先填写API URL和Key");
+								return;
+							}
 
-					if (url.isEmpty() || key.isEmpty()) {
-						showError("请先填写API URL和Key");
-						return;
-					}
-
-					fetchModels(url, key, progressBar, btnFetch);
-				}
-			});
+							fetchModels(url, key, progressBar, btnFetch);
+						}
+					});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "创建对话框失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void fetchModels(String apiUrl, String apiKey, final ProgressBar progressBar, final Button btnFetch) {
-        progressBar.setVisibility(View.VISIBLE);
-        btnFetch.setEnabled(false);
-        btnFetch.setText("获取中...");
+        if (progressBar != null) {
+            progressBar.setVisibility(View.VISIBLE);
+        }
+        if (btnFetch != null) {
+            btnFetch.setEnabled(false);
+            btnFetch.setText("获取中...");
+        }
 
         // 这里简化处理，实际应该使用AsyncTask
-        btnFetch.postDelayed(new Runnable() {
-				@Override
-				public void run() {
-					progressBar.setVisibility(View.GONE);
-					btnFetch.setEnabled(true);
-					btnFetch.setText("获取模型列表");
-					Toast.makeText(ApiProvidersActivity.this, "模拟获取模型成功", Toast.LENGTH_SHORT).show();
-				}
-			}, 2000);
+        if (btnFetch != null) {
+            btnFetch.postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						if (progressBar != null) {
+							progressBar.setVisibility(View.GONE);
+						}
+						if (btnFetch != null) {
+							btnFetch.setEnabled(true);
+							btnFetch.setText("获取模型列表");
+						}
+						Toast.makeText(ApiProvidersActivity.this, "模拟获取模型成功", Toast.LENGTH_SHORT).show();
+					}
+				}, 2000);
+        }
     }
 
     private void showError(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-    }
-
-    private void showErrorDialog(String title, final String error) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(title)
-			.setMessage(error)
-			.setPositiveButton("复制", new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					// 复制错误信息到剪贴板
-					android.content.ClipboardManager clipboard = 
-						(android.content.ClipboardManager) getSystemService(android.content.Context.CLIPBOARD_SERVICE);
-					android.content.ClipData clip = 
-						android.content.ClipData.newPlainText("错误信息", error);
-					if (clipboard != null) {
-						clipboard.setPrimaryClip(clip);
-						Toast.makeText(ApiProvidersActivity.this, "已复制错误信息", Toast.LENGTH_SHORT).show();
-					}
-				}
-			})
-			.setNegativeButton("确定", null)
-			.show();
     }
 
     // 简化版的RecyclerView Adapter
@@ -185,9 +199,11 @@ public class ApiProvidersActivity extends AppCompatActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (providers.get(position).getId() != null && 
-                providers.get(position).getId().equals("add_new")) {
-                return TYPE_ADD_NEW;
+            if (position < providers.size()) {
+                ApiProvider provider = providers.get(position);
+                if (provider.getId() != null && provider.getId().equals("add_new")) {
+                    return TYPE_ADD_NEW;
+                }
             }
             return TYPE_PROVIDER;
         }
@@ -206,6 +222,8 @@ public class ApiProvidersActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            if (position >= providers.size()) return;
+
             if (holder.getItemViewType() == TYPE_ADD_NEW) {
                 ((AddNewViewHolder) holder).bind();
             } else {
@@ -225,19 +243,23 @@ public class ApiProvidersActivity extends AppCompatActivity {
         public AddNewViewHolder(View itemView) {
             super(itemView);
             textView = (TextView) itemView;
-            textView.setTextColor(0xFF2196F3);
-            textView.setPadding(32, 32, 32, 32);
+            if (textView != null) {
+                textView.setTextColor(0xFF2196F3);
+                textView.setPadding(32, 32, 32, 32);
 
-            itemView.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						showAddProviderDialog();
-					}
-				});
+                itemView.setOnClickListener(new View.OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							showAddProviderDialog();
+						}
+					});
+            }
         }
 
         public void bind() {
-            textView.setText("+ 添加新的API供应商");
+            if (textView != null) {
+                textView.setText("+ 添加新的API供应商");
+            }
         }
     }
 
@@ -255,23 +277,27 @@ public class ApiProvidersActivity extends AppCompatActivity {
         }
 
         public void bind(final ApiProvider provider) {
-            tvName.setText(provider.getName());
-            tvUrl.setText(provider.getApiUrl());
-            tvModels.setText("模型: " + provider.getModels().size() + "个");
+            if (tvName != null) tvName.setText(provider.getName());
+            if (tvUrl != null) tvUrl.setText(provider.getApiUrl());
+            if (tvModels != null) tvModels.setText("模型: " + provider.getModels().size() + "个");
 
-            btnEdit.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						editProvider(provider);
-					}
-				});
+            if (btnEdit != null) {
+                btnEdit.setOnClickListener(new View.OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							editProvider(provider);
+						}
+					});
+            }
 
-            btnDelete.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						deleteProvider(provider);
-					}
-				});
+            if (btnDelete != null) {
+                btnDelete.setOnClickListener(new View.OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							deleteProvider(provider);
+						}
+					});
+            }
         }
     }
 
@@ -287,7 +313,9 @@ public class ApiProvidersActivity extends AppCompatActivity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     providers.remove(provider);
-                    adapter.notifyDataSetChanged();
+                    if (adapter != null) {
+                        adapter.notifyDataSetChanged();
+                    }
                     Toast.makeText(ApiProvidersActivity.this, "已删除", Toast.LENGTH_SHORT).show();
                 }
             })
