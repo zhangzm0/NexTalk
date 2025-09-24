@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager.widget.ViewPager;
+import androidx.appcompat.app.AppCompatDelegate;
 
 public class MainActivity extends FragmentActivity {
 
@@ -12,12 +13,15 @@ public class MainActivity extends FragmentActivity {
     private FragmentPagerAdapter pagerAdapter;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
 
-        initViewPager();
-    }
+		// 启用矢量图兼容
+		AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+
+		setContentView(R.layout.activity_main);
+		initViewPager();
+	}
 
     private void initViewPager() {
         viewPager = findViewById(R.id.viewPager);

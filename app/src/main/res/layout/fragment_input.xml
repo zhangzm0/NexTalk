@@ -7,41 +7,39 @@
     android:background="#121212"
     android:padding="8dp">
 
-    <!-- 聊天框和发送键在同一行 -->
-    <LinearLayout
+    <!-- 使用NestedScrollView支持滑动 -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal"
-        android:gravity="bottom">
+        android:fillViewport="true">
 
-        <EditText
-            android:id="@+id/etMessage"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="输入消息..."
-            android:textColor="#FFFFFF"
-            android:textColorHint="#888888"
-            android:background="#1E1E1E"
-            android:padding="12dp"
-            android:gravity="top"
-            android:minHeight="80dp"
-            android:maxHeight="120dp"
-            android:maxLines="5"
-            android:scrollbars="vertical"/>
+            android:orientation="vertical">
 
-        <ImageButton
-            android:id="@+id/btnSend"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_menu_send"
-            android:background="?android:attr/selectableItemBackground"
-            android:tint="#2196F3"
-            android:layout_marginStart="8dp"
-            android:contentDescription="发送"/>
+            <!-- 聊天框 -->
+            <EditText
+                android:id="@+id/etMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入消息..."
+                android:textColor="#FFFFFF"
+                android:textColorHint="#888888"
+                android:background="#1E1E1E"
+                android:padding="16dp"
+                android:gravity="top"
+                android:minHeight="120dp"
+                android:maxHeight="240dp"
+                android:maxLines="10"
+                android:scrollbars="vertical"
+                android:focusableInTouchMode="true"
+                android:focusable="true"/>
 
-    </LinearLayout>
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
 
     <!-- 底部功能栏 -->
     <LinearLayout
@@ -65,9 +63,8 @@
             android:id="@+id/btnNetwork"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_search"  
-            android:background="?android:attr/selectableItemBackground"
-            android:tint="#4CAF50"
+            android:src="@drawable/ic_search_green_24dp"
+            android:background="?attr/selectableItemBackground"
             android:layout_marginStart="8dp"
             android:contentDescription="联网搜索"/>
 
@@ -75,11 +72,19 @@
             android:id="@+id/btnUpload"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_upload"  
-            android:background="?android:attr/selectableItemBackground"
-            android:tint="#FF9800"
+            android:src="@drawable/ic_upload_orange_24dp"
+            android:background="?attr/selectableItemBackground"
             android:layout_marginStart="8dp"
             android:contentDescription="上传文件"/>
+
+        <ImageButton
+            android:id="@+id/btnSend"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_send_blue_24dp"
+            android:background="?attr/selectableItemBackground"
+            android:layout_marginStart="8dp"
+            android:contentDescription="发送"/>
 
     </LinearLayout>
 

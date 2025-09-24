@@ -18,7 +18,7 @@ public class HomeFragment extends Fragment {
 
     private RecyclerView recyclerView;
     private HomeAdapter adapter;
-    private List<Object> items; // 包含菜单项和聊天历史
+    private List<Object> items;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -40,70 +40,59 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadData() {
-		// 添加菜单项
-		items.add(new HomeMenuItem(android.R.drawable.ic_menu_add, "新建对话", new View.OnClickListener() {
-						  @Override
-						  public void onClick(View v) {
-							  createNewChat();
-						  }
-					  }));
-
-		items.add(new HomeMenuItem(android.R.drawable.ic_menu_manage, "API供应商管理", new View.OnClickListener() {
-						  @Override
-						  public void onClick(View v) {
-							  openApiProviders();
-						  }
-					  }));
-
-		items.add(new HomeMenuItem(android.R.drawable.ic_menu_preferences, "设置", new View.OnClickListener() {
-						  @Override
-						  public void onClick(View v) {
-							  openSettings();
-						  }
-					  }));
-
-		// 添加分隔符
-		items.add("分隔符");
-
-		// 添加聊天历史示例数据
-		loadChatHistory();
-
-		adapter.notifyDataSetChanged();
-	}
-
-	private void loadChatHistory() {
-		// 从数据库加载聊天历史，这里先添加示例数据
-		ChatHistory chat1 = new ChatHistory("技术问题讨论", "如何优化Android应用性能？");
-		chat1.setMessageCount(5);
-		chat1.setTimestamp(System.currentTimeMillis() - 30 * 60 * 1000); // 30分钟前
-
-		ChatHistory chat2 = new ChatHistory("学习计划", "本周学习安排");
-		chat2.setMessageCount(3);
-		chat2.setTimestamp(System.currentTimeMillis() - 2 * 60 * 60 * 1000); // 2小时前
-
-		ChatHistory chat3 = new ChatHistory("项目讨论", "新功能需求分析");
-		chat3.setMessageCount(8);
-		chat3.setTimestamp(System.currentTimeMillis() - 24 * 60 * 60 * 1000); // 1天前
-
-		items.add(chat1);
-		items.add(chat2);
-		items.add(chat3);
-	}
+    // 只保留必要的菜单项，并设置正确的图标
+    items.add(new HomeMenuItem(R.drawable.ic_add_white_24dp, "新建对话", new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            createNewChat();
+        }
+    }));
+    
+    // 设置图标
+    items.add(new HomeMenuItem(R.drawable.ic_settings_white_24dp, "设置", new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            openSettings();
+        }
+    }));
+    
+    // 添加分隔符
+    items.add("分隔符");
+    
+    // 添加聊天历史示例数据
+    loadChatHistory();
+    
+    adapter.notifyDataSetChanged();
+}
 
     private void createNewChat() {
-        // 实现新建对话逻辑
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).switchToChatPage();
         }
     }
 
-    private void openApiProviders() {
-        Intent intent = new Intent(getActivity(), ApiProvidersActivity.class);
-        startActivity(intent);
+    private void openSettings() {
+        try {
+            Intent intent = new Intent(getActivity(), SettingsActivity.class);
+            startActivity(intent);
+        } catch (Exception e) {
+            e.printStackTrace();
+            android.widget.Toast.makeText(getActivity(), "打开设置失败: " + e.getMessage(), 
+										  android.widget.Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private void openSettings() {
-        Intent intent = new Intent(getActivity(), SettingsActivity.class);
-        startActivity(intent);
+    private void loadChatHistory() {
+        // 从数据库加载聊天历史，这里先添加示例数据
+        ChatHistory chat1 = new ChatHistory("技术问题讨论", "如何优化Android应用性能？");
+        chat1.setMessageCount(5);
+        chat1.setTimestamp(System.currentTimeMillis() - 30 * 60 * 1000);
+
+        ChatHistory chat2 = new ChatHistory("学习计划", "本周学习安排");
+        chat2.setMessageCount(3);
+        chat2.setTimestamp(System.currentTimeMillis() - 2 * 60 * 60 * 1000);
+
+        items.add(chat1);
+        items.add(chat2);
     }
 }

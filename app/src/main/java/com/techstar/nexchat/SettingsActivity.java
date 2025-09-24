@@ -2,9 +2,10 @@ package com.techstar.nexchat;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
-import android.view.View;
 
 public class SettingsActivity extends AppCompatActivity {
     
@@ -17,8 +18,14 @@ public class SettingsActivity extends AppCompatActivity {
         apiProviderCard.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(SettingsActivity.this, ApiProvidersActivity.class);
-                startActivity(intent);
+                try {
+                    Intent intent = new Intent(SettingsActivity.this, ApiProvidersActivity.class);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(SettingsActivity.this, "打开失败: " + e.getMessage(), 
+                        Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }

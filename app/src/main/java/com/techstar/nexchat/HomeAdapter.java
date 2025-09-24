@@ -83,22 +83,24 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return items.size();
     }
 
+    
     // 菜单项ViewHolder
-    private static class MenuItemViewHolder extends RecyclerView.ViewHolder {
-        private ImageView icon;
-        private TextView title;
+	private static class MenuItemViewHolder extends RecyclerView.ViewHolder {
+		private ImageView icon;
+		private TextView title;
 
-        public MenuItemViewHolder(@NonNull View itemView) {
-            super(itemView);
-            icon = itemView.findViewById(R.id.icon);
-            title = itemView.findViewById(R.id.title);
-        }
+		public MenuItemViewHolder(@NonNull View itemView) {
+			super(itemView);
+			icon = itemView.findViewById(R.id.icon);
+			title = itemView.findViewById(R.id.title);
+		}
 
-        public void bind(final HomeMenuItem menuItem) {
-            icon.setImageResource(menuItem.getIconRes());
-            title.setText(menuItem.getTitle());
+		public void bind(final HomeMenuItem menuItem) {
+			// 使用app:srcCompat来支持矢量图
+			icon.setImageResource(menuItem.getIconRes());
+			title.setText(menuItem.getTitle());
 
-            itemView.setOnClickListener(new View.OnClickListener() {
+			itemView.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
 						if (menuItem.getOnClickListener() != null) {
@@ -106,8 +108,8 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 						}
 					}
 				});
-        }
-    }
+		}
+	}
 
     // 聊天历史ViewHolder
     private static class ChatHistoryViewHolder extends RecyclerView.ViewHolder {
