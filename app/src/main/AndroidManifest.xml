@@ -22,7 +22,7 @@
             android:name=".MainActivity"
             android:label="NexChat"
             android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
-			android:exported="true">
+            android:exported="true">
 
             <intent-filter>
 
@@ -39,6 +39,14 @@
         <activity android:name=".ApiProvidersActivity"/>
 
         <activity android:name=".AddProviderActivity"/>
+
+        <activity 
+			android:name=".CrashActivity"
+			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
+			android:launchMode="singleInstance"
+			android:excludeFromRecents="true"
+			android:taskAffinity=""
+			android:allowTaskReparenting="false"/>
 
     </application>
 

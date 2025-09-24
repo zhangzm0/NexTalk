@@ -12,15 +12,21 @@ public class MainActivity extends FragmentActivity {
     private ViewPager viewPager;
     private FragmentPagerAdapter pagerAdapter;
 
-    @Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+    public class MainActivity extends FragmentActivity {
 
-		// 启用矢量图兼容
-		AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+		@Override
+		protected void onCreate(Bundle savedInstanceState) {
+			super.onCreate(savedInstanceState);
 
-		setContentView(R.layout.activity_main);
-		initViewPager();
+			// 初始化异常捕获
+			CrashHandler.getInstance().init(this);
+
+			// 启用矢量图兼容
+			AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+
+			setContentView(R.layout.activity_main);
+			initViewPager();
+		}
 	}
 
     private void initViewPager() {
