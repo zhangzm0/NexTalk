@@ -1,12 +1,15 @@
 package com.techstar.nexchat;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager.widget.ViewPager;
-import android.view.View;
 
 public class MainActivity extends FragmentActivity {
 
@@ -17,77 +20,76 @@ public class MainActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 先初始化异常捕获
-        try {
-            CrashHandler.getInstance().init(this);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // 启用矢量图兼容
-        androidx.appcompat.app.AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+        // 初始化异常捕获
+        CrashHandler.getInstance().init(this);
 
         setContentView(R.layout.activity_main);
         initViewPager();
-
-        // 测试崩溃捕获是否工作（取消注释来测试）
-        // testCrashHandler();
     }
 
-    private void testCrashHandler() {
-        // 测试按钮，点击会崩溃
-        findViewById(R.id.viewPager).setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					// 人为制造崩溃
-					throw new RuntimeException("测试崩溃捕获功能");
-				}
-			});
+    private void initViewPager() {
+        viewPager = findViewById(R.id.viewPager);
+
+        pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
+            @Override
+            public int getCount() {
+                return 3;
+            }
+
+            @Override
+            public Fragment getItem(int position) {
+                // 简化Fragment创建，避免复杂初始化
+                switch (position) {
+                    case 0:
+                        return new HomeFragment();
+                    case 1:
+                        return new ChatFragment();
+                    case 2:
+                        return new InputFragment();
+                    default:
+                        return new Fragment(); // 返回空Fragment作为备用
+                }
+            }
+
+            @Override
+            public Object instantiateItem(ViewGroup container, int position) {
+                // 添加错误处理
+                try {
+                    return super.instantiateItem(container, position);
+                } catch (Exception e) {
+                    // 如果Fragment初始化失败，返回一个简单的Fragment
+                    Fragment fragment = new Fragment() {
+                        @Override
+                        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+                            TextView textView = new TextView(getActivity());
+                            textView.setText("Fragment加载失败");
+                            textView.setTextColor(0xFFFFFFFF);
+                            textView.setBackgroundColor(0xFF000000);
+                            return textView;
+                        }
+                    };
+                    return fragment;
+                }
+            }
+        };
+
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setCurrentItem(1); // 默认显示聊天页面
     }
 
-    
+
+
+
 
     public void switchToChatPage() {
         if (viewPager != null) {
             viewPager.setCurrentItem(1); // 切换到聊天页面
         }
     }
-
-
-
 	
-
-
 	private ChatFragment chatFragment;
 
-	private void initViewPager() {
-		viewPager = findViewById(R.id.viewPager);
-
-		pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
-			@Override
-			public int getCount() {
-				return 3;
-			}
-
-			@Override
-			public Fragment getItem(int position) {
-				switch (position) {
-					case 0:
-						return new HomeFragment();
-					case 1:
-						chatFragment = new ChatFragment();
-						return chatFragment;
-					case 2:
-						return new InputFragment();
-					default:
-						return null;
-				}
-			}
-		};
-
-		viewPager.setAdapter(pagerAdapter);
-		viewPager.setCurrentItem(1); // 默认显示聊天页面
-	}
+	
 
 	public void sendChatMessage(String message, String providerId, String model) {
 		if (chatFragment != null) {

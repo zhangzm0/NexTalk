@@ -7,9 +7,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -151,9 +151,9 @@ public class InputFragment extends Fragment {
 		listView.setAdapter(adapter);
 	}
 
-	
 
-	
+
+
 
 	private void loadAvailableModels() {
 		// 初始加载默认模型
@@ -180,73 +180,9 @@ public class InputFragment extends Fragment {
 			etMessage.setText("");
 		}
 	}
-	
-    // ... 其他代码不变
+    
 
-    private void showModelSelector() {
-        // 第一步：先选择供应商
-        showProviderSelector();
-    }
-
-    private void showProviderSelector() {
-        final List<ApiProvider> providers = loadProviders();
-        if (providers.isEmpty()) {
-            Toast.makeText(getActivity(), "请先添加API供应商", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 创建供应商名称列表
-        final String[] providerNames = new String[providers.size()];
-        for (int i = 0; i < providers.size(); i++) {
-            providerNames[i] = providers.get(i).getName() + " (" + providers.get(i).getModels().size() + "个模型)";
-        }
-
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-        builder.setTitle("选择供应商")
-			.setItems(providerNames, new android.content.DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(android.content.DialogInterface dialog, int which) {
-					// 选择供应商后，显示该供应商的模型列表
-					showModelSelectorForProvider(providers.get(which));
-				}
-			})
-			.setNegativeButton("取消", null);
-
-        android.app.AlertDialog dialog = builder.create();
-        dialog.show();
-
-        // 设置对话框颜色
-        setDialogStyle(dialog);
-    }
-
-    private void showModelSelectorForProvider(final ApiProvider provider) {
-        if (provider.getModels().isEmpty()) {
-            Toast.makeText(getActivity(), "该供应商没有可用模型", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        final String[] models = provider.getModels().toArray(new String[0]);
-
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-        builder.setTitle("选择模型 - " + provider.getName())
-			.setItems(models, new android.content.DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(android.content.DialogInterface dialog, int which) {
-					// 选择模型
-					currentProviderId = provider.getId();
-					currentModel = models[which];
-					updateModelSpinner();
-					Toast.makeText(getActivity(), "已选择: " + currentModel, Toast.LENGTH_SHORT).show();
-				}
-			})
-			.setNegativeButton("取消", null);
-
-        android.app.AlertDialog dialog = builder.create();
-        dialog.show();
-
-        // 设置对话框颜色
-        setDialogStyle(dialog);
-    }
+    
 
     private void setDialogStyle(android.app.AlertDialog dialog) {
         // 延迟设置样式，确保对话框已创建
@@ -288,82 +224,6 @@ public class InputFragment extends Fragment {
 			});
     }
 
-    // 移除复杂的setupClickListeners中的模型选择逻辑，改为简单的点击监听
-    private void setupClickListeners() {
-        btnSend.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					sendMessage();
-				}
-			});
-
-        btnUpload.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					uploadFile();
-				}
-			});
-
-        btnNetwork.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					toggleNetworkSearch();
-				}
-			});
-
-        // 简单的模型选择点击
-        spinnerModel.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					showModelSelector();
-				}
-			});
-
-        // 也支持点击下拉箭头
-        View spinnerChild = spinnerModel.getChildAt(0);
-        if (spinnerChild instanceof TextView) {
-            spinnerChild.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						showModelSelector();
-					}
-				});
-        }
-
-        // 初始加载模型
-        loadAvailableModels();
-    }
-
-    // 简化模型显示更新
-    private void updateModelSpinner() {
-        String displayText = currentModel;
-        if (displayText.length() > 15) {
-            displayText = displayText.substring(0, 15) + "...";
-        }
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), 
-																android.R.layout.simple_spinner_item, new String[]{displayText}) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                TextView textView = (TextView) super.getView(position, convertView, parent);
-                textView.setTextColor(0xFFFFFFFF);
-                textView.setText(getItem(position));
-                textView.setSingleLine(true);
-                return textView;
-            }
-
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                TextView textView = (TextView) super.getDropDownView(position, convertView, parent);
-                textView.setTextColor(0xFFFFFFFF);
-                textView.setText(currentModel); // 显示完整名称
-                textView.setBackgroundColor(0xFF2D2D2D);
-                return textView;
-            }
-        };
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerModel.setAdapter(adapter);
-    }
 
     // 简化供应商加载（添加示例数据用于测试）
     private List<ApiProvider> loadProviders() {
@@ -432,5 +292,223 @@ public class InputFragment extends Fragment {
         return null;
     }
 
-    // 移除复杂的布局文件引用
+
+	// ... 其他代码不变
+
+	private void setupClickListeners() {
+		btnSend.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					sendMessage();
+				}
+			});
+
+		btnUpload.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					uploadFile();
+				}
+			});
+
+		btnNetwork.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					toggleNetworkSearch();
+				}
+			});
+
+		// 修复：移除错误的setOnClickListener，改用触摸监听
+		spinnerModel.setOnTouchListener(new View.OnTouchListener() {
+				@Override
+				public boolean onTouch(View v, android.view.MotionEvent event) {
+					if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+						showModelSelector();
+						return true; // 消费事件，防止Spinner默认行为
+					}
+					return false;
+				}
+			});
+
+		// 也添加点击监听到Spinner的文本部分（如果有）
+		try {
+			// 获取Spinner内部的TextView
+			java.lang.reflect.Field field = android.widget.AbsSpinner.class.getDeclaredField("mPopup");
+			field.setAccessible(true);
+			Object popup = field.get(spinnerModel);
+
+			if (popup instanceof android.widget.ListPopupWindow) {
+				android.widget.ListPopupWindow listPopup = (android.widget.ListPopupWindow) popup;
+				View anchor = listPopup.getAnchorView();
+				if (anchor != null) {
+					anchor.setOnClickListener(new View.OnClickListener() {
+							@Override
+							public void onClick(View v) {
+								showModelSelector();
+							}
+						});
+				}
+			}
+		} catch (Exception e) {
+			// 如果反射失败，使用备用方案：在Spinner旁边添加一个选择按钮
+			addModelSelectButton();
+		}
+
+		// 初始加载模型
+		loadAvailableModels();
+	}
+
+	// 备用方案：在Spinner旁边添加选择按钮
+	private void addModelSelectButton() {
+		// 创建一个包含Spinner和按钮的布局
+		LinearLayout container = new LinearLayout(getActivity());
+		container.setOrientation(LinearLayout.HORIZONTAL);
+		container.setLayoutParams(new LinearLayout.LayoutParams(
+									  LinearLayout.LayoutParams.MATCH_PARENT,
+									  LinearLayout.LayoutParams.WRAP_CONTENT
+								  ));
+
+		// 移除原来的Spinner从父布局
+		ViewGroup parent = (ViewGroup) spinnerModel.getParent();
+		int index = parent.indexOfChild(spinnerModel);
+		parent.removeView(spinnerModel);
+
+		// 设置Spinner权重
+		LinearLayout.LayoutParams spinnerParams = new LinearLayout.LayoutParams(
+			0, LinearLayout.LayoutParams.WRAP_CONTENT
+		);
+		spinnerParams.weight = 1;
+		spinnerModel.setLayoutParams(spinnerParams);
+
+		// 添加选择按钮
+		ImageButton selectButton = new ImageButton(getActivity());
+		selectButton.setImageResource(android.R.drawable.ic_menu_more);
+		selectButton.setBackgroundColor(0x001E1E1E);
+		selectButton.setColorFilter(0xFFFFFFFF);
+		selectButton.setLayoutParams(new LinearLayout.LayoutParams(
+										 LinearLayout.LayoutParams.WRAP_CONTENT,
+										 LinearLayout.LayoutParams.WRAP_CONTENT
+									 ));
+		selectButton.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					showModelSelector();
+				}
+			});
+
+		// 添加到容器
+		container.addView(spinnerModel);
+		container.addView(selectButton);
+
+		// 添加到原来的位置
+		parent.addView(container, index);
+	}
+
+	// 简化模型选择器显示
+	private void showModelSelector() {
+		// 延迟显示，避免触摸事件冲突
+		spinnerModel.post(new Runnable() {
+				@Override
+				public void run() {
+					showProviderSelector();
+				}
+			});
+	}
+
+	// 修复：确保对话框在UI线程显示
+	private void showProviderSelector() {
+		if (getActivity() == null) return;
+
+		getActivity().runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					final List<ApiProvider> providers = loadProviders();
+					if (providers.isEmpty()) {
+						android.widget.Toast.makeText(getActivity(), "请先添加API供应商", android.widget.Toast.LENGTH_SHORT).show();
+						return;
+					}
+
+					final String[] providerNames = new String[providers.size()];
+					for (int i = 0; i < providers.size(); i++) {
+						providerNames[i] = providers.get(i).getName() + " (" + providers.get(i).getModels().size() + "个模型)";
+					}
+
+					android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+					builder.setTitle("选择供应商")
+						.setItems(providerNames, new android.content.DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(android.content.DialogInterface dialog, int which) {
+								showModelSelectorForProvider(providers.get(which));
+							}
+						})
+						.setNegativeButton("取消", null);
+
+					android.app.AlertDialog dialog = builder.create();
+					dialog.show();
+				}
+			});
+	}
+
+	// 修复模型选择显示
+	private void showModelSelectorForProvider(final ApiProvider provider) {
+		if (getActivity() == null) return;
+
+		getActivity().runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					if (provider.getModels().isEmpty()) {
+						android.widget.Toast.makeText(getActivity(), "该供应商没有可用模型", android.widget.Toast.LENGTH_SHORT).show();
+						return;
+					}
+
+					final String[] models = provider.getModels().toArray(new String[0]);
+
+					android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+					builder.setTitle("选择模型 - " + provider.getName())
+						.setItems(models, new android.content.DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(android.content.DialogInterface dialog, int which) {
+								currentProviderId = provider.getId();
+								currentModel = models[which];
+								updateModelSpinner();
+								android.widget.Toast.makeText(getActivity(), "已选择: " + currentModel, android.widget.Toast.LENGTH_SHORT).show();
+							}
+						})
+						.setNegativeButton("取消", null);
+
+					android.app.AlertDialog dialog = builder.create();
+					dialog.show();
+				}
+			});
+	}
+
+	// 修复模型显示更新
+	private void updateModelSpinner() {
+		if (getActivity() == null || spinnerModel == null) return;
+
+		getActivity().runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					String displayText = currentModel;
+					if (displayText.length() > 15) {
+						displayText = displayText.substring(0, 15) + "...";
+					}
+
+					ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), 
+																			android.R.layout.simple_spinner_item, new String[]{displayText}) {
+						@Override
+						public View getView(int position, View convertView, ViewGroup parent) {
+							TextView textView = (TextView) super.getView(position, convertView, parent);
+							textView.setTextColor(0xFFFFFFFF);
+							textView.setText(getItem(position));
+							textView.setSingleLine(true);
+							return textView;
+						}
+					};
+					adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+					spinnerModel.setAdapter(adapter);
+				}
+			});
+	}
+
+	// ... 其他方法保持不变
 }
