@@ -45,10 +45,13 @@
 			android:name=".AddProviderActivity"
 			/>
 
-        <activity
-            android:name=".CrashActivity"
-            android:launchMode="singleTop"
-            android:excludeFromRecents="true"/>
+        <activity 
+			android:name=".CrashActivity"
+			
+			android:launchMode="singleInstance"
+			android:excludeFromRecents="true"
+			android:taskAffinity=""
+			android:allowTaskReparenting="false"/>
 
     </application>
 

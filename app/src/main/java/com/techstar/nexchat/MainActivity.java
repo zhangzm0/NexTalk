@@ -56,7 +56,7 @@ public class MainActivity extends FragmentActivity {
 
 
 	
-	// ... 其他代码不变
+
 
 	private ChatFragment chatFragment;
 

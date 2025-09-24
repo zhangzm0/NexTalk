@@ -6,7 +6,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import android.content.Intent;
 
 public class CrashActivity extends AppCompatActivity {
 
@@ -16,49 +15,54 @@ public class CrashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_crash);
 
-        initViews();
-        setupClickListeners();
+        // 使用简单的布局，避免可能的布局问题
+        setContentView(android.R.layout.simple_list_item_1);
 
-        // 显示错误信息
+        // 直接显示错误信息
         String errorInfo = getIntent().getStringExtra("error_info");
         if (errorInfo != null) {
-            tvError.setText(errorInfo);
+            TextView textView = findViewById(android.R.id.text1);
+            textView.setText(errorInfo);
+            textView.setTextColor(0xFFFFFFFF);
+            textView.setBackgroundColor(0xFF000000);
+            textView.setPadding(20, 20, 20, 20);
+
             // 自动复制到剪贴板
             copyToClipboard(errorInfo);
         }
+
+        // 添加退出按钮
+        addExitButton();
     }
 
-    private void initViews() {
-        tvError = findViewById(R.id.tvError);
-        btnCopy = findViewById(R.id.btnCopy);
-        btnRestart = findViewById(R.id.btnRestart);
-        btnExit = findViewById(R.id.btnExit);
-    }
-
-    private void setupClickListeners() {
-        btnCopy.setOnClickListener(new View.OnClickListener() {
+    private void addExitButton() {
+        Button exitButton = new Button(this);
+        exitButton.setText("退出应用");
+        exitButton.setTextColor(0xFFFFFFFF);
+        exitButton.setBackgroundColor(0xFFFF0000);
+        exitButton.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
-					String errorInfo = tvError.getText().toString();
-					copyToClipboard(errorInfo);
+					finish();
+					android.os.Process.killProcess(android.os.Process.myPid());
+					System.exit(0);
 				}
 			});
 
-        btnRestart.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					restartApp();
-				}
-			});
+        // 添加到布局
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setBackgroundColor(0xFF000000);
 
-        btnExit.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					exitApp();
-				}
-			});
+        TextView textView = findViewById(android.R.id.text1);
+        android.view.ViewGroup parent = (android.view.ViewGroup) textView.getParent();
+        parent.removeView(textView);
+
+        layout.addView(textView);
+        layout.addView(exitButton);
+
+        setContentView(layout);
     }
 
     private void copyToClipboard(String text) {
@@ -68,29 +72,10 @@ public class CrashActivity extends AppCompatActivity {
             android.content.ClipData clip = android.content.ClipData.newPlainText("错误信息", text);
             if (clipboard != null) {
                 clipboard.setPrimaryClip(clip);
-                Toast.makeText(this, "错误信息已复制到剪贴板", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "错误信息已复制到剪贴板", Toast.LENGTH_LONG).show();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void restartApp() {
-        try {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-            android.os.Process.killProcess(android.os.Process.myPid());
-            System.exit(0);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void exitApp() {
-        finish();
-        android.os.Process.killProcess(android.os.Process.myPid());
-        System.exit(0);
     }
 }
