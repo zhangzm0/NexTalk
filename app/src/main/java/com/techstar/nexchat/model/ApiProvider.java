@@ -9,12 +9,17 @@ public class ApiProvider {
     private String apiUrl;
     private String apiKey;
     private List<String> models;
+    private String balance; // 余额信息
     private long createTime;
 
     public ApiProvider() {
         this.models = new ArrayList<String>();
         this.createTime = System.currentTimeMillis();
+        this.balance = "未查询";
     }
+	
+	
+	
 
     public ApiProvider(String name, String apiUrl, String apiKey) {
         this();
@@ -41,4 +46,7 @@ public class ApiProvider {
 
     public long getCreateTime() { return createTime; }
     public void setCreateTime(long createTime) { this.createTime = createTime; }
+	
+	public String getBalance() { return balance; }
+    public void setBalance(String balance) { this.balance = balance; }
 }

@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    android:backgroundTint="#1E1E1E">
+    app:cardBackgroundColor="#1E1E1E"
+    app:cardCornerRadius="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -30,20 +32,48 @@
             android:textSize="14sp"
             android:layout_marginTop="4dp"/>
 
-        <TextView
-            android:id="@+id/tvModels"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="模型: 0个"
-            android:textColor="#888888"
-            android:textSize="12sp"
-            android:layout_marginTop="4dp"/>
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/tvModels"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="模型: 0个"
+                android:textColor="#888888"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:id="@+id/tvBalance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="余额: 未查询"
+                android:textColor="#FFA726"
+                android:textSize="12sp"
+                android:gravity="end"/>
+
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnBalance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="查询余额"
+                android:textColor="#FFA726"
+                android:background="@android:color/transparent"
+                android:layout_marginEnd="4dp"/>
 
             <Button
                 android:id="@+id/btnEdit"
@@ -53,6 +83,7 @@
                 android:text="编辑"
                 android:textColor="#2196F3"
                 android:background="@android:color/transparent"
+                android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp"/>
 
             <Button

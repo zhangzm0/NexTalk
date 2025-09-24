@@ -19,7 +19,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="NexChat"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+        android:theme="@style/Theme.AppCompat.NoActionBar" >
 
         <activity
             android:name=".MainActivity"
@@ -43,11 +43,10 @@
 
         <activity 
 			android:name=".AddProviderActivity"
-			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"/>
+			/>
 
         <activity
             android:name=".CrashActivity"
-            android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
             android:launchMode="singleTop"
             android:excludeFromRecents="true"/>
 

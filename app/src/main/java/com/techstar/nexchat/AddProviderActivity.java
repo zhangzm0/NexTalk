@@ -21,6 +21,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import com.techstar.nexchat.model.ApiProvider;
+
 
 public class AddProviderActivity extends AppCompatActivity {
 
@@ -32,6 +34,8 @@ public class AddProviderActivity extends AppCompatActivity {
 
     private List<String> fetchedModels = new ArrayList<>();
     private OkHttpClient client;
+    private ApiProvider editingProvider; // 编辑中的供应商
+    private boolean isEditMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +45,146 @@ public class AddProviderActivity extends AppCompatActivity {
         client = new OkHttpClient();
         initViews();
         setupClickListeners();
+        checkEditMode();
+    }
+
+    private void checkEditMode() {
+        String providerId = getIntent().getStringExtra("provider_id");
+        if (providerId != null) {
+            isEditMode = true;
+            editingProvider = loadProviderById(providerId);
+            if (editingProvider != null) {
+                populateForm(editingProvider);
+                findViewById(R.id.btnBack).setOnClickListener(new View.OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							finish();
+						}
+					});
+            }
+        }
+    }
+
+    private void populateForm(ApiProvider provider) {
+        etProviderName.setText(provider.getName());
+        etApiUrl.setText(provider.getApiUrl());
+        etApiKey.setText(provider.getApiKey());
+
+        // 显示已保存的模型
+        fetchedModels.clear();
+        fetchedModels.addAll(provider.getModels());
+        displayModelsList();
+
+        // 修改标题
+        TextView title = findViewById(R.id.tvTitle);
+        if (title != null) {
+            title.setText("编辑API供应商");
+        }
+    }
+
+    private ApiProvider loadProviderById(String providerId) {
+        // 从SharedPreferences加载供应商数据
+        try {
+            String name = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_name", "");
+            String url = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_url", "");
+            String key = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getString(providerId + "_key", "");
+            int modelCount = getSharedPreferences("api_providers", MODE_PRIVATE)
+                .getInt(providerId + "_model_count", 0);
+
+            if (!name.isEmpty()) {
+                ApiProvider provider = new ApiProvider(name, url, key);
+                provider.setId(providerId);
+
+                // 加载模型列表
+                for (int i = 0; i < modelCount; i++) {
+                    String model = getSharedPreferences("api_providers", MODE_PRIVATE)
+                        .getString(providerId + "_model_" + i, "");
+                    if (!model.isEmpty()) {
+                        provider.getModels().add(model);
+                    }
+                }
+
+                return provider;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private void saveProvider() {
+        String name = etProviderName.getText().toString().trim();
+        String url = etApiUrl.getText().toString().trim();
+        String key = etApiKey.getText().toString().trim();
+
+        if (name.isEmpty()) {
+            etProviderName.setError("请输入供应商名称");
+            return;
+        }
+
+        if (url.isEmpty()) {
+            etApiUrl.setError("请输入API URL");
+            return;
+        }
+
+        if (key.isEmpty()) {
+            etApiKey.setError("请输入API Key");
+            return;
+        }
+
+        if (fetchedModels.isEmpty()) {
+            Toast.makeText(this, "请先获取模型列表", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (isEditMode && editingProvider != null) {
+            // 编辑模式：更新现有供应商
+            updateProvider(editingProvider.getId(), name, url, key, fetchedModels);
+        } else {
+            // 新建模式：创建新供应商
+            saveProviderToPrefs(name, url, key, fetchedModels);
+        }
+
+        Toast.makeText(this, "供应商保存成功", Toast.LENGTH_SHORT).show();
+        setResult(RESULT_OK);
+        finish();
+    }
+
+    private void updateProvider(String providerId, String name, String url, String key, List<String> models) {
+        // 更新基本信息
+        getSharedPreferences("api_providers", MODE_PRIVATE)
+            .edit()
+            .putString(providerId + "_name", name)
+            .putString(providerId + "_url", url)
+            .putString(providerId + "_key", key)
+            .putInt(providerId + "_model_count", models.size())
+            .apply();
+
+        // 清除旧的模型数据
+        clearProviderModels(providerId);
+
+        // 保存新的模型列表
+        for (int i = 0; i < models.size(); i++) {
+            getSharedPreferences("api_providers", MODE_PRIVATE)
+                .edit()
+                .putString(providerId + "_model_" + i, models.get(i))
+                .apply();
+        }
+    }
+
+    private void clearProviderModels(String providerId) {
+        // 清除该供应商的所有模型数据
+        int modelCount = getSharedPreferences("api_providers", MODE_PRIVATE)
+            .getInt(providerId + "_model_count", 0);
+        for (int i = 0; i < modelCount; i++) {
+            getSharedPreferences("api_providers", MODE_PRIVATE)
+                .edit()
+                .remove(providerId + "_model_" + i)
+                .apply();
+        }
     }
 
     private void initViews() {
@@ -207,38 +351,6 @@ public class AddProviderActivity extends AppCompatActivity {
         tvModelsTitle.setText("获取到的模型: 0个");
     }
 
-    private void saveProvider() {
-        String name = etProviderName.getText().toString().trim();
-        String url = etApiUrl.getText().toString().trim();
-        String key = etApiKey.getText().toString().trim();
-
-        if (name.isEmpty()) {
-            etProviderName.setError("请输入供应商名称");
-            return;
-        }
-
-        if (url.isEmpty()) {
-            etApiUrl.setError("请输入API URL");
-            return;
-        }
-
-        if (key.isEmpty()) {
-            etApiKey.setError("请输入API Key");
-            return;
-        }
-
-        if (fetchedModels.isEmpty()) {
-            Toast.makeText(this, "请先获取模型列表", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 保存到SharedPreferences
-        saveProviderToPrefs(name, url, key, fetchedModels);
-
-        Toast.makeText(this, "供应商保存成功", Toast.LENGTH_SHORT).show();
-        setResult(RESULT_OK);
-        finish();
-    }
 
     private void saveProviderToPrefs(String name, String url, String key, List<String> models) {
         // 生成唯一ID
