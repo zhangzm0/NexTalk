@@ -96,7 +96,7 @@ public class InputFragment extends Fragment {
 	}
 
 
-    
+
 
 
 
@@ -124,66 +124,21 @@ public class InputFragment extends Fragment {
         modelAdapter.notifyDataSetChanged();
     }
 
-	
+
 
 	private String getSelectedProviderId() {
 		// 实现获取当前选择的供应商ID
 		return "default_provider";
 	}
-	
-	// ... 其他代码不变
+
+
 
 	private String currentProviderId = "";
 	private String currentModel = "";
 
-	private void setupClickListeners() {
-		btnSend.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					sendMessage();
-				}
-			});
+	
 
-		btnUpload.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					uploadFile();
-				}
-			});
-
-		btnNetwork.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					toggleNetworkSearch();
-				}
-			});
-
-		// 模型选择点击事件
-		spinnerModel.setOnTouchListener(new View.OnTouchListener() {
-				@Override
-				public boolean onTouch(View v, android.view.MotionEvent event) {
-					if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
-						showModelSelector();
-						return true;
-					}
-					return false;
-				}
-			});
-
-		// 初始加载模型
-		loadAvailableModels();
-	}
-
-	private void showModelSelector() {
-		android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-		View dialogView = LayoutInflater.from(getActivity()).inflate(R.layout.dialog_model_selector, null);
-		builder.setView(dialogView);
-
-		final android.app.AlertDialog dialog = builder.create();
-		dialog.show();
-
-		setupModelSelector(dialogView, dialog);
-	}
+	
 
 	private void setupModelSelector(View dialogView, final android.app.AlertDialog dialog) {
 		final Spinner spinnerProviders = dialogView.findViewById(R.id.spinnerProviders);
@@ -287,28 +242,9 @@ public class InputFragment extends Fragment {
 		listView.setAdapter(adapter);
 	}
 
-	private void updateModelSpinner() {
-		// 更新主界面的模型显示
-		ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), 
-																android.R.layout.simple_spinner_item, new String[]{currentModel}) {
-			@Override
-			public View getView(int position, View convertView, ViewGroup parent) {
-				TextView textView = (TextView) super.getView(position, convertView, parent);
-				textView.setTextColor(0xFFFFFFFF);
-				textView.setText(getItem(position));
-				return textView;
-			}
-		};
-		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spinnerModel.setAdapter(adapter);
-	}
+	
 
-	private List<ApiProvider> loadProviders() {
-		// 从SharedPreferences加载供应商列表
-		List<ApiProvider> providers = new ArrayList<>();
-		// 这里实现实际的加载逻辑
-		return providers;
-	}
+	
 
 	private void loadAvailableModels() {
 		// 初始加载默认模型
@@ -335,4 +271,257 @@ public class InputFragment extends Fragment {
 			etMessage.setText("");
 		}
 	}
+	
+    // ... 其他代码不变
+
+    private void showModelSelector() {
+        // 第一步：先选择供应商
+        showProviderSelector();
+    }
+
+    private void showProviderSelector() {
+        final List<ApiProvider> providers = loadProviders();
+        if (providers.isEmpty()) {
+            Toast.makeText(getActivity(), "请先添加API供应商", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 创建供应商名称列表
+        final String[] providerNames = new String[providers.size()];
+        for (int i = 0; i < providers.size(); i++) {
+            providerNames[i] = providers.get(i).getName() + " (" + providers.get(i).getModels().size() + "个模型)";
+        }
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+        builder.setTitle("选择供应商")
+			.setItems(providerNames, new android.content.DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(android.content.DialogInterface dialog, int which) {
+					// 选择供应商后，显示该供应商的模型列表
+					showModelSelectorForProvider(providers.get(which));
+				}
+			})
+			.setNegativeButton("取消", null);
+
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // 设置对话框颜色
+        setDialogStyle(dialog);
+    }
+
+    private void showModelSelectorForProvider(final ApiProvider provider) {
+        if (provider.getModels().isEmpty()) {
+            Toast.makeText(getActivity(), "该供应商没有可用模型", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final String[] models = provider.getModels().toArray(new String[0]);
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+        builder.setTitle("选择模型 - " + provider.getName())
+			.setItems(models, new android.content.DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(android.content.DialogInterface dialog, int which) {
+					// 选择模型
+					currentProviderId = provider.getId();
+					currentModel = models[which];
+					updateModelSpinner();
+					Toast.makeText(getActivity(), "已选择: " + currentModel, Toast.LENGTH_SHORT).show();
+				}
+			})
+			.setNegativeButton("取消", null);
+
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // 设置对话框颜色
+        setDialogStyle(dialog);
+    }
+
+    private void setDialogStyle(android.app.AlertDialog dialog) {
+        // 延迟设置样式，确保对话框已创建
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        dialog.setOnShowListener(new android.content.DialogInterface.OnShowListener() {
+				@Override
+				public void onShow(android.content.DialogInterface dialogInterface) {
+					android.app.AlertDialog dialog = (android.app.AlertDialog) dialogInterface;
+
+					// 设置背景色
+					android.graphics.drawable.ColorDrawable background = new android.graphics.drawable.ColorDrawable(0xFF1E1E1E);
+					dialog.getWindow().setBackgroundDrawable(background);
+
+					// 设置列表颜色
+					android.widget.ListView listView = dialog.getListView();
+					if (listView != null) {
+						listView.setBackgroundColor(0xFF1E1E1E);
+						listView.setDivider(new android.graphics.drawable.ColorDrawable(0xFF333333));
+						listView.setDividerHeight(1);
+
+						// 设置列表项颜色
+						try {
+							java.lang.reflect.Field field = android.widget.AbsListView.class.getDeclaredField("mSelector");
+							field.setAccessible(true);
+							android.graphics.drawable.Drawable selector = (android.graphics.drawable.Drawable) field.get(listView);
+							if (selector != null) {
+								selector.setColorFilter(0xFF2196F3, android.graphics.PorterDuff.Mode.SRC_ATOP);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+					// 设置按钮颜色
+					dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE).setTextColor(0xFFFFFFFF);
+					dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE).setBackgroundColor(0xFF2D2D2D);
+				}
+			});
+    }
+
+    // 移除复杂的setupClickListeners中的模型选择逻辑，改为简单的点击监听
+    private void setupClickListeners() {
+        btnSend.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					sendMessage();
+				}
+			});
+
+        btnUpload.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					uploadFile();
+				}
+			});
+
+        btnNetwork.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					toggleNetworkSearch();
+				}
+			});
+
+        // 简单的模型选择点击
+        spinnerModel.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					showModelSelector();
+				}
+			});
+
+        // 也支持点击下拉箭头
+        View spinnerChild = spinnerModel.getChildAt(0);
+        if (spinnerChild instanceof TextView) {
+            spinnerChild.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						showModelSelector();
+					}
+				});
+        }
+
+        // 初始加载模型
+        loadAvailableModels();
+    }
+
+    // 简化模型显示更新
+    private void updateModelSpinner() {
+        String displayText = currentModel;
+        if (displayText.length() > 15) {
+            displayText = displayText.substring(0, 15) + "...";
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), 
+																android.R.layout.simple_spinner_item, new String[]{displayText}) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                TextView textView = (TextView) super.getView(position, convertView, parent);
+                textView.setTextColor(0xFFFFFFFF);
+                textView.setText(getItem(position));
+                textView.setSingleLine(true);
+                return textView;
+            }
+
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                TextView textView = (TextView) super.getDropDownView(position, convertView, parent);
+                textView.setTextColor(0xFFFFFFFF);
+                textView.setText(currentModel); // 显示完整名称
+                textView.setBackgroundColor(0xFF2D2D2D);
+                return textView;
+            }
+        };
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerModel.setAdapter(adapter);
+    }
+
+    // 简化供应商加载（添加示例数据用于测试）
+    private List<ApiProvider> loadProviders() {
+        List<ApiProvider> providers = new ArrayList<>();
+
+        // 从SharedPreferences加载实际数据
+        try {
+            String providerIds = getActivity().getSharedPreferences("api_providers", android.content.Context.MODE_PRIVATE)
+                .getString("provider_ids", "");
+
+            if (!providerIds.isEmpty()) {
+                String[] ids = providerIds.split(",");
+                for (String id : ids) {
+                    ApiProvider provider = loadProviderById(id);
+                    if (provider != null && !provider.getModels().isEmpty()) {
+                        providers.add(provider);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // 如果没有数据，添加示例数据用于测试
+        if (providers.isEmpty()) {
+            ApiProvider exampleProvider = new ApiProvider("OpenAI", "https://api.openai.com/v1", "sk-...");
+            exampleProvider.getModels().add("gpt-3.5-turbo");
+            exampleProvider.getModels().add("gpt-4");
+            exampleProvider.setId("example_1");
+            providers.add(exampleProvider);
+        }
+
+        return providers;
+    }
+
+    private ApiProvider loadProviderById(String providerId) {
+        // 从SharedPreferences加载供应商数据
+        try {
+            String name = getActivity().getSharedPreferences("api_providers", android.content.Context.MODE_PRIVATE)
+                .getString(providerId + "_name", "");
+            String url = getActivity().getSharedPreferences("api_providers", android.content.Context.MODE_PRIVATE)
+                .getString(providerId + "_url", "");
+            String key = getActivity().getSharedPreferences("api_providers", android.content.Context.MODE_PRIVATE)
+                .getString(providerId + "_key", "");
+            int modelCount = getActivity().getSharedPreferences("api_providers", android.content.Context.MODE_PRIVATE)
+                .getInt(providerId + "_model_count", 0);
+
+            if (!name.isEmpty()) {
+                ApiProvider provider = new ApiProvider(name, url, key);
+                provider.setId(providerId);
+
+                // 加载模型列表
+                for (int i = 0; i < modelCount; i++) {
+                    String model = getActivity().getSharedPreferences("api_providers", android.content.Context.MODE_PRIVATE)
+                        .getString(providerId + "_model_" + i, "");
+                    if (!model.isEmpty()) {
+                        provider.getModels().add(model);
+                    }
+                }
+
+                return provider;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // 移除复杂的布局文件引用
 }
