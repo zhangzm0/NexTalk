@@ -14,6 +14,14 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
         
+        // 设置返回按钮
+        findViewById(R.id.btnBack).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+        
         CardView apiProviderCard = findViewById(R.id.apiProviderLayout);
         apiProviderCard.setOnClickListener(new View.OnClickListener() {
             @Override

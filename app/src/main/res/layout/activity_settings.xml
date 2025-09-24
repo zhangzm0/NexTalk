@@ -5,53 +5,82 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#121212"
-    android:padding="16dp">
+    android:background="#121212">
 
-    <TextView
+    <!-- 自定义顶栏 -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="设置"
-        android:textColor="#FFFFFF"
-        android:textSize="24sp"
-        android:layout_marginBottom="20dp"/>
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:background="#1E1E1E"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="16dp">
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/apiProviderLayout"
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_arrow_back_24dp"
+            android:background="?attr/selectableItemBackground"
+            android:tint="#FFFFFF"
+            android:contentDescription="返回"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="设置"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:gravity="center"/>
+
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        app:cardBackgroundColor="#1E1E1E">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <LinearLayout
+        <androidx.cardview.widget.CardView
+            android:id="@+id/apiProviderLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp">
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="#1E1E1E">
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                app:srcCompat="@drawable/ic_settings_white_24dp"
-                android:tint="#2196F3"/>
-
-            <TextView
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="API供应商管理"
-                android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:layout_marginStart="16dp"/>
+                android:orientation="horizontal"
+                android:padding="16dp">
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                app:srcCompat="@drawable/ic_arrow_forward_24dp"
-                android:tint="#666666"/>
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    app:srcCompat="@drawable/ic_settings_white_24dp"
+                    android:tint="#2196F3"/>
 
-        </LinearLayout>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="API供应商管理"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:layout_marginStart="16dp"/>
 
-    </androidx.cardview.widget.CardView>
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    app:srcCompat="@drawable/ic_arrow_forward_24dp"
+                    android:tint="#666666"/>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
 
 </LinearLayout>

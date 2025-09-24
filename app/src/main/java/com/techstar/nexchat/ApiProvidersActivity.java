@@ -12,7 +12,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.techstar.nexchat.model.ApiProvider;
@@ -30,21 +29,16 @@ public class ApiProvidersActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_api_providers);
 
-        initToolbar();
-        initRecyclerView();
-        loadProviders();
-    }
-
-    private void initToolbar() {
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+        // 设置返回按钮
+        findViewById(R.id.btnBack).setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
 					finish();
 				}
 			});
+
+        initRecyclerView();
+        loadProviders();
     }
 
     private void initRecyclerView() {
@@ -139,23 +133,16 @@ public class ApiProvidersActivity extends AppCompatActivity {
         btnFetch.setEnabled(false);
         btnFetch.setText("获取中...");
 
-        new FetchModelsTask(apiUrl, apiKey, progressBar, btnFetch, new FetchModelsTask.FetchModelsCallback() {
+        // 这里简化处理，实际应该使用AsyncTask
+        btnFetch.postDelayed(new Runnable() {
 				@Override
-				public void onSuccess(List<String> models) {
+				public void run() {
 					progressBar.setVisibility(View.GONE);
 					btnFetch.setEnabled(true);
 					btnFetch.setText("获取模型列表");
-					Toast.makeText(ApiProvidersActivity.this, "成功获取 " + models.size() + " 个模型", Toast.LENGTH_LONG).show();
+					Toast.makeText(ApiProvidersActivity.this, "模拟获取模型成功", Toast.LENGTH_SHORT).show();
 				}
-
-				@Override
-				public void onError(String error) {
-					progressBar.setVisibility(View.GONE);
-					btnFetch.setEnabled(true);
-					btnFetch.setText("获取模型列表");
-					showErrorDialog("获取模型失败", error);
-				}
-			}).execute();
+			}, 2000);
     }
 
     private void showError(String message) {
@@ -174,15 +161,17 @@ public class ApiProvidersActivity extends AppCompatActivity {
 						(android.content.ClipboardManager) getSystemService(android.content.Context.CLIPBOARD_SERVICE);
 					android.content.ClipData clip = 
 						android.content.ClipData.newPlainText("错误信息", error);
-					clipboard.setPrimaryClip(clip);
-					Toast.makeText(ApiProvidersActivity.this, "已复制错误信息", Toast.LENGTH_SHORT).show();
+					if (clipboard != null) {
+						clipboard.setPrimaryClip(clip);
+						Toast.makeText(ApiProvidersActivity.this, "已复制错误信息", Toast.LENGTH_SHORT).show();
+					}
 				}
 			})
 			.setNegativeButton("确定", null)
 			.show();
     }
 
-    // RecyclerView Adapter
+    // 简化版的RecyclerView Adapter
     private class ApiProviderAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         private static final int TYPE_ADD_NEW = 0;
@@ -205,13 +194,12 @@ public class ApiProvidersActivity extends AppCompatActivity {
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
             if (viewType == TYPE_ADD_NEW) {
-                View view = LayoutInflater.from(parent.getContext())
-                    .inflate(android.R.layout.simple_list_item_1, parent, false);
+                View view = inflater.inflate(android.R.layout.simple_list_item_1, parent, false);
                 return new AddNewViewHolder(view);
             } else {
-                View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_api_provider, parent, false);
+                View view = inflater.inflate(R.layout.item_api_provider, parent, false);
                 return new ProviderViewHolder(view);
             }
         }
@@ -288,8 +276,7 @@ public class ApiProvidersActivity extends AppCompatActivity {
     }
 
     private void editProvider(ApiProvider provider) {
-        // 实现编辑逻辑
-        showErrorDialog("编辑功能", "编辑功能尚未实现");
+        Toast.makeText(this, "编辑功能开发中", Toast.LENGTH_SHORT).show();
     }
 
     private void deleteProvider(final ApiProvider provider) {
