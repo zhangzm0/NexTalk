@@ -1,25 +1,26 @@
 package com.techstar.nexchat;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import com.techstar.nexchat.model.ApiProvider;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import android.util.Log;
 
 public class InputFragment extends Fragment {
 
@@ -254,16 +255,7 @@ public class InputFragment extends Fragment {
 
 
 
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		View view = inflater.inflate(R.layout.fragment_input, container, false);
-
-		initViews(view);
-		setupClickListeners();
-		loadAvailableModels(); // 确保模型显示
-
-		return view;
-	}
+	
 
 	@Override
 	public void onResume() {
@@ -362,50 +354,10 @@ public class InputFragment extends Fragment {
 		loadSavedModelSelection();
 	}
 	
-	// ... 其他代码不变
+	
 
-	// 修复模型选择确认方法
-	private void showModelSelectorForProvider(final ApiProvider provider) {
-		if (provider.getModels().isEmpty()) {
-			Toast.makeText(getActivity(), "该供应商没有可用模型", Toast.LENGTH_SHORT).show();
-			return;
-		}
-
-		final String[] models = provider.getModels().toArray(new String[0]);
-
-		android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-		builder.setTitle("选择模型 - " + provider.getName())
-			.setItems(models, new android.content.DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(android.content.DialogInterface dialog, int which) {
-					// 确保providerId正确设置
-					if (provider.getId() == null || provider.getId().isEmpty()) {
-						// 如果供应商没有ID，生成一个或使用名称作为ID
-						currentProviderId = "provider_" + System.currentTimeMillis();
-						// 保存这个供应商到SharedPreferences
-						saveProviderToPrefs(provider, currentProviderId);
-					} else {
-						currentProviderId = provider.getId();
-					}
-
-					currentModel = models[which];
-
-					// 保存选择到SharedPreferences
-					saveModelSelection(currentProviderId, currentModel);
-
-					updateModelSpinner();
-					Toast.makeText(getActivity(), "已选择: " + currentModel, Toast.LENGTH_SHORT).show();
-
-					// 调试日志
-					Log.d("InputFragment", "选择的供应商ID: " + currentProviderId + ", 模型: " + currentModel);
-				}
-			})
-			.setNegativeButton("取消", null);
-
-		android.app.AlertDialog dialog = builder.create();
-		dialog.show();
-		setDialogStyle(dialog);
-	}
+	
+	
 
 	// 新增方法：保存供应商到SharedPreferences（用于示例供应商）
 	private void saveProviderToPrefs(ApiProvider provider, String providerId) {
@@ -444,49 +396,195 @@ public class InputFragment extends Fragment {
 		}
 	}
 
-	// 修复供应商加载方法，确保示例供应商有正确的ID
-	private List<ApiProvider> loadProviders() {
-		List<ApiProvider> providers = new ArrayList<>();
+	
+	
 
-		// 从SharedPreferences加载实际数据
-		try {
-			String providerIds = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
-				.getString("provider_ids", "");
+		private BroadcastReceiver providersUpdateReceiver;
 
-			Log.d("InputFragment", "加载供应商ID列表: " + providerIds);
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+			View view = inflater.inflate(R.layout.fragment_input, container, false);
 
-			if (!providerIds.isEmpty()) {
-				String[] ids = providerIds.split(",");
-				for (String id : ids) {
-					ApiProvider provider = loadProviderById(id);
-					if (provider != null && !provider.getModels().isEmpty()) {
-						// 确保供应商有ID
-						if (provider.getId() == null) {
-							provider.setId(id);
-						}
-						providers.add(provider);
-						Log.d("InputFragment", "加载供应商: " + provider.getName() + ", ID: " + provider.getId());
+			initViews(view);
+			setupClickListeners();
+			setupBroadcastReceiver(); // 设置广播接收器
+			loadAvailableModels();
+
+			return view;
+		}
+
+		@Override
+		public void onDestroyView() {
+			super.onDestroyView();
+			// 注销广播接收器
+			if (providersUpdateReceiver != null && getActivity() != null) {
+				getActivity().unregisterReceiver(providersUpdateReceiver);
+			}
+		}
+
+		// 设置广播接收器监听供应商更新
+		private void setupBroadcastReceiver() {
+			providersUpdateReceiver = new BroadcastReceiver() {
+				@Override
+				public void onReceive(Context context, Intent intent) {
+					if ("com.techstar.nexchat.PROVIDERS_UPDATED".equals(intent.getAction())) {
+						// 供应商列表已更新，刷新模型选择
+						refreshModelSelection();
 					}
 				}
+			};
+
+			// 注册广播接收器
+			if (getActivity() != null) {
+				IntentFilter filter = new IntentFilter("com.techstar.nexchat.PROVIDERS_UPDATED");
+				getActivity().registerReceiver(providersUpdateReceiver, filter);
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 
-		// 如果没有数据，添加示例数据用于测试
-		if (providers.isEmpty()) {
-			Log.d("InputFragment", "没有找到供应商，添加示例数据");
-			ApiProvider exampleProvider = new ApiProvider("OpenAI", "https://api.openai.com/v1", "sk-...");
+		// 刷新模型选择
+		private void refreshModelSelection() {
+			if (getActivity() == null) return;
+
+			getActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						// 检查当前选择的供应商是否还存在
+						if (!currentProviderId.isEmpty()) {
+							ApiProvider currentProvider = loadProviderById(currentProviderId);
+							if (currentProvider == null) {
+								// 当前供应商已被删除，重置选择
+								currentProviderId = "";
+								currentModel = "";
+								saveModelSelection("", "");
+								updateModelSpinner();
+								Toast.makeText(getActivity(), "当前选择的供应商已被删除，请重新选择", Toast.LENGTH_LONG).show();
+							} else {
+								// 检查当前选择的模型是否还存在
+								if (!currentModel.isEmpty() && !currentProvider.getModels().contains(currentModel)) {
+									// 当前模型已被删除，重置选择
+									currentModel = "";
+									saveModelSelection(currentProviderId, "");
+									updateModelSpinner();
+									Toast.makeText(getActivity(), "当前选择的模型已不存在，请重新选择", Toast.LENGTH_LONG).show();
+								}
+							}
+						}
+					}
+				});
+		}
+
+		// 修改模型选择方法，添加供应商存在性检查
+		private void showModelSelectorForProvider(final ApiProvider provider) {
+			if (provider.getModels().isEmpty()) {
+				Toast.makeText(getActivity(), "该供应商没有可用模型", Toast.LENGTH_SHORT).show();
+				return;
+			}
+
+			final String[] models = provider.getModels().toArray(new String[0]);
+
+			android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+			builder.setTitle("选择模型 - " + provider.getName())
+				.setItems(models, new android.content.DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(android.content.DialogInterface dialog, int which) {
+						currentProviderId = provider.getId();
+						currentModel = models[which];
+
+						// 保存选择到SharedPreferences
+						saveModelSelection(currentProviderId, currentModel);
+
+						updateModelSpinner();
+						Toast.makeText(getActivity(), "已选择: " + currentModel, Toast.LENGTH_SHORT).show();
+					}
+				})
+				.setNegativeButton("取消", null);
+
+			android.app.AlertDialog dialog = builder.create();
+			dialog.show();
+			setDialogStyle(dialog);
+		}
+
+		// 修改供应商加载方法，添加存在性验证
+		private List<ApiProvider> loadProviders() {
+			List<ApiProvider> providers = new ArrayList<>();
+
+			try {
+				String providerIds = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
+					.getString("provider_ids", "");
+
+				if (!providerIds.isEmpty()) {
+					String[] ids = providerIds.split(",");
+					for (String id : ids) {
+						ApiProvider provider = loadProviderById(id);
+						if (provider != null && !provider.getModels().isEmpty()) {
+							// 验证供应商数据完整性
+							if (isProviderValid(provider)) {
+								providers.add(provider);
+							} else {
+								// 数据不完整，删除这个供应商
+								deleteInvalidProvider(id);
+							}
+						}
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			// 如果没有有效数据，添加示例数据
+			if (providers.isEmpty()) {
+				ApiProvider exampleProvider = createExampleProvider();
+				providers.add(exampleProvider);
+				saveProviderToPrefs(exampleProvider, exampleProvider.getId());
+			}
+
+			return providers;
+		}
+
+		// 验证供应商数据完整性
+		private boolean isProviderValid(ApiProvider provider) {
+			return provider != null && 
+				provider.getId() != null &&
+				!provider.getName().isEmpty() &&
+				!provider.getApiUrl().isEmpty() &&
+				!provider.getModels().isEmpty();
+		}
+
+		// 删除无效的供应商
+		private void deleteInvalidProvider(String providerId) {
+			try {
+				// 从SharedPreferences中删除
+				getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
+					.edit()
+					.remove(providerId + "_name")
+					.remove(providerId + "_url")
+					.remove(providerId + "_key")
+					.remove(providerId + "_model_count")
+					.apply();
+
+				// 从ID列表中移除
+				String existingIds = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
+					.getString("provider_ids", "");
+				if (!existingIds.isEmpty()) {
+					List<String> idList = new ArrayList<>(Arrays.asList(existingIds.split(",")));
+					idList.remove(providerId);
+					String newIds = TextUtils.join(",", idList);
+					getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
+						.edit()
+						.putString("provider_ids", newIds)
+						.apply();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		// 创建示例供应商
+		private ApiProvider createExampleProvider() {
+			ApiProvider exampleProvider = new ApiProvider("OpenAI", "https://api.openai.com/v1", "请输入您的API密钥");
 			exampleProvider.getModels().add("gpt-3.5-turbo");
 			exampleProvider.getModels().add("gpt-4");
-			exampleProvider.setId("example_provider_1"); // 确保有ID
-			providers.add(exampleProvider);
-
-			// 保存示例供应商到SharedPreferences
-			saveProviderToPrefs(exampleProvider, exampleProvider.getId());
+			exampleProvider.setId("example_provider_" + System.currentTimeMillis());
+			return exampleProvider;
 		}
-
-		Log.d("InputFragment", "最终供应商数量: " + providers.size());
-		return providers;
 	}
-}

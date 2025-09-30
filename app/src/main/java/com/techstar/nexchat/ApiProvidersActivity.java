@@ -1,7 +1,9 @@
 package com.techstar.nexchat;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,12 +11,14 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.techstar.nexchat.model.ApiProvider;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -196,22 +200,8 @@ public class ApiProvidersActivity extends AppCompatActivity {
     }
 
 
-    private void deleteProvider(final ApiProvider provider) {
-        new android.app.AlertDialog.Builder(this)
-            .setTitle("确认删除")
-            .setMessage("确定要删除" + provider.getName() + "吗？")
-            .setPositiveButton("删除", new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    providers.remove(provider);
-                    adapter.notifyDataSetChanged();
-                    Toast.makeText(ApiProvidersActivity.this, "已删除", Toast.LENGTH_SHORT).show();
-                }
-            })
-            .setNegativeButton("取消", null)
-            .show();
-    }
-  // ... 其他代码不变
+    
+
     
     private class ProviderViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvUrl, tvModels, tvBalance;
@@ -387,4 +377,104 @@ public class ApiProvidersActivity extends AppCompatActivity {
         }
         return null;
     }
-}
+	// ... 其他代码不变
+
+		private void deleteProvider(final ApiProvider provider) {
+			new AlertDialog.Builder(this)
+				.setTitle("确认删除")
+				.setMessage("确定要删除" + provider.getName() + "吗？")
+				.setPositiveButton("删除", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// 从列表中移除
+						providers.remove(provider);
+
+						// 从SharedPreferences中删除数据
+						deleteProviderFromPrefs(provider.getId());
+
+						// 更新适配器
+						adapter.notifyDataSetChanged();
+
+						// 发送广播通知其他页面更新
+						sendProviderUpdateBroadcast();
+
+						Toast.makeText(ApiProvidersActivity.this, "已删除", Toast.LENGTH_SHORT).show();
+
+						// 检查是否删除了当前选择的供应商
+						checkCurrentModelSelection(provider.getId());
+					}
+				})
+				.setNegativeButton("取消", null)
+				.show();
+		}
+
+		// 从SharedPreferences中彻底删除供应商数据
+		private void deleteProviderFromPrefs(String providerId) {
+			try {
+				// 删除基本信息
+				getSharedPreferences("api_providers", MODE_PRIVATE)
+					.edit()
+					.remove(providerId + "_name")
+					.remove(providerId + "_url")
+					.remove(providerId + "_key")
+					.remove(providerId + "_balance")
+					.remove(providerId + "_model_count")
+					.apply();
+
+				// 删除所有模型数据
+				int modelCount = getSharedPreferences("api_providers", MODE_PRIVATE)
+					.getInt(providerId + "_model_count", 0);
+				for (int i = 0; i < modelCount; i++) {
+					getSharedPreferences("api_providers", MODE_PRIVATE)
+						.edit()
+						.remove(providerId + "_model_" + i)
+						.apply();
+				}
+
+				// 从供应商ID列表中移除
+				String existingIds = getSharedPreferences("api_providers", MODE_PRIVATE)
+					.getString("provider_ids", "");
+				if (!existingIds.isEmpty()) {
+					List<String> idList = new ArrayList<>(Arrays.asList(existingIds.split(",")));
+					idList.remove(providerId);
+					String newIds = TextUtils.join(",", idList);
+					getSharedPreferences("api_providers", MODE_PRIVATE)
+						.edit()
+						.putString("provider_ids", newIds)
+						.apply();
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		// 发送广播通知其他页面更新
+		private void sendProviderUpdateBroadcast() {
+			Intent intent = new Intent("com.techstar.nexchat.PROVIDERS_UPDATED");
+			sendBroadcast(intent);
+		}
+
+		// 检查并更新当前模型选择
+		private void checkCurrentModelSelection(String deletedProviderId) {
+			try {
+				String currentProviderId = getSharedPreferences("app_settings", MODE_PRIVATE)
+					.getString("last_provider_id", "");
+				String currentModel = getSharedPreferences("app_settings", MODE_PRIVATE)
+					.getString("last_model", "");
+
+				// 如果删除的正是当前选择的供应商，清除选择
+				if (deletedProviderId.equals(currentProviderId)) {
+					getSharedPreferences("app_settings", MODE_PRIVATE)
+						.edit()
+						.remove("last_provider_id")
+						.remove("last_model")
+						.apply();
+
+					Toast.makeText(this, "已删除当前选择的供应商，请重新选择模型", Toast.LENGTH_LONG).show();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
