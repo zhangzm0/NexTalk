@@ -377,7 +377,7 @@ public class ApiProvidersActivity extends AppCompatActivity {
         }
         return null;
     }
-	// ... 其他代码不变
+	
 
 		private void deleteProvider(final ApiProvider provider) {
 			new AlertDialog.Builder(this)
