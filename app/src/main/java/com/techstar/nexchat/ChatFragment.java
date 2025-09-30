@@ -1,10 +1,13 @@
 package com.techstar.nexchat;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -12,13 +15,12 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.techstar.nexchat.model.ApiProvider;
+import com.techstar.nexchat.model.ChatConversation;
+import com.techstar.nexchat.model.ChatMessage;
 import io.noties.markwon.Markwon;
 import io.noties.markwon.html.HtmlPlugin;
 import io.noties.markwon.linkify.LinkifyPlugin;
-import com.techstar.nexchat.model.ChatConversation;
-import com.techstar.nexchat.model.ChatMessage;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +31,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import com.techstar.nexchat.model.ApiProvider;
-import android.util.Log;
-import android.content.Context;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class ChatFragment extends Fragment {
 
@@ -45,21 +46,6 @@ public class ChatFragment extends Fragment {
     private Markwon markwon;
     private OkHttpClient client;
 
-    
-
-    private void initViews(View view) {
-        recyclerView = view.findViewById(R.id.recyclerViewMessages);
-        progressBar = view.findViewById(R.id.progressBar);
-        tvChatTitle = view.findViewById(R.id.tvChatTitle);
-
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-
-        messages = new ArrayList<>();
-        adapter = new MessageAdapter(messages);
-        recyclerView.setAdapter(adapter);
-
-        client = new OkHttpClient();
-    }
 
     private void initMarkwon() {
         markwon = Markwon.builder(getActivity())
@@ -68,80 +54,7 @@ public class ChatFragment extends Fragment {
             .build();
     }
 
-    
 
-    
-
-    private void processStreamResponse(Response response, final ChatMessage aiMessage) {
-        try {
-            String line;
-            final StringBuilder content = new StringBuilder();
-            java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(response.body().byteStream())
-            );
-
-            while ((line = reader.readLine()) != null) {
-                if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
-                    String jsonStr = line.substring(6);
-                    if (!jsonStr.trim().isEmpty()) {
-                        JSONObject data = new JSONObject(jsonStr);
-                        JSONArray choices = data.getJSONArray("choices");
-                        if (choices.length() > 0) {
-                            JSONObject choice = choices.getJSONObject(0);
-                            JSONObject delta = choice.getJSONObject("delta");
-                            if (delta.has("content")) {
-                                String chunk = delta.getString("content");
-                                content.append(chunk);
-
-                                // 更新UI
-                                final String currentContent = content.toString();
-                                getActivity().runOnUiThread(new Runnable() {
-										@Override
-										public void run() {
-											aiMessage.setContent(currentContent);
-											aiMessage.setStreaming(true);
-											adapter.notifyItemChanged(messages.size() - 1);
-											scrollToBottom();
-										}
-									});
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 流式响应结束
-            getActivity().runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						aiMessage.setStreaming(false);
-						progressBar.setVisibility(View.GONE);
-						adapter.notifyItemChanged(messages.size() - 1);
-
-						// 保存对话到ChatManager
-						chatManager.saveConversation(currentConversation);
-
-						// 更新对话标题（如果还是默认标题）
-						if ("新对话".equals(currentConversation.getTitle()) && content.length() > 10) {
-							String newTitle = content.toString().substring(0, Math.min(20, content.length()));
-							currentConversation.setTitle(newTitle);
-							tvChatTitle.setText(newTitle);
-							chatManager.saveConversation(currentConversation);
-						}
-					}
-				});
-
-        } catch (final Exception e) {
-            getActivity().runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						handleError("响应解析失败: " + e.getMessage());
-					}
-				});
-        }
-    }
-
-    
 
     private void scrollToBottom() {
         recyclerView.postDelayed(new Runnable() {
@@ -154,13 +67,13 @@ public class ChatFragment extends Fragment {
 			}, 100);
     }
 
-    
+
 
     private void saveConversation(ChatConversation conversation) {
         // 保存对话到SharedPreferences
     }
 
-    
+
 
     // MessageAdapter
     private class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -238,8 +151,8 @@ public class ChatFragment extends Fragment {
             }
         }
     }
-	
-	
+
+
 
 	@Override
 	public void onResume() {
@@ -248,10 +161,10 @@ public class ChatFragment extends Fragment {
 		loadOrCreateConversation();
 	}
 
-	
+
 
 	public void sendMessage(String messageText, String providerId, String model) {
-		
+
 		if (!isInitialized) {
             ensureInitialized();
         }
@@ -261,8 +174,8 @@ public class ChatFragment extends Fragment {
         // 确保数据初始化
         if (messages == null) messages = new ArrayList<>();
         if (currentConversation == null) loadOrCreateConversation();
-		
-		
+
+
 		// 创建用户消息
 		ChatMessage userMessage = new ChatMessage(ChatMessage.TYPE_USER, messageText);
 		messages.add(userMessage);
@@ -318,11 +231,11 @@ public class ChatFragment extends Fragment {
 		}
 		return null;
 	}
-	
+
 	private boolean isInitialized = false;
-    
-    
-    
+
+
+
     public void ensureInitialized() {
         if (!isInitialized && getView() != null) {
             initViews(getView());
@@ -332,112 +245,132 @@ public class ChatFragment extends Fragment {
         }
     }
 
-    
-    
+
+
     private void sendChatRequest(String message, String providerId, String model, final ChatMessage aiMessage) {
-        try {
-            // 获取供应商信息 - 修复这里的加载逻辑
-            ApiProvider provider = loadProviderById(providerId);
-            if (provider == null) {
-                handleError("供应商不存在，请检查供应商配置。Provider ID: " + providerId);
-                return;
-            }
-            
-            // 验证API密钥
-            if (provider.getApiKey() == null || provider.getApiKey().isEmpty() || provider.getApiKey().equals("sk-...")) {
-                handleError("API密钥未配置或无效，请检查供应商设置");
-                return;
-            }
-            
-            // 构建请求体
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("model", model);
-            
-            JSONArray messagesArray = new JSONArray();
-            
-            // 添加上下文消息（最后5轮对话）
-            int startIndex = Math.max(0, messages.size() - 10);
-            for (int i = startIndex; i < messages.size() - 1; i++) {
-                ChatMessage msg = messages.get(i);
-                JSONObject msgObj = new JSONObject();
-                msgObj.put("role", msg.getType() == ChatMessage.TYPE_USER ? "user" : "assistant");
-                msgObj.put("content", msg.getContent());
-                messagesArray.put(msgObj);
-            }
-            
-            // 添加当前消息
-            JSONObject currentMsg = new JSONObject();
-            currentMsg.put("role", "user");
-            currentMsg.put("content", message);
-            messagesArray.put(currentMsg);
-            
-            requestBody.put("messages", messagesArray);
-            requestBody.put("stream", true);
-            requestBody.put("temperature", 0.7);
-            
-            String apiUrl = provider.getApiUrl().endsWith("/") ? 
-                provider.getApiUrl() + "chat/completions" :
-                provider.getApiUrl() + "/chat/completions";
-                
-            // 日志输出用于调试
-            Log.d("ChatFragment", "API URL: " + apiUrl);
-            Log.d("ChatFragment", "Model: " + model);
-            Log.d("ChatFragment", "Provider: " + provider.getName());
-                
-            RequestBody body = RequestBody.create(
-                MediaType.parse("application/json"), 
-                requestBody.toString()
-            );
-            
-            Request request = new Request.Builder()
-                .url(apiUrl)
-                .addHeader("Authorization", "Bearer " + provider.getApiKey())
-                .addHeader("Content-Type", "application/json")
-                .post(body)
-                .build();
-                
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, final IOException e) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            handleError("网络请求失败: " + e.getMessage());
-                        }
-                    });
-                }
-                
-                @Override
-                public void onResponse(Call call, final Response response) throws IOException {
-                    if (!response.isSuccessful()) {
-                        final String errorBody = response.body().string();
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                handleError("API错误: " + response.code() + " - " + errorBody);
-                            }
-                        });
-                        return;
-                    }
-                    
-                    // 处理流式响应
-                    processStreamResponse(response, aiMessage);
-                }
-            });
-            
-        } catch (Exception e) {
-            handleError("请求构建失败: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
+		try {
+			// 获取供应商信息
+			ApiProvider provider = loadProviderById(providerId);
+			if (provider == null) {
+				handleError("供应商不存在，请检查供应商配置。Provider ID: " + providerId);
+				return;
+			}
+
+			// 验证API密钥
+			if (provider.getApiKey() == null || provider.getApiKey().isEmpty() || provider.getApiKey().equals("sk-...")) {
+				handleError("API密钥未配置或无效，请检查供应商设置");
+				return;
+			}
+
+			// 构建请求体
+			JSONObject requestBody = new JSONObject();
+			requestBody.put("model", model);
+
+			JSONArray messagesArray = new JSONArray();
+
+			// 添加上下文消息（最后5轮对话）
+			int startIndex = Math.max(0, messages.size() - 10);
+			for (int i = startIndex; i < messages.size() - 1; i++) {
+				ChatMessage msg = messages.get(i);
+				JSONObject msgObj = new JSONObject();
+				msgObj.put("role", msg.getType() == ChatMessage.TYPE_USER ? "user" : "assistant");
+				msgObj.put("content", msg.getContent());
+				messagesArray.put(msgObj);
+			}
+
+			// 添加当前消息
+			JSONObject currentMsg = new JSONObject();
+			currentMsg.put("role", "user");
+			currentMsg.put("content", message);
+			messagesArray.put(currentMsg);
+
+			requestBody.put("messages", messagesArray);
+			requestBody.put("stream", true);
+			requestBody.put("temperature", 0.7);
+
+			String apiUrl = provider.getApiUrl().endsWith("/") ? 
+				provider.getApiUrl() + "chat/completions" :
+				provider.getApiUrl() + "/chat/completions";
+
+			// 日志输出用于调试
+			Log.d("ChatFragment", "API URL: " + apiUrl);
+			Log.d("ChatFragment", "Model: " + model);
+			Log.d("ChatFragment", "Provider: " + provider.getName());
+
+			RequestBody body = RequestBody.create(
+				MediaType.parse("application/json"), 
+				requestBody.toString()
+			);
+
+			Request request = new Request.Builder()
+				.url(apiUrl)
+				.addHeader("Authorization", "Bearer " + provider.getApiKey())
+				.addHeader("Content-Type", "application/json")
+				.post(body)
+				.build();
+
+			// 保存当前请求以便暂停
+			currentCall = client.newCall(request);
+			isStreaming = true;
+
+			// 显示暂停按钮
+			if (btnPause != null) {
+				getActivity().runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							btnPause.setVisibility(View.VISIBLE);
+						}
+					});
+			}
+
+			currentCall.enqueue(new Callback() {
+					@Override
+					public void onFailure(Call call, final IOException e) {
+						if (!call.isCanceled()) { // 如果不是用户取消的
+							getActivity().runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										handleError("网络请求失败: " + e.getMessage());
+										hidePauseButton();
+									}
+								});
+						}
+					}
+
+					@Override
+					public void onResponse(Call call, final Response response) throws IOException {
+						if (!response.isSuccessful()) {
+							final String errorBody = response.body().string();
+							getActivity().runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										handleError("API错误: " + response.code() + " - " + errorBody);
+										hidePauseButton();
+									}
+								});
+							return;
+						}
+
+						// 处理流式响应
+						processStreamResponse(response, aiMessage);
+					}
+				});
+
+		} catch (Exception e) {
+			handleError("请求构建失败: " + e.getMessage());
+			hidePauseButton();
+			e.printStackTrace();
+		}
+	}
+	
+
     // 修复供应商加载方法
     private ApiProvider loadProviderById(String providerId) {
         if (getActivity() == null) return null;
-        
+
         try {
             Log.d("ChatFragment", "正在加载供应商: " + providerId);
-            
+
             // 从SharedPreferences加载供应商数据
             String name = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
                 .getString(providerId + "_name", "");
@@ -447,13 +380,13 @@ public class ChatFragment extends Fragment {
                 .getString(providerId + "_key", "");
             int modelCount = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
                 .getInt(providerId + "_model_count", 0);
-                
+
             Log.d("ChatFragment", "加载到供应商数据 - Name: " + name + ", URL: " + url);
-                
+
             if (!name.isEmpty()) {
                 ApiProvider provider = new ApiProvider(name, url, key);
                 provider.setId(providerId);
-                
+
                 // 加载模型列表
                 for (int i = 0; i < modelCount; i++) {
                     String model = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
@@ -462,7 +395,7 @@ public class ChatFragment extends Fragment {
                         provider.getModels().add(model);
                     }
                 }
-                
+
                 Log.d("ChatFragment", "成功加载供应商: " + provider.getName() + ", 模型数量: " + provider.getModels().size());
                 return provider;
             } else {
@@ -474,8 +407,161 @@ public class ChatFragment extends Fragment {
         }
         return null;
     }
+
     
-    // 修复错误处理方法，提供更详细的错误信息
+
+	private ChatManager chatManager;
+
+
+    private void loadOrCreateConversation() {
+        // 使用ChatManager加载当前对话
+        currentConversation = chatManager.getCurrentConversation();
+        if (currentConversation == null) {
+            currentConversation = chatManager.createNewConversation();
+        }
+
+        messages.clear();
+        messages.addAll(currentConversation.getMessages());
+        adapter.notifyDataSetChanged();
+
+        tvChatTitle.setText(currentConversation.getTitle());
+        scrollToBottom();
+    }
+
+	private ImageButton btnPause;
+    private boolean isStreaming = false;
+    private Call currentCall; // 用于暂停请求
+
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_chat, container, false);
+
+        chatManager = ChatManager.getInstance(getActivity());
+        initViews(view);
+        initMarkwon();
+        loadOrCreateConversation();
+        isInitialized = true;
+
+        return view;
+    }
+
+    private void initViews(View view) {
+        recyclerView = view.findViewById(R.id.recyclerViewMessages);
+        tvChatTitle = view.findViewById(R.id.tvChatTitle);
+        btnPause = view.findViewById(R.id.btnPause); // 新增暂停按钮
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+
+        messages = new ArrayList<>();
+        adapter = new MessageAdapter(messages);
+        recyclerView.setAdapter(adapter);
+
+        // 暂停按钮点击事件
+        btnPause.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (isStreaming && currentCall != null) {
+						// 取消当前请求
+						currentCall.cancel();
+						isStreaming = false;
+						btnPause.setVisibility(View.GONE);
+
+						// 更新最后一条消息状态
+						if (!messages.isEmpty()) {
+							ChatMessage lastMessage = messages.get(messages.size() - 1);
+							if (lastMessage.isStreaming()) {
+								lastMessage.setStreaming(false);
+								lastMessage.setContent(lastMessage.getContent() + "\n\n[已停止]");
+								adapter.notifyItemChanged(messages.size() - 1);
+								chatManager.saveConversation(currentConversation);
+							}
+						}
+
+						Toast.makeText(getActivity(), "已停止生成", Toast.LENGTH_SHORT).show();
+					}
+				}
+			});
+    }
+	
+	    private void processStreamResponse(Response response, final ChatMessage aiMessage) {
+        try {
+            String line;
+            final StringBuilder content = new StringBuilder();
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(response.body().byteStream())
+            );
+            
+            while ((line = reader.readLine()) != null && isStreaming) {
+                if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
+                    String jsonStr = line.substring(6);
+                    if (!jsonStr.trim().isEmpty()) {
+                        JSONObject data = new JSONObject(jsonStr);
+                        JSONArray choices = data.getJSONArray("choices");
+                        if (choices.length() > 0) {
+                            JSONObject choice = choices.getJSONObject(0);
+                            JSONObject delta = choice.getJSONObject("delta");
+                            if (delta.has("content")) {
+                                String chunk = delta.getString("content");
+                                content.append(chunk);
+                                
+                                // 更新UI
+                                final String currentContent = content.toString();
+                                getActivity().runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        aiMessage.setContent(currentContent);
+                                        aiMessage.setStreaming(true);
+                                        adapter.notifyItemChanged(messages.size() - 1);
+                                        scrollToBottom();
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 流式响应结束
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    aiMessage.setStreaming(false);
+                    hidePauseButton();
+                    adapter.notifyItemChanged(messages.size() - 1);
+                    
+                    // 保存对话到ChatManager
+                    chatManager.saveConversation(currentConversation);
+                    
+                    // 更新对话标题
+                    if ("新对话".equals(currentConversation.getTitle()) && content.length() > 10) {
+                        String newTitle = content.toString().substring(0, Math.min(20, content.length()));
+                        currentConversation.setTitle(newTitle);
+                        tvChatTitle.setText(newTitle);
+                        chatManager.saveConversation(currentConversation);
+                    }
+                }
+            });
+            
+        } catch (final Exception e) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isStreaming) { // 如果不是用户取消的
+                        handleError("响应解析失败: " + e.getMessage());
+                    }
+                    hidePauseButton();
+                }
+            });
+        }
+    }
+    
+    private void hidePauseButton() {
+        isStreaming = false;
+        if (btnPause != null) {
+            btnPause.setVisibility(View.GONE);
+        }
+    }
+    
     private void handleError(final String error) {
         Log.e("ChatFragment", "错误: " + error);
         
@@ -483,7 +569,7 @@ public class ChatFragment extends Fragment {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    progressBar.setVisibility(View.GONE);
+                    hidePauseButton();
                     
                     if (!messages.isEmpty() && messages.get(messages.size() - 1).isStreaming()) {
                         ChatMessage lastMessage = messages.get(messages.size() - 1);
@@ -500,38 +586,6 @@ public class ChatFragment extends Fragment {
         }
     }
 	
-	private ChatManager chatManager;
-
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_chat, container, false);
-
-        chatManager = ChatManager.getInstance(getActivity());
-        initViews(view);
-        initMarkwon();
-        loadOrCreateConversation();
-        isInitialized = true;
-
-        return view;
-    }
-
-    private void loadOrCreateConversation() {
-        // 使用ChatManager加载当前对话
-        currentConversation = chatManager.getCurrentConversation();
-        if (currentConversation == null) {
-            currentConversation = chatManager.createNewConversation();
-        }
-
-        messages.clear();
-        messages.addAll(currentConversation.getMessages());
-        adapter.notifyDataSetChanged();
-
-        tvChatTitle.setText(currentConversation.getTitle());
-        scrollToBottom();
-    }
 	
 	
 }
-
-
-

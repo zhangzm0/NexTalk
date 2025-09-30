@@ -125,35 +125,6 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // 显示对话操作菜单
-    private void showConversationMenu(final ChatConversation conversation) {
-        final String[] items = conversation.isPinned() ? 
-            new String[]{"取消置顶", "删除对话", "重命名"} : 
-            new String[]{"置顶", "删除对话", "重命名"};
-
-        new android.app.AlertDialog.Builder(getActivity())
-            .setTitle(conversation.getTitle())
-            .setItems(items, new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    switch (which) {
-                        case 0: // 置顶/取消置顶
-                            chatManager.togglePinConversation(conversation.getId());
-                            loadData(); // 重新加载
-                            break;
-                        case 1: // 删除
-                            deleteConversation(conversation);
-                            break;
-                        case 2: // 重命名
-                            renameConversation(conversation);
-                            break;
-                    }
-                }
-            })
-            .setNegativeButton("取消", null)
-            .show();
-    }
-
     private void deleteConversation(final ChatConversation conversation) {
         new android.app.AlertDialog.Builder(getActivity())
             .setTitle("确认删除")
@@ -281,5 +252,78 @@ public class HomeFragment extends Fragment {
             }
         }
     }
-}
+	// ... 其他代码不变
 
+	// 修改ChatHistoryViewHolder，显示消息数量
+	private class ChatHistoryViewHolder extends RecyclerView.ViewHolder {
+		TextView tvChatTitle, tvPreview, tvTime, tvMessageCount;
+		ImageView ivPin;
+
+		public ChatHistoryViewHolder(@NonNull View itemView) {
+			super(itemView);
+			tvChatTitle = itemView.findViewById(R.id.tvChatTitle);
+			tvPreview = itemView.findViewById(R.id.tvPreview);
+			tvTime = itemView.findViewById(R.id.tvTime);
+			tvMessageCount = itemView.findViewById(R.id.tvMessageCount);
+			ivPin = itemView.findViewById(R.id.ivPin);
+		}
+
+		public void bind(final ChatConversation conversation) {
+			tvChatTitle.setText(conversation.getTitle());
+			tvPreview.setText(conversation.getPreview());
+			tvTime.setText(conversation.getFormattedTime());
+			tvMessageCount.setText(conversation.getMessageCount() + "条");
+
+			// 显示置顶图标
+			if (conversation.isPinned()) {
+				ivPin.setVisibility(View.VISIBLE);
+			} else {
+				ivPin.setVisibility(View.GONE);
+			}
+
+			// 点击进入对话
+			itemView.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						switchToChatAndLoad(conversation.getId());
+					}
+				});
+
+			// 长按显示操作菜单
+			itemView.setOnLongClickListener(new View.OnLongClickListener() {
+					@Override
+					public boolean onLongClick(View v) {
+						showConversationMenu(conversation);
+						return true;
+					}
+				});
+		}
+	}
+
+	// 修改对话操作菜单
+	private void showConversationMenu(final ChatConversation conversation) {
+		new android.app.AlertDialog.Builder(getActivity())
+			.setTitle(conversation.getTitle())
+			.setItems(new String[]{"置顶", "删除对话", "重命名"}, new android.content.DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(android.content.DialogInterface dialog, int which) {
+					switch (which) {
+						case 0: // 置顶/取消置顶
+							chatManager.togglePinConversation(conversation.getId());
+							loadData(); // 重新加载
+							String action = conversation.isPinned() ? "取消置顶" : "置顶";
+							Toast.makeText(getActivity(), "已" + action, Toast.LENGTH_SHORT).show();
+							break;
+						case 1: // 删除
+							deleteConversation(conversation);
+							break;
+						case 2: // 重命名
+							renameConversation(conversation);
+							break;
+					}
+				}
+			})
+			.setNegativeButton("取消", null)
+			.show();
+	}
+}
