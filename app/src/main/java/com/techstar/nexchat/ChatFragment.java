@@ -56,70 +56,14 @@ public class ChatFragment extends Fragment {
 
 
 
-    private void scrollToBottom() {
-        recyclerView.postDelayed(new Runnable() {
-				@Override
-				public void run() {
-					if (messages.size() > 0) {
-						recyclerView.smoothScrollToPosition(messages.size() - 1);
-					}
-				}
-			}, 100);
-    }
+    
 
 
 
     private void saveConversation(ChatConversation conversation) {
         // 保存对话到SharedPreferences
     }
-
-
-
-    // MessageAdapter
-    private class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
-        private static final int TYPE_USER = 0;
-        private static final int TYPE_ASSISTANT = 1;
-
-        private List<ChatMessage> messages;
-
-        public MessageAdapter(List<ChatMessage> messages) {
-            this.messages = messages;
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            return messages.get(position).getType() == ChatMessage.TYPE_USER ? TYPE_USER : TYPE_ASSISTANT;
-        }
-
-        @NonNull
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            if (viewType == TYPE_USER) {
-                View view = inflater.inflate(R.layout.item_message_user, parent, false);
-                return new UserMessageViewHolder(view);
-            } else {
-                View view = inflater.inflate(R.layout.item_message_assistant, parent, false);
-                return new AssistantMessageViewHolder(view);
-            }
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-            ChatMessage message = messages.get(position);
-            if (holder instanceof UserMessageViewHolder) {
-                ((UserMessageViewHolder) holder).bind(message);
-            } else if (holder instanceof AssistantMessageViewHolder) {
-                ((AssistantMessageViewHolder) holder).bind(message);
-            }
-        }
-
-        @Override
-        public int getItemCount() {
-            return messages.size();
-        }
-    }
+    
 
     private class UserMessageViewHolder extends RecyclerView.ViewHolder {
         TextView tvMessage;
@@ -161,51 +105,6 @@ public class ChatFragment extends Fragment {
 		loadOrCreateConversation();
 	}
 
-
-
-	public void sendMessage(String messageText, String providerId, String model) {
-
-		if (!isInitialized) {
-            ensureInitialized();
-        }
-
-        if (TextUtils.isEmpty(messageText)) return;
-
-        // 确保数据初始化
-        if (messages == null) messages = new ArrayList<>();
-        if (currentConversation == null) loadOrCreateConversation();
-
-
-		// 创建用户消息
-		ChatMessage userMessage = new ChatMessage(ChatMessage.TYPE_USER, messageText);
-		messages.add(userMessage);
-		currentConversation.addMessage(userMessage);
-
-		if (adapter != null) {
-			adapter.notifyItemInserted(messages.size() - 1);
-		}
-		scrollToBottom();
-
-		// 创建AI消息（流式响应）
-		ChatMessage aiMessage = new ChatMessage(ChatMessage.TYPE_ASSISTANT, "");
-		aiMessage.setStreaming(true);
-		aiMessage.setModel(model);
-		messages.add(aiMessage);
-		currentConversation.addMessage(aiMessage);
-
-		if (adapter != null) {
-			adapter.notifyItemInserted(messages.size() - 1);
-		}
-		scrollToBottom();
-
-		// 显示加载
-		if (progressBar != null) {
-			progressBar.setVisibility(View.VISIBLE);
-		}
-
-		// 发送API请求
-		sendChatRequest(messageText, providerId, model, aiMessage);
-	}
 
 	// 修复数据持久化方法
 	private ChatConversation loadCurrentConversation() {
@@ -362,7 +261,7 @@ public class ChatFragment extends Fragment {
 			e.printStackTrace();
 		}
 	}
-	
+
 
     // 修复供应商加载方法
     private ApiProvider loadProviderById(String providerId) {
@@ -408,7 +307,7 @@ public class ChatFragment extends Fragment {
         return null;
     }
 
-    
+
 
 	private ChatManager chatManager;
 
@@ -482,15 +381,15 @@ public class ChatFragment extends Fragment {
 				}
 			});
     }
-	
-	    private void processStreamResponse(Response response, final ChatMessage aiMessage) {
+
+	private void processStreamResponse(Response response, final ChatMessage aiMessage) {
         try {
             String line;
             final StringBuilder content = new StringBuilder();
             java.io.BufferedReader reader = new java.io.BufferedReader(
                 new java.io.InputStreamReader(response.body().byteStream())
             );
-            
+
             while ((line = reader.readLine()) != null && isStreaming) {
                 if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
                     String jsonStr = line.substring(6);
@@ -503,89 +402,235 @@ public class ChatFragment extends Fragment {
                             if (delta.has("content")) {
                                 String chunk = delta.getString("content");
                                 content.append(chunk);
-                                
+
                                 // 更新UI
                                 final String currentContent = content.toString();
                                 getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        aiMessage.setContent(currentContent);
-                                        aiMessage.setStreaming(true);
-                                        adapter.notifyItemChanged(messages.size() - 1);
-                                        scrollToBottom();
-                                    }
-                                });
+										@Override
+										public void run() {
+											aiMessage.setContent(currentContent);
+											aiMessage.setStreaming(true);
+											adapter.notifyItemChanged(messages.size() - 1);
+											scrollToBottom();
+										}
+									});
                             }
                         }
                     }
                 }
             }
-            
+
             // 流式响应结束
             getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    aiMessage.setStreaming(false);
-                    hidePauseButton();
-                    adapter.notifyItemChanged(messages.size() - 1);
-                    
-                    // 保存对话到ChatManager
-                    chatManager.saveConversation(currentConversation);
-                    
-                    // 更新对话标题
-                    if ("新对话".equals(currentConversation.getTitle()) && content.length() > 10) {
-                        String newTitle = content.toString().substring(0, Math.min(20, content.length()));
-                        currentConversation.setTitle(newTitle);
-                        tvChatTitle.setText(newTitle);
-                        chatManager.saveConversation(currentConversation);
-                    }
-                }
-            });
-            
+					@Override
+					public void run() {
+						aiMessage.setStreaming(false);
+						hidePauseButton();
+						adapter.notifyItemChanged(messages.size() - 1);
+
+						// 保存对话到ChatManager
+						chatManager.saveConversation(currentConversation);
+
+						// 更新对话标题
+						if ("新对话".equals(currentConversation.getTitle()) && content.length() > 10) {
+							String newTitle = content.toString().substring(0, Math.min(20, content.length()));
+							currentConversation.setTitle(newTitle);
+							tvChatTitle.setText(newTitle);
+							chatManager.saveConversation(currentConversation);
+						}
+					}
+				});
+
         } catch (final Exception e) {
             getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (isStreaming) { // 如果不是用户取消的
-                        handleError("响应解析失败: " + e.getMessage());
-                    }
-                    hidePauseButton();
-                }
-            });
+					@Override
+					public void run() {
+						if (isStreaming) { // 如果不是用户取消的
+							handleError("响应解析失败: " + e.getMessage());
+						}
+						hidePauseButton();
+					}
+				});
         }
     }
-    
+
     private void hidePauseButton() {
         isStreaming = false;
         if (btnPause != null) {
             btnPause.setVisibility(View.GONE);
         }
     }
-    
+
     private void handleError(final String error) {
         Log.e("ChatFragment", "错误: " + error);
-        
+
         if (getActivity() != null) {
             getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    hidePauseButton();
-                    
-                    if (!messages.isEmpty() && messages.get(messages.size() - 1).isStreaming()) {
-                        ChatMessage lastMessage = messages.get(messages.size() - 1);
-                        lastMessage.setContent("错误: " + error);
-                        lastMessage.setStreaming(false);
-                        if (adapter != null) {
-                            adapter.notifyItemChanged(messages.size() - 1);
-                        }
-                    }
-                    
-                    Toast.makeText(getActivity(), error, Toast.LENGTH_LONG).show();
-                }
-            });
+					@Override
+					public void run() {
+						hidePauseButton();
+
+						if (!messages.isEmpty() && messages.get(messages.size() - 1).isStreaming()) {
+							ChatMessage lastMessage = messages.get(messages.size() - 1);
+							lastMessage.setContent("错误: " + error);
+							lastMessage.setStreaming(false);
+							if (adapter != null) {
+								adapter.notifyItemChanged(messages.size() - 1);
+							}
+						}
+
+						Toast.makeText(getActivity(), error, Toast.LENGTH_LONG).show();
+					}
+				});
         }
     }
+
+
 	
-	
-	
+
+	// 修复Adapter，确保ViewHolder不为空
+	private class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+		private List<ChatMessage> messages;
+
+		private static final int TYPE_USER = 0;
+		private static final int TYPE_ASSISTANT = 1;
+
+		public MessageAdapter(List<ChatMessage> messages) {
+			this.messages = messages != null ? messages : new ArrayList<ChatMessage>();
+		}
+
+		@Override
+		public int getItemViewType(int position) {
+			if (position < 0 || position >= messages.size()) {
+				return TYPE_ASSISTANT; // 默认类型
+			}
+			return messages.get(position).getType() == ChatMessage.TYPE_USER ? TYPE_USER : TYPE_ASSISTANT;
+		}
+
+		@NonNull
+		@Override
+		public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+			LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+			try {
+				if (viewType == TYPE_USER) {
+					View view = inflater.inflate(R.layout.item_message_user, parent, false);
+					return new UserMessageViewHolder(view);
+				} else {
+					View view = inflater.inflate(R.layout.item_message_assistant, parent, false);
+					return new AssistantMessageViewHolder(view);
+				}
+			} catch (Exception e) {
+				// 如果布局加载失败，返回一个简单的ViewHolder
+				TextView fallbackView = new TextView(parent.getContext());
+				fallbackView.setText("消息加载失败");
+				fallbackView.setTextColor(0xFFFFFFFF);
+				return new SimpleViewHolder(fallbackView);
+			}
+		}
+
+		@Override
+		public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+			if (position < 0 || position >= messages.size()) {
+				return; // 位置无效，直接返回
+			}
+
+			ChatMessage message = messages.get(position);
+			try {
+				if (holder instanceof UserMessageViewHolder) {
+					((UserMessageViewHolder) holder).bind(message);
+				} else if (holder instanceof AssistantMessageViewHolder) {
+					((AssistantMessageViewHolder) holder).bind(message);
+				} else if (holder instanceof SimpleViewHolder) {
+					((SimpleViewHolder) holder).bind(message);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		@Override
+		public int getItemCount() {
+			return messages != null ? messages.size() : 0;
+		}
+
+		// 简单的ViewHolder作为备用
+		private class SimpleViewHolder extends RecyclerView.ViewHolder {
+			TextView textView;
+
+			public SimpleViewHolder(View itemView) {
+				super(itemView);
+				textView = (TextView) itemView;
+			}
+
+			public void bind(ChatMessage message) {
+				textView.setText(message.getContent());
+			}
+		}
+	}
+
+	// 修复数据更新方法
+	public void sendMessage(String messageText, String providerId, String model) {
+		if (!isInitialized) {
+			ensureInitialized();
+		}
+
+		if (TextUtils.isEmpty(messageText)) return;
+
+		// 确保数据初始化
+		if (messages == null) {
+			messages = new ArrayList<>();
+		}
+		if (currentConversation == null) {
+			loadOrCreateConversation();
+		}
+		if (adapter == null) {
+			adapter = new MessageAdapter(messages);
+			recyclerView.setAdapter(adapter);
+		}
+
+		// 创建用户消息
+		ChatMessage userMessage = new ChatMessage(ChatMessage.TYPE_USER, messageText);
+		messages.add(userMessage);
+		currentConversation.addMessage(userMessage);
+
+		if (adapter != null) {
+			adapter.notifyItemInserted(messages.size() - 1);
+		}
+		scrollToBottom();
+
+		// 创建AI消息（流式响应）
+		ChatMessage aiMessage = new ChatMessage(ChatMessage.TYPE_ASSISTANT, "");
+		aiMessage.setStreaming(true);
+		aiMessage.setModel(model);
+		messages.add(aiMessage);
+		currentConversation.addMessage(aiMessage);
+
+		if (adapter != null) {
+			adapter.notifyItemInserted(messages.size() - 1);
+		}
+		scrollToBottom();
+
+		// 发送API请求
+		sendChatRequest(messageText, providerId, model, aiMessage);
+	}
+
+	// 修复滚动方法
+	private void scrollToBottom() {
+		if (recyclerView != null && adapter != null) {
+			recyclerView.postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						if (messages != null && messages.size() > 0) {
+							try {
+								recyclerView.smoothScrollToPosition(messages.size() - 1);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				}, 100);
+		}
+	}
 }
+
