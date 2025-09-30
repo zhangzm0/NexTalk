@@ -15,15 +15,18 @@
     <!-- 在其他应用之上显示内容 -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
 
+    <!-- 修改或删除您的SD卡中的内容 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="NexChat"
-        android:theme="@style/Theme.AppCompat.NoActionBar" >
+        android:theme="@style/Theme.AppCompat.NoActionBar">
 
         <activity
             android:name=".MainActivity"
-			android:icon="@mipmap/ic_launcher"
+            android:icon="@mipmap/ic_launcher"
             android:label="NexChat"
             android:exported="true">
 
@@ -41,17 +44,14 @@
 
         <activity android:name=".ApiProvidersActivity"/>
 
-        <activity 
-			android:name=".AddProviderActivity"
-			/>
+        <activity android:name=".AddProviderActivity"/>
 
-        <activity 
-			android:name=".CrashActivity"
-			
-			android:launchMode="singleInstance"
-			android:excludeFromRecents="true"
-			android:taskAffinity=""
-			android:allowTaskReparenting="false"/>
+        <activity
+            android:name=".CrashActivity"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:allowTaskReparenting="false"/>
 
     </application>
 

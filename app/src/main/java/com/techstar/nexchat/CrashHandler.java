@@ -62,7 +62,7 @@ public class CrashHandler implements UncaughtExceptionHandler {
             e.printStackTrace();
         }
     }
-	// ... 其他代码不变
+	
 
 	@Override
 	public void uncaughtException(Thread thread, Throwable ex) {
