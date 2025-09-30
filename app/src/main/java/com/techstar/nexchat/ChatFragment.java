@@ -117,14 +117,16 @@ public class ChatFragment extends Fragment {
 						aiMessage.setStreaming(false);
 						progressBar.setVisibility(View.GONE);
 						adapter.notifyItemChanged(messages.size() - 1);
-						saveConversation(currentConversation);
+
+						// 保存对话到ChatManager
+						chatManager.saveConversation(currentConversation);
 
 						// 更新对话标题（如果还是默认标题）
 						if ("新对话".equals(currentConversation.getTitle()) && content.length() > 10) {
 							String newTitle = content.toString().substring(0, Math.min(20, content.length()));
 							currentConversation.setTitle(newTitle);
 							tvChatTitle.setText(newTitle);
-							saveConversation(currentConversation);
+							chatManager.saveConversation(currentConversation);
 						}
 					}
 				});
@@ -246,33 +248,7 @@ public class ChatFragment extends Fragment {
 		loadOrCreateConversation();
 	}
 
-	private void loadOrCreateConversation() {
-		// 从SharedPreferences加载当前对话
-		currentConversation = loadCurrentConversation();
-		if (currentConversation == null) {
-			currentConversation = new ChatConversation("新对话");
-			saveConversation(currentConversation);
-		}
-
-		if (messages == null) {
-			messages = new ArrayList<>();
-		} else {
-			messages.clear();
-		}
-		messages.addAll(currentConversation.getMessages());
-
-		if (adapter == null) {
-			adapter = new MessageAdapter(messages);
-			recyclerView.setAdapter(adapter);
-		} else {
-			adapter.notifyDataSetChanged();
-		}
-
-		if (tvChatTitle != null) {
-			tvChatTitle.setText(currentConversation.getTitle());
-		}
-		scrollToBottom();
-	}
+	
 
 	public void sendMessage(String messageText, String providerId, String model) {
 		
@@ -345,15 +321,7 @@ public class ChatFragment extends Fragment {
 	
 	private boolean isInitialized = false;
     
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_chat, container, false);
-        initViews(view);
-        initMarkwon();
-        loadOrCreateConversation();
-        isInitialized = true;
-        return view;
-    }
+    
     
     public void ensureInitialized() {
         if (!isInitialized && getView() != null) {
@@ -364,7 +332,7 @@ public class ChatFragment extends Fragment {
         }
     }
 
-    // ... 其他代码不变 ............
+    
     
     private void sendChatRequest(String message, String providerId, String model, final ChatMessage aiMessage) {
         try {
@@ -531,4 +499,39 @@ public class ChatFragment extends Fragment {
             });
         }
     }
+	
+	private ChatManager chatManager;
+
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_chat, container, false);
+
+        chatManager = ChatManager.getInstance(getActivity());
+        initViews(view);
+        initMarkwon();
+        loadOrCreateConversation();
+        isInitialized = true;
+
+        return view;
+    }
+
+    private void loadOrCreateConversation() {
+        // 使用ChatManager加载当前对话
+        currentConversation = chatManager.getCurrentConversation();
+        if (currentConversation == null) {
+            currentConversation = chatManager.createNewConversation();
+        }
+
+        messages.clear();
+        messages.addAll(currentConversation.getMessages());
+        adapter.notifyDataSetChanged();
+
+        tvChatTitle.setText(currentConversation.getTitle());
+        scrollToBottom();
+    }
+	
+	
 }
+
+
+

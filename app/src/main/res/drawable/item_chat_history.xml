@@ -1,0 +1,27 @@
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <TextView
+        android:id="@+id/tvChatTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="聊天标题"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end"/>
+
+    <ImageView
+        android:id="@+id/ivPin"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:src="@drawable/ic_pin_24dp"
+        android:tint="#FFA726"
+        android:visibility="gone"
+        android:layout_marginStart="8dp"/>
+
+</LinearLayout>
