@@ -206,18 +206,6 @@ public class ChatManager {
         prefs.edit().putString(KEY_CURRENT_CONVERSATION, conversationId).apply();
     }
 
-
-
-	// ... 其他代码不变
-
-	// 创建新对话
-	public ChatConversation createNewConversation() {
-		ChatConversation conversation = new ChatConversation("新对话");
-		saveConversation(conversation);
-		setCurrentConversationId(conversation.getId());
-		return conversation;
-	}
-
 	// 加载所有对话（按更新时间倒序，去掉置顶逻辑）
 	public List<ChatConversation> loadAllConversations() {
 		List<ChatConversation> conversations = new ArrayList<>();
@@ -249,11 +237,6 @@ public class ChatManager {
 		return conversations;
 	}
 
-	// 设置当前对话
-	public void setCurrentConversation(String conversationId) {
-		setCurrentConversationId(conversationId);
-	}
-
 	// 获取当前对话
 	public ChatConversation getCurrentConversation() {
 		String currentId = getCurrentConversationId();
@@ -261,5 +244,23 @@ public class ChatManager {
 			return loadConversation(currentId);
 		}
 		return null;
+	}
+	
+
+	// 创建新对话
+	public ChatConversation createNewConversation() {
+		ChatConversation conversation = new ChatConversation("新对话");
+		saveConversation(conversation);
+		setCurrentConversationId(conversation.getId());
+		AppLogger.d("ChatManager", "创建新对话: " + conversation.getId());
+		return conversation;
+	}
+
+	// 设置当前对话
+	public void setCurrentConversation(String conversationId) {
+		if (conversationId != null && !conversationId.isEmpty()) {
+			setCurrentConversationId(conversationId);
+			AppLogger.d("ChatManager", "设置当前对话: " + conversationId);
+		}
 	}
 }

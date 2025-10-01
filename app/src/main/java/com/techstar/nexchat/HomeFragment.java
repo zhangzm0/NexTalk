@@ -43,7 +43,7 @@ public class HomeFragment extends Fragment {
         recyclerView.setAdapter(adapter);
     }
 
-    
+
 
     private void loadChatHistory() {
         List<ChatConversation> conversations = chatManager.loadAllConversations();
@@ -189,7 +189,7 @@ public class HomeFragment extends Fragment {
         // 聊天历史ViewHolder
         private class ChatHistoryViewHolder extends RecyclerView.ViewHolder {
             private TextView tvChatTitle, tvPreview, tvTime, tvMessageCount;
-            
+
 
             public ChatHistoryViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -197,7 +197,7 @@ public class HomeFragment extends Fragment {
                 tvPreview = itemView.findViewById(R.id.tvPreview);
                 tvTime = itemView.findViewById(R.id.tvTime);
                 tvMessageCount = itemView.findViewById(R.id.tvMessageCount);
-                
+
             }
 
             public void bind(final ChatConversation conversation) {
@@ -213,7 +213,7 @@ public class HomeFragment extends Fragment {
                 if (tvMessageCount != null) {
                     tvMessageCount.setText(conversation.getMessageCount() + "条");
                 }
-                
+
 
                 // 点击进入对话
                 itemView.setOnClickListener(new View.OnClickListener() {
@@ -342,20 +342,6 @@ public class HomeFragment extends Fragment {
 		adapter.notifyDataSetChanged();
 	}
 
-	private void createNewChat() {
-		AppLogger.d("HomeFragment", "创建新对话");
-		ChatConversation newConversation = chatManager.createNewConversation();
-		switchToChatAndLoad(newConversation.getId());
-	}
-
-	private void switchToChatAndLoad(String conversationId) {
-		AppLogger.d("HomeFragment", "切换到对话: " + conversationId);
-		chatManager.setCurrentConversation(conversationId);
-		if (getActivity() instanceof MainActivity) {
-			((MainActivity) getActivity()).switchToChatPage();
-		}
-	}
-
 	// 简化长按菜单，移除置顶选项
 	private void showConversationMenu(final ChatConversation conversation) {
 		new android.app.AlertDialog.Builder(getActivity())
@@ -422,5 +408,36 @@ public class HomeFragment extends Fragment {
 					}
 				});
 		}
+	}
+	// ... 其他代码不变
+
+	private void switchToChatAndLoad(String conversationId) {
+		AppLogger.d("HomeFragment", "切换到对话: " + conversationId);
+
+		// 设置当前对话
+		chatManager.setCurrentConversation(conversationId);
+
+		if (getActivity() instanceof MainActivity) {
+			final MainActivity mainActivity = (MainActivity) getActivity();
+
+			// 切换到聊天页面
+			mainActivity.switchToChatPage();
+
+			// 确保ChatFragment刷新
+			new android.os.Handler().postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						if (mainActivity.chatFragment != null) {
+							mainActivity.chatFragment.refreshConversation();
+						}
+					}
+				}, 200);
+		}
+	}
+
+	private void createNewChat() {
+		AppLogger.d("HomeFragment", "创建新对话");
+		ChatConversation newConversation = chatManager.createNewConversation();
+		switchToChatAndLoad(newConversation.getId());
 	}
 }

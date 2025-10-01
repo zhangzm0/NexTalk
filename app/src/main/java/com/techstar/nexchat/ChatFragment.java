@@ -55,16 +55,6 @@ public class ChatFragment extends Fragment {
     }
 
 
-
-
-
-
-
-    private void saveConversation(ChatConversation conversation) {
-        // 保存对话到SharedPreferences
-    }
-
-
     private class UserMessageViewHolder extends RecyclerView.ViewHolder {
         TextView tvMessage;
 
@@ -96,41 +86,6 @@ public class ChatFragment extends Fragment {
         }
     }
 
-
-
-	@Override
-	public void onResume() {
-		super.onResume();
-		// 确保数据正确加载
-		loadOrCreateConversation();
-	}
-
-
-	// 修复数据持久化方法
-	private ChatConversation loadCurrentConversation() {
-		try {
-			String conversationId = getActivity().getSharedPreferences("chat", android.content.Context.MODE_PRIVATE)
-				.getString("current_conversation_id", "");
-
-			if (!conversationId.isEmpty()) {
-				String conversationJson = getActivity().getSharedPreferences("chat", android.content.Context.MODE_PRIVATE)
-					.getString(conversationId, "");
-
-				if (!conversationJson.isEmpty()) {
-					JSONObject json = new JSONObject(conversationJson);
-					ChatConversation conversation = new ChatConversation();
-					conversation.setId(json.getString("id"));
-					conversation.setTitle(json.getString("title"));
-					// ... 加载其他字段和消息
-					return conversation;
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
 	private boolean isInitialized = false;
 
 
@@ -145,23 +100,6 @@ public class ChatFragment extends Fragment {
     }
 
 	private ChatManager chatManager;
-
-
-    private void loadOrCreateConversation() {
-        // 使用ChatManager加载当前对话
-        currentConversation = chatManager.getCurrentConversation();
-        if (currentConversation == null) {
-            currentConversation = chatManager.createNewConversation();
-        }
-
-        messages.clear();
-        messages.addAll(currentConversation.getMessages());
-        adapter.notifyDataSetChanged();
-
-        tvChatTitle.setText(currentConversation.getTitle());
-        scrollToBottom();
-    }
-
 	private ImageButton btnPause;
     private boolean isStreaming = false;
     private Call currentCall; // 用于暂停请求
@@ -581,7 +519,6 @@ public class ChatFragment extends Fragment {
 			AppLogger.e("ChatFragment", "简单测试请求异常", e);
 		}
 	}
-	// ... 其他代码不变
 
 	@Override
 	public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -659,7 +596,6 @@ public class ChatFragment extends Fragment {
 			AppLogger.e("ChatFragment", "HTTP客户端测试异常", e);
 		}
 	}
-	// ... 其他代码不变
 
 	public void sendMessage(String messageText, String providerId, String model) {
 		if (!isInitialized) {
@@ -876,5 +812,129 @@ public class ChatFragment extends Fragment {
 					}
 				});
 		}
+	}
+	// ... 其他代码不变
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		AppLogger.d("ChatFragment", "onResume called");
+
+		// 每次页面显示时检查是否需要更新对话
+		checkAndUpdateConversation();
+	}
+
+	// 检查并更新当前对话
+	private void checkAndUpdateConversation() {
+		if (chatManager == null) {
+			chatManager = ChatManager.getInstance(getActivity());
+		}
+
+		ChatConversation currentConv = chatManager.getCurrentConversation();
+		if (currentConv != null) {
+			// 如果当前对话与显示的不同，更新显示
+			if (currentConversation == null || !currentConversation.getId().equals(currentConv.getId())) {
+				AppLogger.d("ChatFragment", "切换到新对话: " + currentConv.getTitle());
+				loadConversation(currentConv.getId());
+			}
+		} else {
+			// 如果没有当前对话，创建新的
+			AppLogger.d("ChatFragment", "没有当前对话，创建新对话");
+			loadOrCreateConversation();
+		}
+	}
+
+	// 加载指定对话
+	private void loadConversation(String conversationId) {
+		try {
+			AppLogger.d("ChatFragment", "加载对话: " + conversationId);
+
+			ChatConversation conversation = chatManager.loadConversation(conversationId);
+			if (conversation != null) {
+				currentConversation = conversation;
+
+				// 更新消息列表
+				if (messages == null) {
+					messages = new ArrayList<>();
+				} else {
+					messages.clear();
+				}
+				messages.addAll(currentConversation.getMessages());
+
+				// 更新UI
+				if (tvChatTitle != null) {
+					tvChatTitle.setText(currentConversation.getTitle());
+				}
+
+				if (adapter != null) {
+					adapter.notifyDataSetChanged();
+				} else {
+					adapter = new MessageAdapter(messages);
+					if (recyclerView != null) {
+						recyclerView.setAdapter(adapter);
+					}
+				}
+
+				safeScrollToBottom();
+				AppLogger.d("ChatFragment", "对话加载完成: " + currentConversation.getTitle() + ", 消息数: " + messages.size());
+			} else {
+				AppLogger.e("ChatFragment", "对话加载失败: " + conversationId);
+				loadOrCreateConversation();
+			}
+		} catch (Exception e) {
+			AppLogger.e("ChatFragment", "加载对话异常", e);
+			loadOrCreateConversation();
+		}
+	}
+
+	// 修改原有的loadOrCreateConversation方法
+	private void loadOrCreateConversation() {
+		AppLogger.d("ChatFragment", "加载或创建对话");
+
+		if (chatManager == null) {
+			chatManager = ChatManager.getInstance(getActivity());
+		}
+
+		// 获取当前对话
+		currentConversation = chatManager.getCurrentConversation();
+		if (currentConversation == null) {
+			// 如果没有当前对话，创建新的
+			currentConversation = chatManager.createNewConversation();
+			AppLogger.d("ChatFragment", "创建新对话: " + currentConversation.getId());
+		} else {
+			AppLogger.d("ChatFragment", "使用现有对话: " + currentConversation.getTitle());
+		}
+
+		// 初始化消息列表
+		if (messages == null) {
+			messages = new ArrayList<>();
+		} else {
+			messages.clear();
+		}
+		messages.addAll(currentConversation.getMessages());
+
+		// 初始化适配器
+		if (adapter == null) {
+			adapter = new MessageAdapter(messages);
+			if (recyclerView != null) {
+				recyclerView.setAdapter(adapter);
+			}
+		} else {
+			adapter.notifyDataSetChanged();
+		}
+
+		// 更新标题
+		if (tvChatTitle != null) {
+			tvChatTitle.setText(currentConversation.getTitle());
+		}
+
+		safeScrollToBottom();
+		AppLogger.d("ChatFragment", "对话加载完成: " + currentConversation.getTitle() + ", 消息数: " + messages.size());
+	}
+
+	// 添加一个公共方法来强制刷新对话
+	public void refreshConversation() {
+		AppLogger.d("ChatFragment", "强制刷新对话");
+		checkAndUpdateConversation();
 	}
 }

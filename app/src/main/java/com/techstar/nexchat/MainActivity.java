@@ -15,7 +15,7 @@ public class MainActivity extends FragmentActivity {
 
     private ViewPager viewPager;
     private FragmentPagerAdapter pagerAdapter;
-    private ChatFragment chatFragment;
+    public  ChatFragment chatFragment;
     private InputFragment inputFragment;
 
 	@Override
@@ -28,78 +28,13 @@ public class MainActivity extends FragmentActivity {
         // 初始化全局日志记录器
         AppLogger.getInstance().init(this);
 
-        
+
 
         // 使用新的日志方法
         AppLogger.i("MainActivity", "App started");
 
         setContentView(R.layout.activity_main);
         initViewPager();
-    }
-
-
-
-    private void initViewPager() {
-        viewPager = findViewById(R.id.viewPager);
-
-        // 预先创建Fragment实例
-        chatFragment = new ChatFragment();
-        inputFragment = new InputFragment();
-
-        pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
-            @Override
-            public int getCount() {
-                return 3;
-            }
-
-            @Override
-            public Fragment getItem(int position) {
-                switch (position) {
-                    case 0:
-                        return new HomeFragment();
-                    case 1:
-                        return chatFragment;
-                    case 2:
-                        return inputFragment;
-                    default:
-                        return new Fragment();
-                }
-            }
-
-            @Override
-            public Object instantiateItem(ViewGroup container, int position) {
-                try {
-                    return super.instantiateItem(container, position);
-                } catch (Exception e) {
-                    // 备用方案
-                    return createFallbackFragment();
-                }
-            }
-        };
-
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(1); // 默认显示聊天页面
-
-        // 添加页面切换监听，确保Fragment正确初始化
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-				@Override
-				public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
-
-				@Override
-				public void onPageSelected(int position) {
-					// 当切换到聊天页面时，确保聊天Fragment已初始化
-					if (position == 1 && chatFragment != null) {
-						chatFragment.ensureInitialized();
-					}
-					// 当切换到输入页面时，确保模型显示正确
-					if (position == 2 && inputFragment != null) {
-						inputFragment.refreshModelDisplay();
-					}
-				}
-
-				@Override
-				public void onPageScrollStateChanged(int state) {}
-			});
     }
 
     public void sendChatMessage(final String message, final String providerId, final String model) {
@@ -125,12 +60,6 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    public void switchToChatPage() {
-        if (viewPager != null) {
-            viewPager.setCurrentItem(1);
-        }
-    }
-
     private Fragment createFallbackFragment() {
         return new Fragment() {
             @Override
@@ -143,5 +72,73 @@ public class MainActivity extends FragmentActivity {
                 return textView;
             }
         };
+    }
+// ... 其他代码不变
+
+    private void initViewPager() {
+        viewPager = findViewById(R.id.viewPager);
+
+        pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
+            @Override
+            public int getCount() {
+                return 3;
+            }
+
+            @Override
+            public Fragment getItem(int position) {
+                switch (position) {
+                    case 0:
+                        return new HomeFragment();
+                    case 1:
+                        chatFragment = new ChatFragment();
+                        return chatFragment;
+                    case 2:
+                        inputFragment = new InputFragment();
+                        return inputFragment;
+                    default:
+                        return new Fragment();
+                }
+            }
+        };
+
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setCurrentItem(1); // 默认显示聊天页面
+
+        // 添加页面切换监听
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+				@Override
+				public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+
+				@Override
+				public void onPageSelected(int position) {
+					AppLogger.d("MainActivity", "切换到页面: " + position);
+
+					// 当切换到聊天页面时，刷新对话显示
+					if (position == 1 && chatFragment != null) {
+						AppLogger.d("MainActivity", "刷新聊天页面");
+						chatFragment.refreshConversation();
+					}
+				}
+
+				@Override
+				public void onPageScrollStateChanged(int state) {}
+			});
+    }
+
+    public void switchToChatPage() {
+        if (viewPager != null) {
+            viewPager.setCurrentItem(1);
+            AppLogger.d("MainActivity", "切换到聊天页面");
+
+            // 延迟刷新，确保页面切换完成
+            new android.os.Handler().postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						if (chatFragment != null) {
+							chatFragment.refreshConversation();
+						}
+					}
+				}, 100);
+        }
     }
 }
