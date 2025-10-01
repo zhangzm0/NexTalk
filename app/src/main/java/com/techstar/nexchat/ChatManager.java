@@ -263,5 +263,9 @@ public class ChatManager {
 			AppLogger.d("ChatManager", "设置当前对话: " + conversationId);
 		}
 	}
+	
+	
+	
+	
 }
 

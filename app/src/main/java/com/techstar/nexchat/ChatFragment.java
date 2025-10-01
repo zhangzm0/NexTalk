@@ -165,7 +165,7 @@ public class ChatFragment extends Fragment {
 
 	private boolean isUpdating = false;
 
-	// 修复流式响应处理
+// 修改processStreamResponse方法，添加tokens提取
 	private void processStreamResponse(Response response, final ChatMessage aiMessage) {
 		try {
 			String line;
@@ -175,47 +175,66 @@ public class ChatFragment extends Fragment {
 			);
 
 			final int aiMessageIndex = messages.indexOf(aiMessage);
-			final int totalTokens = 0;
+			int promptTokens = 0;
+			int completionTokens = 0;
+			int totalTokens = 0;
 
 			while ((line = reader.readLine()) != null && isStreaming) {
 				if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
 					String jsonStr = line.substring(6);
 					if (!jsonStr.trim().isEmpty()) {
-						JSONObject data = new JSONObject(jsonStr);
-						JSONArray choices = data.getJSONArray("choices");
-						if (choices.length() > 0) {
-							JSONObject choice = choices.getJSONObject(0);
-							JSONObject delta = choice.getJSONObject("delta");
-							if (delta.has("content")) {
-								String chunk = delta.getString("content");
-								content.append(chunk);
+						try {
+							JSONObject data = new JSONObject(jsonStr);
 
-								// 更新UI
-								final String currentContent = content.toString();
-								if (getActivity() != null) {
-									getActivity().runOnUiThread(new Runnable() {
-											@Override
-											public void run() {
-												synchronized (ChatFragment.this) {
-													if (aiMessageIndex >= 0 && aiMessageIndex < messages.size()) {
-														aiMessage.setContent(currentContent);
-														aiMessage.setStreaming(true);
-														if (adapter != null) {
-															adapter.safeNotifyItemChanged(aiMessageIndex);
+							// 提取tokens信息（如果存在）
+							if (data.has("usage")) {
+								JSONObject usage = data.getJSONObject("usage");
+								promptTokens = usage.optInt("prompt_tokens", promptTokens);
+								completionTokens = usage.optInt("completion_tokens", completionTokens);
+								totalTokens = usage.optInt("total_tokens", totalTokens);
+							}
+
+							JSONArray choices = data.getJSONArray("choices");
+							if (choices.length() > 0) {
+								JSONObject choice = choices.getJSONObject(0);
+								JSONObject delta = choice.getJSONObject("delta");
+								if (delta.has("content")) {
+									String chunk = delta.getString("content");
+									content.append(chunk);
+
+									// 更新UI
+									final String currentContent = content.toString();
+									if (getActivity() != null) {
+										getActivity().runOnUiThread(new Runnable() {
+												@Override
+												public void run() {
+													synchronized (ChatFragment.this) {
+														if (aiMessageIndex >= 0 && aiMessageIndex < messages.size()) {
+															aiMessage.setContent(currentContent);
+															aiMessage.setStreaming(true);
+															if (adapter != null) {
+																adapter.safeNotifyItemChanged(aiMessageIndex);
+															}
+															safeScrollToBottom();
 														}
-														safeScrollToBottom();
 													}
 												}
-											}
-										});
+											});
+									}
 								}
 							}
+						} catch (Exception e) {
+							AppLogger.e("ChatFragment", "解析流数据失败: " + e.getMessage());
 						}
 					}
 				}
 			}
 
 			// 流式响应结束
+			final int finalPromptTokens = promptTokens;
+			final int finalCompletionTokens = completionTokens;
+			final int finalTotalTokens = totalTokens;
+
 			if (getActivity() != null) {
 				getActivity().runOnUiThread(new Runnable() {
 						@Override
@@ -223,7 +242,8 @@ public class ChatFragment extends Fragment {
 							synchronized (ChatFragment.this) {
 								if (aiMessageIndex >= 0 && aiMessageIndex < messages.size()) {
 									aiMessage.setStreaming(false);
-									aiMessage.setTokens(totalTokens); // 设置tokens数量
+									// 设置tokens信息
+									aiMessage.setTokensInfo(finalPromptTokens, finalCompletionTokens, finalTotalTokens);
 									hidePauseButton();
 									if (adapter != null) {
 										adapter.safeNotifyItemChanged(aiMessageIndex);
@@ -237,7 +257,7 @@ public class ChatFragment extends Fragment {
 					});
 			}
 
-		}  catch (final Exception e) {
+		} catch (final Exception e) {
 			AppLogger.e("ChatFragment", "流式响应处理失败", e);
 			if (getActivity() != null) {
 				getActivity().runOnUiThread(new Runnable() {
@@ -492,7 +512,7 @@ public class ChatFragment extends Fragment {
 	public void sendMessage(String messageText, String providerId, String model) {
 		this.currentProviderId = providerId;
 		this.currentModel = model;
-		
+
 		if (!isInitialized) {
 			ensureInitialized();
 		}
@@ -834,124 +854,208 @@ public class ChatFragment extends Fragment {
 	}
 
 
-	// 修改MessageAdapter
+// 修改MessageAdapter类
 	private class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-        private final List<ChatMessage> messages;
-        private final Object lock = new Object();
+		private final List<ChatMessage> messages;
+		private final Object lock = new Object();
 
-        public MessageAdapter(List<ChatMessage> messages) {
-            this.messages = messages != null ? messages : new ArrayList<ChatMessage>();
-        }
+		public MessageAdapter(List<ChatMessage> messages) {
+			this.messages = messages != null ? messages : new ArrayList<ChatMessage>();
+		}
 
-        @Override
-        public int getItemViewType(int position) {
-            synchronized (lock) {
-                if (position < 0 || position >= messages.size()) {
-                    return TYPE_ASSISTANT;
-                }
-                return messages.get(position).getType() == ChatMessage.TYPE_USER ? TYPE_USER : TYPE_ASSISTANT;
-            }
-        }
+		@Override
+		public int getItemViewType(int position) {
+			synchronized (lock) {
+				if (position < 0 || position >= messages.size()) {
+					return TYPE_ASSISTANT;
+				}
+				return messages.get(position).getType() == ChatMessage.TYPE_USER ? TYPE_USER : TYPE_ASSISTANT;
+			}
+		}
 
-        @NonNull
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-            if (viewType == TYPE_USER) {
-                View view = inflater.inflate(R.layout.item_message_user, parent, false);
-                return new UserMessageViewHolder(view);
-            } else {
-                View view = inflater.inflate(R.layout.item_message_assistant, parent, false);
-                return new AssistantMessageViewHolder(view);
-            }
-        }
+		@NonNull
+		@Override
+		public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+			LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+			if (viewType == TYPE_USER) {
+				View view = inflater.inflate(R.layout.item_message_user, parent, false);
+				return new UserMessageViewHolder(view);
+			} else {
+				View view = inflater.inflate(R.layout.item_message_assistant, parent, false);
+				return new AssistantMessageViewHolder(view);
+			}
+		}
 
-        @Override
-        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-            synchronized (lock) {
-                if (position < 0 || position >= messages.size()) {
-                    return;
-                }
+		@Override
+		public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+			synchronized (lock) {
+				if (position < 0 || position >= messages.size()) {
+					return;
+				}
 
-                ChatMessage message = messages.get(position);
-                if (holder instanceof UserMessageViewHolder) {
-                    ((UserMessageViewHolder) holder).bind(message);
-                } else if (holder instanceof AssistantMessageViewHolder) {
-                    ((AssistantMessageViewHolder) holder).bind(message);
-                }
-            }
-        }
+				ChatMessage message = messages.get(position);
+				if (holder instanceof UserMessageViewHolder) {
+					((UserMessageViewHolder) holder).bind(message);
+				} else if (holder instanceof AssistantMessageViewHolder) {
+					((AssistantMessageViewHolder) holder).bind(message);
+				}
+			}
+		}
 
-        @Override
-        public int getItemCount() {
-            synchronized (lock) {
-                return messages.size();
-            }
-        }
+		@Override
+		public int getItemCount() {
+			synchronized (lock) {
+				return messages.size();
+			}
+		}
 
-        // 安全地通知数据更新
-        public void safeNotifyItemInserted(final int position) {
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(new Runnable() {
+// 在MessageAdapter类中添加安全通知方法
+		public void safeNotifyItemInserted(final int position) {
+			if (getActivity() != null) {
+				getActivity().runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
 							synchronized (lock) {
 								if (position >= 0 && position <= messages.size()) {
-									notifyItemInserted(position);
+									try {
+										notifyItemInserted(position);
+									} catch (Exception e) {
+										AppLogger.e("MessageAdapter", "notifyItemInserted失败", e);
+										notifyDataSetChanged();
+									}
 								}
 							}
 						}
 					});
-            }
-        }
+			}
+		}
 
-        public void safeNotifyItemChanged(final int position) {
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(new Runnable() {
+		public void safeNotifyItemChanged(final int position) {
+			if (getActivity() != null) {
+				getActivity().runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
 							synchronized (lock) {
 								if (position >= 0 && position < messages.size()) {
-									notifyItemChanged(position);
+									try {
+										notifyItemChanged(position);
+									} catch (Exception e) {
+										AppLogger.e("MessageAdapter", "notifyItemChanged失败", e);
+										// 不调用notifyDataSetChanged()，避免循环
+									}
 								}
 							}
 						}
 					});
-            }
-        }
-
-        public void safeNotifyItemRemoved(final int position) {
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(new Runnable() {
+			}
+		}
+		public void safeNotifyItemRemoved(final int position) {
+			if (getActivity() != null) {
+				getActivity().runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
 							synchronized (lock) {
 								if (position >= 0 && position < messages.size()) {
-									notifyItemRemoved(position);
+									try {
+										notifyItemRemoved(position);
+									} catch (Exception e) {
+										AppLogger.e("MessageAdapter", "notifyItemRemoved失败", e);
+										notifyDataSetChanged();
+									}
 								}
 							}
 						}
 					});
-            }
-        }
+			}
+		}
 
-        // UserMessageViewHolder
-        private class UserMessageViewHolder extends RecyclerView.ViewHolder {
-            private TextView tvMessage, tvTime;
+		// UserMessageViewHolder - 为用户消息添加操作按钮
+		private class UserMessageViewHolder extends RecyclerView.ViewHolder {
+			private TextView tvMessage, tvTime;
+			private LinearLayout layoutActions;
+			private Button btnCopy, btnRegenerate;
 
-            public UserMessageViewHolder(@NonNull View itemView) {
-                super(itemView);
-                tvMessage = itemView.findViewById(R.id.tvMessage);
-                tvTime = itemView.findViewById(R.id.tvTime);
-            }
+			public UserMessageViewHolder(@NonNull View itemView) {
+				super(itemView);
+				tvMessage = itemView.findViewById(R.id.tvMessage);
+				tvTime = itemView.findViewById(R.id.tvTime);
 
-            public void bind(final ChatMessage message) {
-                if (tvMessage != null) {
-                    tvMessage.setText(message.getContent());
+				// 为用户消息添加操作布局（需要修改布局文件）
+				// 先检查是否存在，如果不存在就动态添加
+				layoutActions = itemView.findViewById(R.id.layoutActions);
+				if (layoutActions == null) {
+					// 动态创建操作按钮布局
+					createUserMessageActions(itemView);
+				} else {
+					btnCopy = itemView.findViewById(R.id.btnCopy);
+					btnRegenerate = itemView.findViewById(R.id.btnRegenerate);
+				}
+			}
 
-                    // 长按复制
-                    tvMessage.setOnLongClickListener(new View.OnLongClickListener() {
+			// 在UserMessageViewHolder的createUserMessageActions方法中修复
+			private void createUserMessageActions(View itemView) {
+				// 如果布局文件中没有操作按钮，动态创建
+				if (itemView instanceof LinearLayout) {
+					LinearLayout rootLayout = (LinearLayout) itemView;
+
+					layoutActions = new LinearLayout(getActivity());
+					layoutActions.setId(R.id.layoutActions);
+					layoutActions.setOrientation(LinearLayout.HORIZONTAL); // 修复：HORIZONTAL
+					layoutActions.setLayoutParams(new LinearLayout.LayoutParams(
+													  LinearLayout.LayoutParams.WRAP_CONTENT, 
+													  LinearLayout.LayoutParams.WRAP_CONTENT
+												  ));
+					layoutActions.setGravity(android.view.Gravity.END);
+
+					
+
+					LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+						LinearLayout.LayoutParams.WRAP_CONTENT,
+						LinearLayout.LayoutParams.WRAP_CONTENT
+					);
+					params.setMargins(0, 4, 12, 0);
+					layoutActions.setLayoutParams(params);
+
+					// 复制按钮
+					btnCopy = new Button(getActivity());
+					btnCopy.setId(R.id.btnCopy);
+					btnCopy.setText("复制");
+					btnCopy.setTextColor(0xFF2196F3);
+					btnCopy.setTextSize(10);
+					btnCopy.setBackgroundColor(0x00000000); // 透明背景
+					btnCopy.setPadding(8, 0, 8, 0);
+
+					// 分割线
+					View divider = new View(getActivity());
+					LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(1, 12);
+					dividerParams.setMargins(4, 0, 4, 0);
+					divider.setLayoutParams(dividerParams);
+					divider.setBackgroundColor(0xFF666666);
+
+					// 重新生成按钮
+					btnRegenerate = new Button(getActivity());
+					btnRegenerate.setId(R.id.btnRegenerate);
+					btnRegenerate.setText("重新生成");
+					btnRegenerate.setTextColor(0xFF4CAF50);
+					btnRegenerate.setTextSize(10);
+					btnRegenerate.setBackgroundColor(0x00000000);
+					btnRegenerate.setPadding(8, 0, 8, 0);
+
+					layoutActions.addView(btnCopy);
+					layoutActions.addView(divider);
+					layoutActions.addView(btnRegenerate);
+
+					rootLayout.addView(layoutActions);
+				}
+			}
+
+			public void bind(final ChatMessage message) {
+				if (tvMessage != null) {
+					tvMessage.setText(message.getContent());
+
+					// 长按复制 - 修复崩溃问题
+					tvMessage.setOnLongClickListener(new View.OnLongClickListener() {
 							@Override
 							public boolean onLongClick(View v) {
 								copyToClipboard(message.getContent());
@@ -959,89 +1063,62 @@ public class ChatFragment extends Fragment {
 								return true;
 							}
 						});
-                }
+				}
 
-                if (tvTime != null) {
-                    tvTime.setText(message.getFormattedTime());
-                }
-            }
-        }
+				if (tvTime != null) {
+					tvTime.setText(message.getFormattedTime());
+				}
 
-        // AssistantMessageViewHolder
-        private class AssistantMessageViewHolder extends RecyclerView.ViewHolder {
-            private TextView tvMessage, tvTime, tvTokens, tvModelName;
-            private LinearLayout layoutActions;
-            private Button btnCopy, btnRegenerate;
-
-            public AssistantMessageViewHolder(@NonNull View itemView) {
-                super(itemView);
-                tvMessage = itemView.findViewById(R.id.tvMessage);
-                tvTime = itemView.findViewById(R.id.tvTime);
-                tvTokens = itemView.findViewById(R.id.tvTokens);
-                tvModelName = itemView.findViewById(R.id.tvModelName);
-                layoutActions = itemView.findViewById(R.id.layoutActions);
-                btnCopy = itemView.findViewById(R.id.btnCopy);
-                btnRegenerate = itemView.findViewById(R.id.btnRegenerate);
-            }
-
-            public void bind(final ChatMessage message) {
-                // 设置消息内容
-                if (tvMessage != null) {
-                    if (message.isStreaming()) {
-                        tvMessage.setText(message.getContent() + " ▌");
-                    } else {
-                        markwon.setMarkdown(tvMessage, message.getContent());
-                    }
-                }
-
-                // 设置模型名称
-                if (tvModelName != null && message.getModel() != null) {
-                    tvModelName.setText(message.getModel());
-                }
-
-                // 设置时间和tokens
-                if (tvTime != null) {
-                    tvTime.setText(message.getFormattedTime());
-                }
-                if (tvTokens != null) {
-                    String tokensText = message.getTokens() > 0 ? 
-                        " • " + message.getTokens() + " tokens" : " • 计算中...";
-                    tvTokens.setText(tokensText);
-                }
-
-                // 设置操作按钮可见性（只在非流式状态下显示）
-                if (layoutActions != null) {
-                    if (message.isStreaming()) {
-                        layoutActions.setVisibility(View.GONE);
-                    } else {
-                        layoutActions.setVisibility(View.VISIBLE);
-                    }
-                }
-
-                // 复制按钮
-                if (btnCopy != null) {
-                    btnCopy.setOnClickListener(new View.OnClickListener() {
+				// 设置操作按钮
+				if (btnCopy != null) {
+					btnCopy.setOnClickListener(new View.OnClickListener() {
 							@Override
 							public void onClick(View v) {
 								copyToClipboard(message.getContent());
 								Toast.makeText(getActivity(), "已复制到剪贴板", Toast.LENGTH_SHORT).show();
 							}
 						});
-                }
+				}
 
-                // 重新生成按钮
-                if (btnRegenerate != null) {
-                    btnRegenerate.setOnClickListener(new View.OnClickListener() {
+				if (btnRegenerate != null) {
+					btnRegenerate.setOnClickListener(new View.OnClickListener() {
 							@Override
 							public void onClick(View v) {
 								regenerateMessage(message);
 							}
 						});
-                }
+				}
+			}
+		}
 
-                // 消息长按也可以复制
-                if (tvMessage != null) {
-                    tvMessage.setOnLongClickListener(new View.OnLongClickListener() {
+		// AssistantMessageViewHolder - 修复复制崩溃
+		private class AssistantMessageViewHolder extends RecyclerView.ViewHolder {
+			private TextView tvMessage, tvTime, tvTokens, tvModelName;
+			private LinearLayout layoutActions;
+			private Button btnCopy, btnRegenerate;
+
+			public AssistantMessageViewHolder(@NonNull View itemView) {
+				super(itemView);
+				tvMessage = itemView.findViewById(R.id.tvMessage);
+				tvTime = itemView.findViewById(R.id.tvTime);
+				tvTokens = itemView.findViewById(R.id.tvTokens);
+				tvModelName = itemView.findViewById(R.id.tvModelName);
+				layoutActions = itemView.findViewById(R.id.layoutActions);
+				btnCopy = itemView.findViewById(R.id.btnCopy);
+				btnRegenerate = itemView.findViewById(R.id.btnRegenerate);
+			}
+
+			public void bind(final ChatMessage message) {
+				// 设置消息内容
+				if (tvMessage != null) {
+					if (message.isStreaming()) {
+						tvMessage.setText(message.getContent() + " ▌");
+					} else {
+						markwon.setMarkdown(tvMessage, message.getContent());
+					}
+
+					// 修复长按复制崩溃
+					tvMessage.setOnLongClickListener(new View.OnLongClickListener() {
 							@Override
 							public boolean onLongClick(View v) {
 								copyToClipboard(message.getContent());
@@ -1049,10 +1126,52 @@ public class ChatFragment extends Fragment {
 								return true;
 							}
 						});
-                }
-            }
-        }
+				}
 
+				// 设置模型名称
+				if (tvModelName != null && message.getModel() != null) {
+					tvModelName.setText(message.getModel());
+				}
+
+				// 设置时间和tokens
+				if (tvTime != null) {
+					tvTime.setText(message.getFormattedTime());
+				}
+				if (tvTokens != null) {
+					tvTokens.setText(" • " + message.getTokensText());
+				}
+
+				// 设置操作按钮可见性（只在非流式状态下显示）
+				if (layoutActions != null) {
+					if (message.isStreaming()) {
+						layoutActions.setVisibility(View.GONE);
+					} else {
+						layoutActions.setVisibility(View.VISIBLE);
+					}
+				}
+
+				// 复制按钮 - 修复点击崩溃
+				if (btnCopy != null) {
+					btnCopy.setOnClickListener(new View.OnClickListener() {
+							@Override
+							public void onClick(View v) {
+								copyToClipboard(message.getContent());
+								Toast.makeText(getActivity(), "已复制到剪贴板", Toast.LENGTH_SHORT).show();
+							}
+						});
+				}
+
+				// 重新生成按钮
+				if (btnRegenerate != null) {
+					btnRegenerate.setOnClickListener(new View.OnClickListener() {
+							@Override
+							public void onClick(View v) {
+								regenerateMessage(message);
+							}
+						});
+				}
+			}
+		}
 	}
 
 	// 复制到剪贴板
@@ -1068,9 +1187,19 @@ public class ChatFragment extends Fragment {
 		}
 	}
 
-	// 重新生成消息
+// 在ChatFragment类中添加改进的重新生成方法
 	private void regenerateMessage(ChatMessage message) {
-		AppLogger.d("ChatFragment", "重新生成消息");
+		AppLogger.d("ChatFragment", "重新生成消息，位置: " + messages.indexOf(message));
+
+		if (currentProviderId == null || currentProviderId.isEmpty()) {
+			Toast.makeText(getActivity(), "请先选择供应商", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		if (currentModel == null || currentModel.isEmpty()) {
+			Toast.makeText(getActivity(), "请先选择模型", Toast.LENGTH_SHORT).show();
+			return;
+		}
 
 		// 找到用户的上一条消息
 		int messageIndex = messages.indexOf(message);
@@ -1081,16 +1210,18 @@ public class ChatFragment extends Fragment {
 				messages.remove(message);
 				currentConversation.getMessages().remove(message);
 
-				// 通知适配器
+				// 通知适配器 - 使用安全方法
 				if (adapter != null) {
 					adapter.safeNotifyItemRemoved(messageIndex);
 				}
 
 				// 重新发送用户消息
 				sendMessage(userMessage.getContent(), currentProviderId, currentModel);
+				return;
 			}
-		} else {
-			Toast.makeText(getActivity(), "无法重新生成此消息", Toast.LENGTH_SHORT).show();
 		}
+
+		// 如果找不到对应的用户消息，提示错误
+		Toast.makeText(getActivity(), "无法重新生成此消息", Toast.LENGTH_SHORT).show();
 	}
 }

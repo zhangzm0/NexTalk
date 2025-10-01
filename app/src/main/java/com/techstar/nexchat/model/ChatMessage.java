@@ -1,4 +1,5 @@
 package com.techstar.nexchat.model;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -14,6 +15,26 @@ public class ChatMessage {
     private long timestamp;
     private boolean isStreaming;
     private String model;
+    private int tokens; // 消耗的tokens
+    private String responseId; // 响应ID
+    private int promptTokens; // 输入tokens
+    private int completionTokens; // 输出tokens
+    private int totalTokens; // 总tokens
+
+    public ChatMessage() {
+        this.timestamp = System.currentTimeMillis();
+        this.id = "msg_" + System.currentTimeMillis();
+        this.tokens = 0;
+        this.promptTokens = 0;
+        this.completionTokens = 0;
+        this.totalTokens = 0;
+    }
+
+    public ChatMessage(int type, String content) {
+        this();
+        this.type = type;
+        this.content = content;
+    }
 
     // Getter and Setter
     public String getId() { return id; }
@@ -34,31 +55,48 @@ public class ChatMessage {
     public String getModel() { return model; }
     public void setModel(String model) { this.model = model; }
 
-	private int tokens; // 消耗的tokens
-	private String responseId; // 响应ID
+    public int getTokens() { return tokens; }
+    public void setTokens(int tokens) { this.tokens = tokens; }
 
-	public ChatMessage() {
-		this.timestamp = System.currentTimeMillis();
-		this.id = "msg_" + System.currentTimeMillis();
-		this.tokens = 0;
+    public String getResponseId() { return responseId; }
+    public void setResponseId(String responseId) { this.responseId = responseId; }
+
+    public int getPromptTokens() { return promptTokens; }
+    public void setPromptTokens(int promptTokens) { this.promptTokens = promptTokens; }
+
+    public int getCompletionTokens() { return completionTokens; }
+    public void setCompletionTokens(int completionTokens) { this.completionTokens = completionTokens; }
+
+    public int getTotalTokens() { return totalTokens; }
+    public void setTotalTokens(int totalTokens) { this.totalTokens = totalTokens; }
+
+
+
+    // 获取格式化时间
+    public String getFormattedTime() {
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        return sdf.format(new Date(timestamp));
+    }
+	
+	// 在ChatMessage类中添加这些方法
+	public void setTokensInfo(int promptTokens, int completionTokens, int totalTokens) {
+		this.promptTokens = promptTokens;
+		this.completionTokens = completionTokens;
+		this.totalTokens = totalTokens;
+		this.tokens = totalTokens; // 向后兼容
 	}
 
-	public ChatMessage(int type, String content) {
-		this();
-		this.type = type;
-		this.content = content;
+// 获取tokens显示文本
+	public String getTokensText() {
+		if (totalTokens > 0) {
+			return promptTokens + "+" + completionTokens + "=" + totalTokens + " tokens";
+		} else if (tokens > 0) {
+			return tokens + " tokens";
+		} else {
+			return "计算中...";
+		}
 	}
-
-	// Getter and Setter
-	public int getTokens() { return tokens; }
-	public void setTokens(int tokens) { this.tokens = tokens; }
-
-	public String getResponseId() { return responseId; }
-	public void setResponseId(String responseId) { this.responseId = responseId; }
-
-	// 获取格式化时间
-	public String getFormattedTime() {
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
-		return sdf.format(new Date(timestamp));
-	}
+	
+	
+	
 }
