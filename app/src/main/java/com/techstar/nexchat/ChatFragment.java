@@ -552,161 +552,7 @@ public class ChatFragment extends Fragment {
 			currentCall.cancel();
 		}
 	}
-	// ... 其他代码不变
 
-	private void sendChatRequest(String message, String providerId, String model, final ChatMessage aiMessage) {
-		try {
-			AppLogger.d("ChatFragment", "开始构建请求 - Provider: " + providerId + ", Model: " + model);
-
-			// 获取供应商信息
-			ApiProvider provider = loadProviderById(providerId);
-			if (provider == null) {
-				AppLogger.e("ChatFragment", "供应商不存在: " + providerId);
-				handleError("供应商不存在: " + providerId);
-				return;
-			}
-
-			AppLogger.d("ChatFragment", "找到供应商: " + provider.getName());
-
-			// 验证供应商数据
-			if (provider.getApiKey() == null || provider.getApiKey().isEmpty()) {
-				AppLogger.e("ChatFragment", "API密钥为空");
-				handleError("API密钥未配置");
-				return;
-			}
-
-			if (provider.getApiUrl() == null || provider.getApiUrl().isEmpty()) {
-				AppLogger.e("ChatFragment", "API URL为空");
-				handleError("API URL未配置");
-				return;
-			}
-
-			// 构建请求体
-			JSONObject requestBody = new JSONObject();
-			requestBody.put("model", model);
-
-			JSONArray messagesArray = new JSONArray();
-
-			// 添加上下文消息
-			if (messages != null && messages.size() > 1) {
-				int startIndex = Math.max(0, messages.size() - 10);
-				for (int i = startIndex; i < messages.size() - 1; i++) {
-					if (i >= 0 && i < messages.size()) {
-						ChatMessage msg = messages.get(i);
-						JSONObject msgObj = new JSONObject();
-						msgObj.put("role", msg.getType() == ChatMessage.TYPE_USER ? "user" : "assistant");
-						msgObj.put("content", msg.getContent());
-						messagesArray.put(msgObj);
-					}
-				}
-			}
-
-			// 添加当前消息
-			JSONObject currentMsg = new JSONObject();
-			currentMsg.put("role", "user");
-			currentMsg.put("content", message);
-			messagesArray.put(currentMsg);
-
-			requestBody.put("messages", messagesArray);
-			requestBody.put("stream", true);
-			requestBody.put("temperature", 0.7);
-
-			// 构建API URL
-			String baseUrl = provider.getApiUrl().trim();
-			String apiUrl;
-			if (baseUrl.endsWith("/")) {
-				apiUrl = baseUrl + "chat/completions";
-			} else {
-				apiUrl = baseUrl + "/chat/completions";
-			}
-
-			AppLogger.d("ChatFragment", "API URL: " + apiUrl);
-			AppLogger.d("ChatFragment", "请求消息数量: " + messagesArray.length());
-
-			RequestBody body = RequestBody.create(
-				MediaType.parse("application/json"), 
-				requestBody.toString()
-			);
-
-			Request request = new Request.Builder()
-				.url(apiUrl)
-				.addHeader("Authorization", "Bearer " + provider.getApiKey().trim())
-				.addHeader("Content-Type", "application/json")
-				.post(body)
-				.build();
-
-			AppLogger.d("ChatFragment", "请求构建完成，准备发送");
-
-			// 保存当前请求以便暂停
-			currentCall = client.newCall(request);
-			isStreaming = true;
-
-			// 显示暂停按钮
-			if (btnPause != null && getActivity() != null) {
-				getActivity().runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							btnPause.setVisibility(View.VISIBLE);
-						}
-					});
-			}
-
-			currentCall.enqueue(new Callback() {
-					@Override
-					public void onFailure(Call call, final IOException e) {
-						if (!call.isCanceled()) {
-							AppLogger.e("ChatFragment", "网络请求失败", e);
-							if (getActivity() != null) {
-								getActivity().runOnUiThread(new Runnable() {
-										@Override
-										public void run() {
-											handleError("网络请求失败: " + e.getMessage());
-											hidePauseButton();
-										}
-									});
-							}
-						} else {
-							AppLogger.d("ChatFragment", "请求被用户取消");
-						}
-					}
-
-					@Override
-					public void onResponse(Call call, final Response response) throws IOException {
-						if (!response.isSuccessful()) {
-							final String errorBody = response.body().string();
-							AppLogger.e("ChatFragment", "API错误: " + response.code() + " - " + errorBody);
-							if (getActivity() != null) {
-								getActivity().runOnUiThread(new Runnable() {
-										@Override
-										public void run() {
-											handleError("API错误: " + response.code() + " - " + errorBody);
-											hidePauseButton();
-										}
-									});
-							}
-							return;
-						}
-
-						AppLogger.d("ChatFragment", "收到流式响应");
-						// 处理流式响应
-						processStreamResponse(response, aiMessage);
-					}
-				});
-
-		} catch (Exception e) {
-			// 这里确保异常对象e不是null
-			String errorMsg = "请求构建失败: ";
-			if (e != null) {
-				errorMsg += e.getMessage();
-				AppLogger.e("ChatFragment", "请求构建失败", e);
-			} else {
-				errorMsg += "未知错误（异常对象为null）";
-				AppLogger.e("ChatFragment", "请求构建失败 - 异常对象为null");
-			}
-			handleError(errorMsg);
-			hidePauseButton();
-		}
-	}
 
 	// 修复供应商加载方法，添加更多调试信息
 	private ApiProvider loadProviderById(String providerId) {
@@ -788,6 +634,242 @@ public class ChatFragment extends Fragment {
 						}
 					}
 				});
+		}
+	}
+	// ... 其他代码不变
+
+	private void sendChatRequest(String message, String providerId, String model, final ChatMessage aiMessage) {
+		try {
+			AppLogger.d("ChatFragment", "开始构建请求 - Provider: " + providerId + ", Model: " + model);
+
+			// 1. 检查基本参数
+			if (message == null) {
+				AppLogger.e("ChatFragment", "消息为null");
+				handleError("消息为空");
+				return;
+			}
+
+			// 2. 获取供应商信息
+			AppLogger.d("ChatFragment", "开始加载供应商: " + providerId);
+			ApiProvider provider = loadProviderById(providerId);
+			if (provider == null) {
+				AppLogger.e("ChatFragment", "供应商加载失败: " + providerId);
+				handleError("供应商不存在: " + providerId);
+				return;
+			}
+
+			AppLogger.d("ChatFragment", "供应商加载成功: " + provider.getName());
+
+			// 3. 验证供应商数据
+			if (provider.getApiKey() == null || provider.getApiKey().isEmpty()) {
+				AppLogger.e("ChatFragment", "API密钥为空");
+				handleError("API密钥未配置");
+				return;
+			}
+
+			if (provider.getApiUrl() == null || provider.getApiUrl().isEmpty()) {
+				AppLogger.e("ChatFragment", "API URL为空");
+				handleError("API URL未配置");
+				return;
+			}
+
+			AppLogger.d("ChatFragment", "供应商数据验证通过");
+
+			// 4. 构建请求体 - 分步骤检查
+			JSONObject requestBody = new JSONObject();
+			AppLogger.d("ChatFragment", "创建JSONObject成功");
+
+			requestBody.put("model", model);
+			AppLogger.d("ChatFragment", "设置model成功: " + model);
+
+			JSONArray messagesArray = new JSONArray();
+			AppLogger.d("ChatFragment", "创建JSONArray成功");
+
+			// 添加上下文消息
+			if (messages != null && messages.size() > 1) {
+				int startIndex = Math.max(0, messages.size() - 10);
+				AppLogger.d("ChatFragment", "开始添加上下文消息，起始索引: " + startIndex);
+
+				for (int i = startIndex; i < messages.size() - 1; i++) {
+					if (i >= 0 && i < messages.size()) {
+						ChatMessage msg = messages.get(i);
+						JSONObject msgObj = new JSONObject();
+						msgObj.put("role", msg.getType() == ChatMessage.TYPE_USER ? "user" : "assistant");
+						msgObj.put("content", msg.getContent());
+						messagesArray.put(msgObj);
+					}
+				}
+				AppLogger.d("ChatFragment", "添加上下文消息完成，数量: " + (messagesArray.length() - 1));
+			}
+
+			// 添加当前消息
+			JSONObject currentMsg = new JSONObject();
+			currentMsg.put("role", "user");
+			currentMsg.put("content", message);
+			messagesArray.put(currentMsg);
+			AppLogger.d("ChatFragment", "添加当前消息完成");
+
+			requestBody.put("messages", messagesArray);
+			AppLogger.d("ChatFragment", "设置messages数组成功");
+
+			requestBody.put("stream", true);
+			requestBody.put("temperature", 0.7);
+			AppLogger.d("ChatFragment", "设置其他参数成功");
+
+			// 5. 构建API URL
+			String baseUrl = provider.getApiUrl().trim();
+			AppLogger.d("ChatFragment", "原始URL: " + baseUrl);
+
+			String apiUrl;
+			if (baseUrl.endsWith("/")) {
+				apiUrl = baseUrl + "chat/completions";
+			} else {
+				apiUrl = baseUrl + "/chat/completions";
+			}
+
+			AppLogger.d("ChatFragment", "完整API URL: " + apiUrl);
+			AppLogger.d("ChatFragment", "请求消息数量: " + messagesArray.length());
+			AppLogger.d("ChatFragment", "请求体JSON: " + requestBody.toString());
+
+			// 6. 创建RequestBody
+			MediaType mediaType = MediaType.parse("application/json");
+			AppLogger.d("ChatFragment", "MediaType创建成功");
+
+			String requestBodyString = requestBody.toString();
+			RequestBody body = RequestBody.create(mediaType, requestBodyString);
+			AppLogger.d("ChatFragment", "RequestBody创建成功");
+
+			// 7. 构建Request
+			Request.Builder requestBuilder = new Request.Builder();
+			AppLogger.d("ChatFragment", "Request.Builder创建成功");
+
+			requestBuilder.url(apiUrl);
+			AppLogger.d("ChatFragment", "设置URL成功");
+
+			requestBuilder.addHeader("Authorization", "Bearer " + provider.getApiKey().trim());
+			AppLogger.d("ChatFragment", "设置Authorization头成功");
+
+			requestBuilder.addHeader("Content-Type", "application/json");
+			AppLogger.d("ChatFragment", "设置Content-Type头成功");
+
+			requestBuilder.post(body);
+			AppLogger.d("ChatFragment", "设置POST方法成功");
+
+			Request request = requestBuilder.build();
+			AppLogger.d("ChatFragment", "Request构建完成");
+
+			// 8. 创建OkHttp Call
+			AppLogger.d("ChatFragment", "开始创建OkHttp Call");
+			currentCall = client.newCall(request);
+			AppLogger.d("ChatFragment", "OkHttp Call创建成功");
+
+			isStreaming = true;
+			AppLogger.d("ChatFragment", "设置isStreaming为true");
+
+			// 显示暂停按钮
+			if (btnPause != null && getActivity() != null) {
+				getActivity().runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							btnPause.setVisibility(View.VISIBLE);
+							AppLogger.d("ChatFragment", "暂停按钮显示成功");
+						}
+					});
+			}
+
+			AppLogger.d("ChatFragment", "准备发送请求，调用enqueue");
+
+			currentCall.enqueue(new Callback() {
+					@Override
+					public void onFailure(Call call, final IOException e) {
+						AppLogger.d("ChatFragment", "进入onFailure回调");
+						if (!call.isCanceled()) {
+							AppLogger.e("ChatFragment", "网络请求失败", e);
+							if (getActivity() != null) {
+								getActivity().runOnUiThread(new Runnable() {
+										@Override
+										public void run() {
+											handleError("网络请求失败: " + e.getMessage());
+											hidePauseButton();
+										}
+									});
+							}
+						} else {
+							AppLogger.d("ChatFragment", "请求被用户取消");
+						}
+					}
+
+					@Override
+					public void onResponse(Call call, final Response response) throws IOException {
+						AppLogger.d("ChatFragment", "进入onResponse回调，状态码: " + response.code());
+						if (!response.isSuccessful()) {
+							final String errorBody = response.body().string();
+							AppLogger.e("ChatFragment", "API错误: " + response.code() + " - " + errorBody);
+							if (getActivity() != null) {
+								getActivity().runOnUiThread(new Runnable() {
+										@Override
+										public void run() {
+											handleError("API错误: " + response.code() + " - " + errorBody);
+											hidePauseButton();
+										}
+									});
+							}
+							return;
+						}
+
+						AppLogger.d("ChatFragment", "收到流式响应");
+						// 处理流式响应
+						processStreamResponse(response, aiMessage);
+					}
+				});
+
+			AppLogger.d("ChatFragment", "enqueue调用完成");
+
+		} catch (Exception e) {
+			// 这里确保异常对象e不是null
+			AppLogger.e("ChatFragment", "捕获到异常", e);
+
+			String errorMsg = "请求构建失败: ";
+			if (e != null) {
+				errorMsg += e.getClass().getSimpleName() + ": " + e.getMessage();
+				// 打印堆栈跟踪
+				e.printStackTrace();
+			} else {
+				errorMsg += "未知错误（异常对象为null）";
+			}
+			handleError(errorMsg);
+			hidePauseButton();
+		}
+	}
+
+	// 添加一个简单的测试方法，绕过复杂的请求构建
+	private void testSimpleRequest() {
+		try {
+			AppLogger.d("ChatFragment", "开始简单测试请求");
+
+			// 创建一个最简单的请求
+			String testUrl = "https://httpbin.org/get"; // 测试用的公开API
+			Request request = new Request.Builder()
+				.url(testUrl)
+				.get()
+				.build();
+
+			AppLogger.d("ChatFragment", "简单请求构建完成");
+
+			client.newCall(request).enqueue(new Callback() {
+					@Override
+					public void onFailure(Call call, IOException e) {
+						AppLogger.e("ChatFragment", "简单测试请求失败", e);
+					}
+
+					@Override
+					public void onResponse(Call call, Response response) throws IOException {
+						AppLogger.d("ChatFragment", "简单测试请求成功: " + response.code());
+					}
+				});
+
+		} catch (Exception e) {
+			AppLogger.e("ChatFragment", "简单测试请求异常", e);
 		}
 	}
 }
