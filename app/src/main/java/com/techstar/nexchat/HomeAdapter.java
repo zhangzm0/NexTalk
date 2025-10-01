@@ -7,7 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.techstar.nexchat.model.ChatHistory;
+import com.techstar.nexchat.model.ChatConversation;
 import com.techstar.nexchat.model.HomeMenuItem;
 import java.util.List;
 
@@ -18,9 +18,16 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int TYPE_SEPARATOR = 2;
 
     private List<Object> items;
+    private OnConversationClickListener listener;
 
-    public HomeAdapter(List<Object> items) {
+    public interface OnConversationClickListener {
+        void onConversationClick(ChatConversation conversation);
+        void onConversationLongClick(ChatConversation conversation);
+    }
+
+    public HomeAdapter(List<Object> items, OnConversationClickListener listener) {
         this.items = items;
+        this.listener = listener;
     }
 
     @Override
@@ -28,9 +35,9 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         Object item = items.get(position);
         if (item instanceof HomeMenuItem) {
             return TYPE_MENU_ITEM;
-        } else if (item instanceof ChatHistory) {
+        } else if (item instanceof ChatConversation) {
             return TYPE_CHAT_HISTORY;
-        } else if (item instanceof String && ((String) item).equals("分隔符")) {
+        } else if (item instanceof String && "分隔符".equals(item)) {
             return TYPE_SEPARATOR;
         }
         return TYPE_MENU_ITEM;
@@ -55,7 +62,8 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 return new SeparatorViewHolder(separatorView);
 
             default:
-                return null;
+                View defaultView = inflater.inflate(R.layout.item_home_menu, parent, false);
+                return new MenuItemViewHolder(defaultView);
         }
     }
 
@@ -69,7 +77,7 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 break;
 
             case TYPE_CHAT_HISTORY:
-                ((ChatHistoryViewHolder) holder).bind((ChatHistory) item);
+                ((ChatHistoryViewHolder) holder).bind((ChatConversation) item);
                 break;
 
             case TYPE_SEPARATOR:
@@ -83,24 +91,22 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return items.size();
     }
 
-    
     // 菜单项ViewHolder
-	private static class MenuItemViewHolder extends RecyclerView.ViewHolder {
-		private ImageView icon;
-		private TextView title;
+    private static class MenuItemViewHolder extends RecyclerView.ViewHolder {
+        private ImageView icon;
+        private TextView title;
 
-		public MenuItemViewHolder(@NonNull View itemView) {
-			super(itemView);
-			icon = itemView.findViewById(R.id.icon);
-			title = itemView.findViewById(R.id.title);
-		}
+        public MenuItemViewHolder(@NonNull View itemView) {
+            super(itemView);
+            icon = itemView.findViewById(R.id.icon);
+            title = itemView.findViewById(R.id.title);
+        }
 
-		public void bind(final HomeMenuItem menuItem) {
-			// 使用app:srcCompat来支持矢量图
-			icon.setImageResource(menuItem.getIconRes());
-			title.setText(menuItem.getTitle());
+        public void bind(final HomeMenuItem menuItem) {
+            icon.setImageResource(menuItem.getIconRes());
+            title.setText(menuItem.getTitle());
 
-			itemView.setOnClickListener(new View.OnClickListener() {
+            itemView.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
 						if (menuItem.getOnClickListener() != null) {
@@ -108,30 +114,50 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 						}
 					}
 				});
-		}
-	}
+        }
+    }
 
     // 聊天历史ViewHolder
-    private static class ChatHistoryViewHolder extends RecyclerView.ViewHolder {
-        private TextView tvChatTitle, tvPreview, tvTime;
+    private class ChatHistoryViewHolder extends RecyclerView.ViewHolder {
+        private TextView tvChatTitle, tvPreview, tvTime, tvMessageCount;
+        private ImageView ivPin;
 
         public ChatHistoryViewHolder(@NonNull View itemView) {
             super(itemView);
             tvChatTitle = itemView.findViewById(R.id.tvChatTitle);
             tvPreview = itemView.findViewById(R.id.tvPreview);
             tvTime = itemView.findViewById(R.id.tvTime);
+            tvMessageCount = itemView.findViewById(R.id.tvMessageCount);
+            ivPin = itemView.findViewById(R.id.ivPin);
         }
 
-        public void bind(final ChatHistory chatHistory) {
-            tvChatTitle.setText(chatHistory.getTitle());
-            tvPreview.setText(chatHistory.getPreview());
-            tvTime.setText(chatHistory.getFormattedTime());
+        public void bind(final ChatConversation conversation) {
+            tvChatTitle.setText(conversation.getTitle());
+            tvPreview.setText(conversation.getPreview());
+            tvTime.setText(conversation.getFormattedTime());
+            tvMessageCount.setText(conversation.getMessageCount() + "条");
 
+            // 显示置顶图标
+            ivPin.setVisibility(conversation.isPinned() ? View.VISIBLE : View.GONE);
+
+            // 点击进入对话
             itemView.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						// 加载选中的聊天记录
-						// 这里需要实现加载聊天逻辑
+						if (listener != null) {
+							listener.onConversationClick(conversation);
+						}
+					}
+				});
+
+            // 长按显示操作菜单
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+					@Override
+					public boolean onLongClick(View v) {
+						if (listener != null) {
+							listener.onConversationLongClick(conversation);
+						}
+						return true;
 					}
 				});
         }
@@ -151,3 +177,4 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 }
+
