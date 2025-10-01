@@ -14,9 +14,9 @@ import androidx.viewpager.widget.ViewPager;
 public class MainActivity extends FragmentActivity {
 
     private ViewPager viewPager;
-    private FragmentPagerAdapter pagerAdapter;
+    public  FragmentPagerAdapter pagerAdapter;
     public  ChatFragment chatFragment;
-    private InputFragment inputFragment;
+    public  InputFragment inputFragment;
 
 	@Override
     protected void onCreate(Bundle savedInstanceState) {

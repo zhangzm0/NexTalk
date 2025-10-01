@@ -231,11 +231,6 @@ public class InputFragment extends Fragment {
     }
 
 
-
-
-
-
-
 	@Override
 	public void onResume() {
 		super.onResume();
@@ -248,15 +243,59 @@ public class InputFragment extends Fragment {
 		}
 	}
 
+	// 在InputFragment.java中修改refreshModelDisplay方法
 	public void refreshModelDisplay() {
 		if (spinnerModel != null && modelAdapter != null) {
+			// 加载保存的选择
+			loadSavedModelSelection();
+
 			// 如果当前有选择的模型，确保显示正确
-			if (!currentModel.isEmpty()) {
+			if (!currentModel.isEmpty() && !currentProviderId.isEmpty()) {
 				updateModelSpinner();
 			} else {
 				// 如果没有选择模型，加载默认模型
 				loadAvailableModels();
 			}
+		}
+	}
+
+// 修改loadSavedModelSelection方法
+	private void loadSavedModelSelection() {
+		try {
+			String savedProviderId = getActivity().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+				.getString("last_provider_id", "");
+			String savedModel = getActivity().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+				.getString("last_model", "");
+
+			if (!savedProviderId.isEmpty() && !savedModel.isEmpty()) {
+				// 验证供应商是否还存在
+				ApiProvider provider = loadProviderById(savedProviderId);
+				if (provider != null && provider.getModels().contains(savedModel)) {
+					currentProviderId = savedProviderId;
+					currentModel = savedModel;
+					AppLogger.d("InputFragment", "加载保存的选择: " + currentProviderId + ", " + currentModel);
+				} else {
+					// 供应商或模型不存在，清除保存的选择
+					clearSavedModelSelection();
+				}
+			}
+		} catch (Exception e) {
+			AppLogger.e("InputFragment", "加载保存的模型选择失败", e);
+		}
+	}
+
+// 添加清除保存选择的方法
+	private void clearSavedModelSelection() {
+		try {
+			getActivity().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+				.edit()
+				.remove("last_provider_id")
+				.remove("last_model")
+				.apply();
+			currentProviderId = "";
+			currentModel = "";
+		} catch (Exception e) {
+			AppLogger.e("InputFragment", "清除保存的选择失败", e);
 		}
 	}
 
@@ -303,22 +342,7 @@ public class InputFragment extends Fragment {
 		}
 	}
 
-	// 加载保存的模型选择
-	private void loadSavedModelSelection() {
-		try {
-			String savedProviderId = getActivity().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-				.getString("last_provider_id", "");
-			String savedModel = getActivity().getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-				.getString("last_model", "");
-
-			if (!savedProviderId.isEmpty() && !savedModel.isEmpty()) {
-				currentProviderId = savedProviderId;
-				currentModel = savedModel;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+	
 
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
@@ -574,7 +598,7 @@ public class InputFragment extends Fragment {
             updateModelSpinner();
         }
     }
-	
+
 
     private void sendMessage() {
         String message = etMessage.getText().toString().trim();
@@ -606,4 +630,15 @@ public class InputFragment extends Fragment {
             etMessage.setText("");
         }
     }
+	
+	// 在InputFragment.java中添加
+	public String getCurrentProviderId() {
+		return currentProviderId;
+	}
+
+	public String getCurrentModel() {
+		return currentModel;
+	}
+	
+	
 }

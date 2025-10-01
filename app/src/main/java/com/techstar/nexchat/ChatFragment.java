@@ -148,7 +148,42 @@ public class ChatFragment extends Fragment {
 
 	private boolean isUpdating = false;
 
-// 修改流式响应处理，确保tokens正确提取
+// 在ChatFragment.java中修改滚动方法
+	private void safeScrollToBottom() {
+		if (recyclerView != null && adapter != null && getActivity() != null) {
+			getActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							if (messages != null && messages.size() > 0) {
+								// 检查LayoutManager是否可用
+								RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+								if (layoutManager != null) {
+									// 使用smoothScrollToPosition但禁用动画避免跳动
+									recyclerView.scrollToPosition(messages.size() - 1);
+
+									// 延迟微调确保滚动到位
+									new android.os.Handler().postDelayed(new Runnable() {
+											@Override
+											public void run() {
+												try {
+													recyclerView.smoothScrollToPosition(messages.size() - 1);
+												} catch (Exception e) {
+													AppLogger.e("ChatFragment", "微调滚动失败", e);
+												}
+											}
+										}, 100);
+								}
+							}
+						} catch (Exception e) {
+							AppLogger.e("ChatFragment", "安全滚动失败", e);
+						}
+					}
+				});
+		}
+	}
+
+// 修改流式更新时的滚动策略
 	private void processStreamResponse(Response response, final ChatMessage aiMessage) {
 		try {
 			String line;
@@ -162,6 +197,7 @@ public class ChatFragment extends Fragment {
 			int completionTokens = 0;
 			int totalTokens = 0;
 			boolean hasTokens = false;
+			final int updateCount = 0; // 控制更新频率
 
 			while ((line = reader.readLine()) != null && isStreaming) {
 				if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
@@ -170,87 +206,63 @@ public class ChatFragment extends Fragment {
 						try {
 							JSONObject data = new JSONObject(jsonStr);
 
-							// 在流结束时提取tokens信息
+							// 提取tokens信息
 							if (data.has("usage")) {
 								JSONObject usage = data.getJSONObject("usage");
 								promptTokens = usage.optInt("prompt_tokens", 0);
 								completionTokens = usage.optInt("completion_tokens", 0);
 								totalTokens = usage.optInt("total_tokens", 0);
 								hasTokens = true;
-								AppLogger.d("ChatFragment", "提取到tokens: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
 							}
 
 							JSONArray choices = data.getJSONArray("choices");
 							if (choices.length() > 0) {
 								JSONObject choice = choices.getJSONObject(0);
-								if (choice.has("finish_reason") && !choice.isNull("finish_reason")) {
-									// 流结束，可能有tokens信息
-									if (data.has("usage")) {
-										JSONObject usage = data.getJSONObject("usage");
-										promptTokens = usage.optInt("prompt_tokens", 0);
-										completionTokens = usage.optInt("completion_tokens", 0);
-										totalTokens = usage.optInt("total_tokens", 0);
-										hasTokens = true;
-									}
-								}
-
 								JSONObject delta = choice.getJSONObject("delta");
 								if (delta.has("content")) {
 									String chunk = delta.getString("content");
 									content.append(chunk);
+									updateCount++;
 
-									// 更新UI
-									final String currentContent = content.toString();
-									if (getActivity() != null) {
-										getActivity().runOnUiThread(new Runnable() {
-												@Override
-												public void run() {
-													synchronized (ChatFragment.this) {
-														if (aiMessageIndex >= 0 && aiMessageIndex < messages.size()) {
-															aiMessage.setContent(currentContent);
-															aiMessage.setStreaming(true);
-															if (adapter != null) {
-																adapter.safeNotifyItemChanged(aiMessageIndex);
+									// 控制更新频率，避免频繁跳动
+									if (updateCount % 3 == 0) { // 每3个chunk更新一次
+										final String currentContent = content.toString();
+										if (getActivity() != null) {
+											getActivity().runOnUiThread(new Runnable() {
+													@Override
+													public void run() {
+														synchronized (ChatFragment.this) {
+															if (aiMessageIndex >= 0 && aiMessageIndex < messages.size()) {
+																aiMessage.setContent(currentContent);
+																aiMessage.setStreaming(true);
+																if (adapter != null) {
+																	adapter.safeNotifyItemChanged(aiMessageIndex);
+																}
+																// 只在重要更新时滚动
+																if (updateCount % 6 == 0) {
+																	safeScrollToBottom();
+																}
 															}
-															safeScrollToBottom();
 														}
 													}
-												}
-											});
+												});
+										}
 									}
 								}
 							}
 						} catch (Exception e) {
-							AppLogger.e("ChatFragment", "解析流数据失败: " + e.getMessage());
+							AppLogger.e("ChatFragment", "解析流数据失败", e);
 						}
 					}
 				}
 			}
 
-			// 如果没有提取到tokens，尝试估算
-			if (!hasTokens && content.length() > 0) {
-				// 简单估算：中文字符算2个token，英文字符算1个token
-				int chineseCount = 0;
-				int englishCount = 0;
-				String text = content.toString();
-				for (char c : text.toCharArray()) {
-					if (Character.UnicodeScript.of(c) == Character.UnicodeScript.HAN) {
-						chineseCount++;
-					} else if (Character.isLetterOrDigit(c)) {
-						englishCount++;
-					}
-				}
-				completionTokens = (int) (chineseCount * 2 + englishCount * 0.7);
-				totalTokens = completionTokens + 50; // 估算prompt tokens
-				hasTokens = true;
-				AppLogger.d("ChatFragment", "估算tokens: " + completionTokens);
-			}
-
-			// 流式响应结束
+			// 流结束时的处理
 			final int finalPromptTokens = promptTokens;
 			final int finalCompletionTokens = completionTokens;
 			final int finalTotalTokens = totalTokens;
 			final boolean finalHasTokens = hasTokens;
+			final String finalContent = content.toString();
 
 			if (getActivity() != null) {
 				getActivity().runOnUiThread(new Runnable() {
@@ -258,18 +270,17 @@ public class ChatFragment extends Fragment {
 						public void run() {
 							synchronized (ChatFragment.this) {
 								if (aiMessageIndex >= 0 && aiMessageIndex < messages.size()) {
+									aiMessage.setContent(finalContent);
 									aiMessage.setStreaming(false);
-									// 设置tokens信息
 									if (finalHasTokens) {
 										aiMessage.setTokensInfo(finalPromptTokens, finalCompletionTokens, finalTotalTokens);
-									} else {
-										// 如果没有tokens信息，设置为0
-										aiMessage.setTokensInfo(0, 0, 0);
 									}
 									hidePauseButton();
 									if (adapter != null) {
 										adapter.safeNotifyItemChanged(aiMessageIndex);
 									}
+									// 最终滚动到底部
+									safeScrollToBottom();
 
 									// 保存对话
 									chatManager.saveConversation(currentConversation);
@@ -292,34 +303,6 @@ public class ChatFragment extends Fragment {
 						}
 					});
 			}
-		}
-	}
-
-	// 修复滚动方法
-	private void safeScrollToBottom() {
-		if (recyclerView != null && adapter != null && getActivity() != null) {
-			getActivity().runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							if (messages != null && messages.size() > 0) {
-								// 使用post确保RecyclerView已经完成布局
-								recyclerView.post(new Runnable() {
-										@Override
-										public void run() {
-											try {
-												recyclerView.smoothScrollToPosition(messages.size() - 1);
-											} catch (Exception e) {
-												AppLogger.e("ChatFragment", "Scroll failed", e);
-											}
-										}
-									});
-							}
-						} catch (Exception e) {
-							AppLogger.e("ChatFragment", "Safe scroll failed", e);
-						}
-					}
-				});
 		}
 	}
 
@@ -418,37 +401,6 @@ public class ChatFragment extends Fragment {
 		}
 	}
 
-
-	// 添加一个简单的测试方法，绕过复杂的请求构建
-	private void testSimpleRequest() {
-		try {
-			AppLogger.d("ChatFragment", "开始简单测试请求");
-
-			// 创建一个最简单的请求
-			String testUrl = "https://httpbin.org/get"; // 测试用的公开API
-			Request request = new Request.Builder()
-				.url(testUrl)
-				.get()
-				.build();
-
-			AppLogger.d("ChatFragment", "简单请求构建完成");
-
-			client.newCall(request).enqueue(new Callback() {
-					@Override
-					public void onFailure(Call call, IOException e) {
-						AppLogger.e("ChatFragment", "简单测试请求失败", e);
-					}
-
-					@Override
-					public void onResponse(Call call, Response response) throws IOException {
-						AppLogger.d("ChatFragment", "简单测试请求成功: " + response.code());
-					}
-				});
-
-		} catch (Exception e) {
-			AppLogger.e("ChatFragment", "简单测试请求异常", e);
-		}
-	}
 
 	@Override
 	public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -758,10 +710,26 @@ public class ChatFragment extends Fragment {
 	}
 
 
+	// 在ChatFragment.java中添加初始化方法
 	@Override
 	public void onResume() {
 		super.onResume();
 		AppLogger.d("ChatFragment", "onResume called");
+
+		// 从InputFragment获取当前选择的模型
+		if (getActivity() instanceof MainActivity) {
+			MainActivity mainActivity = (MainActivity) getActivity();
+			if (mainActivity.inputFragment != null) {
+				// 通过MainActivity同步模型选择
+				String providerId = mainActivity.inputFragment.getCurrentProviderId();
+				String model = mainActivity.inputFragment.getCurrentModel();
+				if (!TextUtils.isEmpty(providerId) && !TextUtils.isEmpty(model)) {
+					this.currentProviderId = providerId;
+					this.currentModel = model;
+					AppLogger.d("ChatFragment", "从InputFragment同步选择: " + providerId + ", " + model);
+				}
+			}
+		}
 
 		// 每次页面显示时检查是否需要更新对话
 		checkAndUpdateConversation();
@@ -1164,7 +1132,7 @@ public class ChatFragment extends Fragment {
 
 // 在ChatFragment.java中修改重新生成方法
 	private void regenerateMessage(ChatMessage message) {
-		AppLogger.d("ChatFragment", "重新生成消息，类型: " + message.getType() + ", 位置: " + messages.indexOf(message));
+		AppLogger.d("ChatFragment", "重新生成消息，类型: " + message.getType());
 
 		// 检查供应商和模型选择
 		if (TextUtils.isEmpty(currentProviderId) || TextUtils.isEmpty(currentModel)) {
@@ -1173,26 +1141,27 @@ public class ChatFragment extends Fragment {
 		}
 
 		// 找到对应的用户消息
-		int messageIndex = messages.indexOf(message);
 		String userMessageContent = null;
-		int removeIndex = -1;
+		int aiMessageIndex = -1;
 
 		if (message.getType() == ChatMessage.TYPE_ASSISTANT) {
 			// AI消息：找前一条用户消息
+			int messageIndex = messages.indexOf(message);
 			if (messageIndex > 0) {
 				ChatMessage userMessage = messages.get(messageIndex - 1);
 				if (userMessage.getType() == ChatMessage.TYPE_USER) {
 					userMessageContent = userMessage.getContent();
-					removeIndex = messageIndex; // 删除AI消息
+					aiMessageIndex = messageIndex;
 				}
 			}
 		} else if (message.getType() == ChatMessage.TYPE_USER) {
-			// 用户消息：直接使用当前消息内容，删除后面的AI消息
+			// 用户消息：直接使用当前消息内容，找后面的AI消息
 			userMessageContent = message.getContent();
+			int messageIndex = messages.indexOf(message);
 			if (messageIndex + 1 < messages.size()) {
-				ChatMessage nextMessage = messages.get(messageIndex + 1);
-				if (nextMessage.getType() == ChatMessage.TYPE_ASSISTANT) {
-					removeIndex = messageIndex + 1; // 删除后面的AI消息
+				ChatMessage aiMessage = messages.get(messageIndex + 1);
+				if (aiMessage.getType() == ChatMessage.TYPE_ASSISTANT) {
+					aiMessageIndex = messageIndex + 1;
 				}
 			}
 		}
@@ -1202,28 +1171,63 @@ public class ChatFragment extends Fragment {
 			return;
 		}
 
-		// 安全删除消息
-		if (removeIndex != -1 && removeIndex < messages.size()) {
-			ChatMessage messageToRemove = messages.get(removeIndex);
-			messages.remove(removeIndex);
-			currentConversation.getMessages().remove(messageToRemove);
+		// 安全删除AI消息
+		if (aiMessageIndex != -1 && aiMessageIndex < messages.size()) {
+			ChatMessage aiMessageToRemove = messages.get(aiMessageIndex);
+			messages.remove(aiMessageIndex);
+			currentConversation.getMessages().remove(aiMessageToRemove);
 
-			// 使用安全方式更新UI - 先保存数据再更新UI
+			// 立即保存对话
+			chatManager.saveConversation(currentConversation);
+
+			// 使用安全方式更新UI
+			if (adapter != null) {
+				adapter.safeNotifyDataSetChanged();
+			}
+
+			AppLogger.d("ChatFragment", "删除AI消息，位置: " + aiMessageIndex);
+		}
+
+		// 重新发送用户消息 - 不创建新的用户消息
+		sendRegeneratedMessage(userMessageContent, currentProviderId, currentModel);
+	}
+
+// 添加重新生成专用的发送方法
+	private void sendRegeneratedMessage(String messageText, String providerId, String model) {
+		this.currentProviderId = providerId;
+		this.currentModel = model;
+
+		if (TextUtils.isEmpty(messageText)) return;
+
+		if (isUpdating) {
+			AppLogger.w("ChatFragment", "正在更新，跳过重新生成");
+			return;
+		}
+
+		isUpdating = true;
+
+		try {
+			// 创建AI消息（流式响应）
+			ChatMessage aiMessage = new ChatMessage(ChatMessage.TYPE_ASSISTANT, "");
+			aiMessage.setStreaming(true);
+			aiMessage.setModel(model);
+			messages.add(aiMessage);
+			currentConversation.addMessage(aiMessage);
+
+			// 立即保存对话
 			chatManager.saveConversation(currentConversation);
 
 			if (adapter != null) {
-				// 延迟更新UI确保数据同步
-				new android.os.Handler().postDelayed(new Runnable() {
-						@Override
-						public void run() {
-							adapter.safeNotifyDataSetChanged();
-						}
-					}, 50);
+				adapter.safeNotifyDataSetChanged();
 			}
-		}
+			safeScrollToBottom();
 
-		// 重新发送用户消息
-		sendMessage(userMessageContent, currentProviderId, currentModel);
+			// 发送API请求
+			sendChatRequest(messageText, providerId, model, aiMessage);
+
+		} finally {
+			isUpdating = false;
+		}
 	}
 	
 	// 在ChatFragment类中添加
