@@ -12,36 +12,46 @@ import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 public class MainActivity extends FragmentActivity {
-    
+
     private ViewPager viewPager;
     private FragmentPagerAdapter pagerAdapter;
     private ChatFragment chatFragment;
     private InputFragment inputFragment;
-    
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        // 初始化异常捕获
-        CrashHandler.getInstance().init(this);
-        
-        setContentView(R.layout.activity_main);
-        initViewPager();
-    }
-    
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		// 初始化异常捕获
+		CrashHandler.getInstance().init(this);
+
+		// 初始化全局日志记录器
+		AppLogger.getInstance().init(this);
+
+		// 清理旧日志
+		AppLogger.getInstance().cleanupOldLogs();
+
+		// 记录应用启动
+		AppLogger.getInstance().i("MainActivity", "App started");
+
+		setContentView(R.layout.activity_main);
+		initViewPager();
+	}
+	
+
     private void initViewPager() {
         viewPager = findViewById(R.id.viewPager);
-        
+
         // 预先创建Fragment实例
         chatFragment = new ChatFragment();
         inputFragment = new InputFragment();
-        
+
         pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
             @Override
             public int getCount() {
                 return 3;
             }
-            
+
             @Override
             public Fragment getItem(int position) {
                 switch (position) {
@@ -55,7 +65,7 @@ public class MainActivity extends FragmentActivity {
                         return new Fragment();
                 }
             }
-            
+
             @Override
             public Object instantiateItem(ViewGroup container, int position) {
                 try {
@@ -66,32 +76,32 @@ public class MainActivity extends FragmentActivity {
                 }
             }
         };
-        
+
         viewPager.setAdapter(pagerAdapter);
         viewPager.setCurrentItem(1); // 默认显示聊天页面
-        
+
         // 添加页面切换监听，确保Fragment正确初始化
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
-            
-            @Override
-            public void onPageSelected(int position) {
-                // 当切换到聊天页面时，确保聊天Fragment已初始化
-                if (position == 1 && chatFragment != null) {
-                    chatFragment.ensureInitialized();
-                }
-                // 当切换到输入页面时，确保模型显示正确
-                if (position == 2 && inputFragment != null) {
-                    inputFragment.refreshModelDisplay();
-                }
-            }
-            
-            @Override
-            public void onPageScrollStateChanged(int state) {}
-        });
+				@Override
+				public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+
+				@Override
+				public void onPageSelected(int position) {
+					// 当切换到聊天页面时，确保聊天Fragment已初始化
+					if (position == 1 && chatFragment != null) {
+						chatFragment.ensureInitialized();
+					}
+					// 当切换到输入页面时，确保模型显示正确
+					if (position == 2 && inputFragment != null) {
+						inputFragment.refreshModelDisplay();
+					}
+				}
+
+				@Override
+				public void onPageScrollStateChanged(int state) {}
+			});
     }
-    
+
     public void sendChatMessage(final String message, final String providerId, final String model) {
         if (chatFragment != null && chatFragment.isAdded()) {
             chatFragment.sendMessage(message, providerId, model);
@@ -103,24 +113,24 @@ public class MainActivity extends FragmentActivity {
             }
             // 延迟发送消息
             new android.os.Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if (chatFragment != null) {
-                        chatFragment.sendMessage(message, providerId, model);
-                        // 切换到聊天页面查看回复
-                        viewPager.setCurrentItem(1);
-                    }
-                }
-            }, 500);
+					@Override
+					public void run() {
+						if (chatFragment != null) {
+							chatFragment.sendMessage(message, providerId, model);
+							// 切换到聊天页面查看回复
+							viewPager.setCurrentItem(1);
+						}
+					}
+				}, 500);
         }
     }
-    
+
     public void switchToChatPage() {
         if (viewPager != null) {
             viewPager.setCurrentItem(1);
         }
     }
-    
+
     private Fragment createFallbackFragment() {
         return new Fragment() {
             @Override
