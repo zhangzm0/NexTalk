@@ -31,14 +31,6 @@ public class ChatManager {
         this.context = context.getApplicationContext();
     }
 
-    // 创建新对话
-    public ChatConversation createNewConversation() {
-        ChatConversation conversation = new ChatConversation("新对话");
-        saveConversation(conversation);
-        setCurrentConversationId(conversation.getId());
-        return conversation;
-    }
-
     // 保存对话
     public void saveConversation(ChatConversation conversation) {
         try {
@@ -66,39 +58,6 @@ public class ChatManager {
             e.printStackTrace();
         }
         return null;
-    }
-
-    // 加载所有对话（按更新时间倒序）
-    public List<ChatConversation> loadAllConversations() {
-        List<ChatConversation> conversations = new ArrayList<>();
-        try {
-            SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-            String conversationIds = prefs.getString(KEY_CONVERSATION_IDS, "");
-
-            if (!conversationIds.isEmpty()) {
-                String[] ids = conversationIds.split(",");
-                for (String id : ids) {
-                    ChatConversation conversation = loadConversation(id);
-                    if (conversation != null) {
-                        conversations.add(conversation);
-                    }
-                }
-            }
-
-            // 按更新时间倒序排序（置顶的排前面）
-            Collections.sort(conversations, new Comparator<ChatConversation>() {
-					@Override
-					public int compare(ChatConversation c1, ChatConversation c2) {
-						if (c1.isPinned() && !c2.isPinned()) return -1;
-						if (!c1.isPinned() && c2.isPinned()) return 1;
-						return Long.compare(c2.getUpdateTime(), c1.getUpdateTime());
-					}
-				});
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return conversations;
     }
 
     // 删除对话
@@ -129,20 +88,6 @@ public class ChatManager {
             conversation.setPinned(!conversation.isPinned());
             saveConversation(conversation);
         }
-    }
-
-    // 获取当前对话
-    public ChatConversation getCurrentConversation() {
-        String currentId = getCurrentConversationId();
-        if (!currentId.isEmpty()) {
-            return loadConversation(currentId);
-        }
-        return null;
-    }
-
-    // 设置当前对话
-    public void setCurrentConversation(String conversationId) {
-        setCurrentConversationId(conversationId);
     }
 
     // 清空所有对话
@@ -260,7 +205,61 @@ public class ChatManager {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         prefs.edit().putString(KEY_CURRENT_CONVERSATION, conversationId).apply();
     }
-	
-	
-	
+
+
+
+	// ... 其他代码不变
+
+	// 创建新对话
+	public ChatConversation createNewConversation() {
+		ChatConversation conversation = new ChatConversation("新对话");
+		saveConversation(conversation);
+		setCurrentConversationId(conversation.getId());
+		return conversation;
+	}
+
+	// 加载所有对话（按更新时间倒序，去掉置顶逻辑）
+	public List<ChatConversation> loadAllConversations() {
+		List<ChatConversation> conversations = new ArrayList<>();
+		try {
+			SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+			String conversationIds = prefs.getString(KEY_CONVERSATION_IDS, "");
+
+			if (!conversationIds.isEmpty()) {
+				String[] ids = conversationIds.split(",");
+				for (String id : ids) {
+					ChatConversation conversation = loadConversation(id);
+					if (conversation != null) {
+						conversations.add(conversation);
+					}
+				}
+			}
+
+			// 按更新时间倒序排序（最新的在前面）
+			Collections.sort(conversations, new Comparator<ChatConversation>() {
+					@Override
+					public int compare(ChatConversation c1, ChatConversation c2) {
+						return Long.compare(c2.getUpdateTime(), c1.getUpdateTime());
+					}
+				});
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return conversations;
+	}
+
+	// 设置当前对话
+	public void setCurrentConversation(String conversationId) {
+		setCurrentConversationId(conversationId);
+	}
+
+	// 获取当前对话
+	public ChatConversation getCurrentConversation() {
+		String currentId = getCurrentConversationId();
+		if (!currentId.isEmpty()) {
+			return loadConversation(currentId);
+		}
+		return null;
+	}
 }

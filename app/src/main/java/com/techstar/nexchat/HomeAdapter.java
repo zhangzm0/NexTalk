@@ -120,7 +120,7 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     // 聊天历史ViewHolder
     private class ChatHistoryViewHolder extends RecyclerView.ViewHolder {
         private TextView tvChatTitle, tvPreview, tvTime, tvMessageCount;
-        private ImageView ivPin;
+        
 
         public ChatHistoryViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -128,7 +128,7 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvPreview = itemView.findViewById(R.id.tvPreview);
             tvTime = itemView.findViewById(R.id.tvTime);
             tvMessageCount = itemView.findViewById(R.id.tvMessageCount);
-            ivPin = itemView.findViewById(R.id.ivPin);
+            
         }
 
         public void bind(final ChatConversation conversation) {
@@ -137,8 +137,7 @@ public class HomeAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvTime.setText(conversation.getFormattedTime());
             tvMessageCount.setText(conversation.getMessageCount() + "条");
 
-            // 显示置顶图标
-            ivPin.setVisibility(conversation.isPinned() ? View.VISIBLE : View.GONE);
+            
 
             // 点击进入对话
             itemView.setOnClickListener(new View.OnClickListener() {

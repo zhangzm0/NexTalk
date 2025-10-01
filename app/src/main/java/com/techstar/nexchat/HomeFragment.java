@@ -43,50 +43,13 @@ public class HomeFragment extends Fragment {
         recyclerView.setAdapter(adapter);
     }
 
-    private void loadData() {
-		items.clear();
-
-		// 使用清晰的矢量图标
-		items.add(new HomeMenuItem(R.drawable.ic_add_white_24dp, "新建对话", new View.OnClickListener() {
-						  @Override
-						  public void onClick(View v) {
-							  createNewChat();
-						  }
-					  }));
-
-		items.add(new HomeMenuItem(R.drawable.ic_delete_white_24dp, "清空所有对话", new View.OnClickListener() {
-						  @Override
-						  public void onClick(View v) {
-							  clearAllChats();
-						  }
-					  }));
-
-		items.add(new HomeMenuItem(R.drawable.ic_settings_white_24dp, "设置", new View.OnClickListener() {
-						  @Override
-						  public void onClick(View v) {
-							  openSettings();
-						  }
-					  }));
-
-		// 添加分隔符
-		items.add("分隔符");
-
-		// 添加聊天历史
-		loadChatHistory();
-
-		adapter.notifyDataSetChanged();
-	}
+    
 
     private void loadChatHistory() {
         List<ChatConversation> conversations = chatManager.loadAllConversations();
         for (ChatConversation conversation : conversations) {
             items.add(conversation);
         }
-    }
-
-    private void createNewChat() {
-        ChatConversation newConversation = chatManager.createNewConversation();
-        switchToChatAndLoad(newConversation.getId());
     }
 
     private void clearAllChats() {
@@ -108,13 +71,6 @@ public class HomeFragment extends Fragment {
     private void openSettings() {
         Intent intent = new Intent(getActivity(), SettingsActivity.class);
         startActivity(intent);
-    }
-
-    private void switchToChatAndLoad(String conversationId) {
-        chatManager.setCurrentConversation(conversationId);
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).switchToChatPage();
-        }
     }
 
     // HomeAdapter内部类
@@ -233,7 +189,7 @@ public class HomeFragment extends Fragment {
         // 聊天历史ViewHolder
         private class ChatHistoryViewHolder extends RecyclerView.ViewHolder {
             private TextView tvChatTitle, tvPreview, tvTime, tvMessageCount;
-            private android.widget.ImageView ivPin;
+            
 
             public ChatHistoryViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -241,7 +197,7 @@ public class HomeFragment extends Fragment {
                 tvPreview = itemView.findViewById(R.id.tvPreview);
                 tvTime = itemView.findViewById(R.id.tvTime);
                 tvMessageCount = itemView.findViewById(R.id.tvMessageCount);
-                ivPin = itemView.findViewById(R.id.ivPin);
+                
             }
 
             public void bind(final ChatConversation conversation) {
@@ -257,13 +213,7 @@ public class HomeFragment extends Fragment {
                 if (tvMessageCount != null) {
                     tvMessageCount.setText(conversation.getMessageCount() + "条");
                 }
-                if (ivPin != null) {
-                    if (conversation.isPinned()) {
-                        ivPin.setVisibility(View.VISIBLE);
-                    } else {
-                        ivPin.setVisibility(View.GONE);
-                    }
-                }
+                
 
                 // 点击进入对话
                 itemView.setOnClickListener(new View.OnClickListener() {
@@ -313,33 +263,6 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // 显示对话操作菜单
-    private void showConversationMenu(final ChatConversation conversation) {
-        new android.app.AlertDialog.Builder(getActivity())
-            .setTitle(conversation.getTitle())
-            .setItems(new String[]{"置顶", "删除对话", "重命名"}, new android.content.DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(android.content.DialogInterface dialog, int which) {
-                    switch (which) {
-                        case 0: // 置顶/取消置顶
-                            chatManager.togglePinConversation(conversation.getId());
-                            loadData();
-                            String action = conversation.isPinned() ? "取消置顶" : "置顶";
-                            Toast.makeText(getActivity(), "已" + action, Toast.LENGTH_SHORT).show();
-                            break;
-                        case 1: // 删除
-                            deleteConversation(conversation);
-                            break;
-                        case 2: // 重命名
-                            renameConversation(conversation);
-                            break;
-                    }
-                }
-            })
-            .setNegativeButton("取消", null)
-            .show();
-    }
-
     private void deleteConversation(final ChatConversation conversation) {
         new android.app.AlertDialog.Builder(getActivity())
             .setTitle("确认删除")
@@ -383,4 +306,121 @@ public class HomeFragment extends Fragment {
         android.app.AlertDialog dialog = builder.create();
         dialog.show();
     }
+
+	private void loadData() {
+		items.clear();
+
+		// 添加菜单项
+		items.add(new HomeMenuItem(R.drawable.ic_add_white_24dp, "新建对话", new View.OnClickListener() {
+						  @Override
+						  public void onClick(View v) {
+							  createNewChat();
+						  }
+					  }));
+
+		// 移除置顶相关菜单项，简化界面
+		items.add(new HomeMenuItem(R.drawable.ic_delete_white_24dp, "清空所有对话", new View.OnClickListener() {
+						  @Override
+						  public void onClick(View v) {
+							  clearAllChats();
+						  }
+					  }));
+
+		items.add(new HomeMenuItem(R.drawable.ic_settings_white_24dp, "设置", new View.OnClickListener() {
+						  @Override
+						  public void onClick(View v) {
+							  openSettings();
+						  }
+					  }));
+
+		// 添加分隔符
+		items.add("分隔符");
+
+		// 添加聊天历史
+		loadChatHistory();
+
+		adapter.notifyDataSetChanged();
+	}
+
+	private void createNewChat() {
+		AppLogger.d("HomeFragment", "创建新对话");
+		ChatConversation newConversation = chatManager.createNewConversation();
+		switchToChatAndLoad(newConversation.getId());
+	}
+
+	private void switchToChatAndLoad(String conversationId) {
+		AppLogger.d("HomeFragment", "切换到对话: " + conversationId);
+		chatManager.setCurrentConversation(conversationId);
+		if (getActivity() instanceof MainActivity) {
+			((MainActivity) getActivity()).switchToChatPage();
+		}
+	}
+
+	// 简化长按菜单，移除置顶选项
+	private void showConversationMenu(final ChatConversation conversation) {
+		new android.app.AlertDialog.Builder(getActivity())
+			.setTitle(conversation.getTitle())
+			.setItems(new String[]{"删除对话", "重命名"}, new android.content.DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(android.content.DialogInterface dialog, int which) {
+					switch (which) {
+						case 0: // 删除
+							deleteConversation(conversation);
+							break;
+						case 1: // 重命名
+							renameConversation(conversation);
+							break;
+					}
+				}
+			})
+			.setNegativeButton("取消", null)
+			.show();
+	}
+
+	// 修改ChatHistoryViewHolder，移除置顶图标
+	private class ChatHistoryViewHolder extends RecyclerView.ViewHolder {
+		private TextView tvChatTitle, tvPreview, tvTime, tvMessageCount;
+
+		public ChatHistoryViewHolder(@NonNull View itemView) {
+			super(itemView);
+			tvChatTitle = itemView.findViewById(R.id.tvChatTitle);
+			tvPreview = itemView.findViewById(R.id.tvPreview);
+			tvTime = itemView.findViewById(R.id.tvTime);
+			tvMessageCount = itemView.findViewById(R.id.tvMessageCount);
+
+			// 移除置顶图标相关代码
+		}
+
+		public void bind(final ChatConversation conversation) {
+			if (tvChatTitle != null) {
+				tvChatTitle.setText(conversation.getTitle());
+			}
+			if (tvPreview != null) {
+				tvPreview.setText(conversation.getPreview());
+			}
+			if (tvTime != null) {
+				tvTime.setText(conversation.getFormattedTime());
+			}
+			if (tvMessageCount != null) {
+				tvMessageCount.setText(conversation.getMessageCount() + "条");
+			}
+
+			// 点击进入对话
+			itemView.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						switchToChatAndLoad(conversation.getId());
+					}
+				});
+
+			// 长按显示操作菜单
+			itemView.setOnLongClickListener(new View.OnLongClickListener() {
+					@Override
+					public boolean onLongClick(View v) {
+						showConversationMenu(conversation);
+						return true;
+					}
+				});
+		}
+	}
 }
