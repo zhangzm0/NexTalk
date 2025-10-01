@@ -41,6 +41,7 @@ public class ChatFragment extends Fragment {
     private RecyclerView recyclerView;
     private MessageAdapter adapter;
     private TextView tvChatTitle;
+	
 
     private ChatConversation currentConversation;
     private List<ChatMessage> messages;
@@ -49,6 +50,8 @@ public class ChatFragment extends Fragment {
 
 	private static final int TYPE_USER = 0;
     private static final int TYPE_ASSISTANT = 1;
+	
+	private int updateCount = 0; // 控制更新频率
 
     private void initMarkwon() {
         markwon = Markwon.builder(getActivity())
@@ -197,7 +200,7 @@ public class ChatFragment extends Fragment {
 			int completionTokens = 0;
 			int totalTokens = 0;
 			boolean hasTokens = false;
-			final int updateCount = 0; // 控制更新频率
+			updateCount = 0; // 控制更新频率
 
 			while ((line = reader.readLine()) != null && isStreaming) {
 				if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
