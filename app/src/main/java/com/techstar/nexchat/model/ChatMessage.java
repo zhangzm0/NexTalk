@@ -1,4 +1,7 @@
 package com.techstar.nexchat.model;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class ChatMessage {
     public static final int TYPE_USER = 0;
@@ -11,17 +14,6 @@ public class ChatMessage {
     private long timestamp;
     private boolean isStreaming;
     private String model;
-
-    public ChatMessage() {
-        this.timestamp = System.currentTimeMillis();
-        this.id = "msg_" + System.currentTimeMillis();
-    }
-
-    public ChatMessage(int type, String content) {
-        this();
-        this.type = type;
-        this.content = content;
-    }
 
     // Getter and Setter
     public String getId() { return id; }
@@ -41,4 +33,32 @@ public class ChatMessage {
 
     public String getModel() { return model; }
     public void setModel(String model) { this.model = model; }
+
+	private int tokens; // 消耗的tokens
+	private String responseId; // 响应ID
+
+	public ChatMessage() {
+		this.timestamp = System.currentTimeMillis();
+		this.id = "msg_" + System.currentTimeMillis();
+		this.tokens = 0;
+	}
+
+	public ChatMessage(int type, String content) {
+		this();
+		this.type = type;
+		this.content = content;
+	}
+
+	// Getter and Setter
+	public int getTokens() { return tokens; }
+	public void setTokens(int tokens) { this.tokens = tokens; }
+
+	public String getResponseId() { return responseId; }
+	public void setResponseId(String responseId) { this.responseId = responseId; }
+
+	// 获取格式化时间
+	public String getFormattedTime() {
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+		return sdf.format(new Date(timestamp));
+	}
 }

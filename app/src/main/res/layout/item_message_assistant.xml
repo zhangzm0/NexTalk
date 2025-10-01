@@ -3,27 +3,112 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="12dp">
+    android:orientation="vertical"
+    android:padding="8dp">
 
-    <TextView
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:text="🤖"
-        android:textSize="20sp"
-        android:gravity="center"
-        android:layout_marginEnd="12dp"/>
-
-    <TextView
-        android:id="@+id/tvMessage"
-        android:layout_width="0dp"
+    <!-- AI消息气泡 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="AI回复"
-        android:textColor="#E0E0E0"
-        android:textSize="14sp"
-        android:background="#2D2D2D"
-        android:padding="12dp"
-        android:lineSpacingExtra="2dp"/>
+        android:orientation="vertical"
+        android:gravity="start">
+
+        <!-- AI模型名称 -->
+        <TextView
+            android:id="@+id/tvModelName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AI模型"
+            android:textColor="#AAAAAA"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginStart="12dp"
+            android:layout_marginBottom="2dp"/>
+
+        <!-- 消息内容 -->
+        <TextView
+            android:id="@+id/tvMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="40dp"
+            android:maxWidth="280dp"
+            android:text="AI回复"
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:lineSpacingExtra="2dp"
+            android:background="@drawable/bubble_assistant"
+            android:padding="12dp"
+            android:textIsSelectable="true"/>
+
+    </LinearLayout>
+
+    <!-- 时间和tokens信息 -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="2dp">
+
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="时间"
+            android:textColor="#888888"
+            android:textSize="10sp"/>
+
+        <TextView
+            android:id="@+id/tvTokens"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" • 0 tokens"
+            android:textColor="#888888"
+            android:textSize="10sp"
+            android:layout_marginStart="8dp"/>
+
+    </LinearLayout>
+
+    <!-- 操作按钮 -->
+    <LinearLayout
+        android:id="@+id/layoutActions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnCopy"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:text="复制"
+            android:textColor="#2196F3"
+            android:textSize="10sp"
+            android:background="@android:color/transparent"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="12dp"
+            android:background="#666666"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"/>
+
+        <Button
+            android:id="@+id/btnRegenerate"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:text="重新生成"
+            android:textColor="#4CAF50"
+            android:textSize="10sp"
+            android:background="@android:color/transparent"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"/>
+
+    </LinearLayout>
 
 </LinearLayout>
