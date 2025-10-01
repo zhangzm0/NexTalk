@@ -446,7 +446,7 @@ public class InputFragment extends Fragment {
 			});
 	}
 
-	// 修改模型选择方法，添加供应商存在性检查
+	// 在InputFragment.java中确保currentProviderId正确设置
 	private void showModelSelectorForProvider(final ApiProvider provider) {
 		if (provider.getModels().isEmpty()) {
 			Toast.makeText(getActivity(), "该供应商没有可用模型", Toast.LENGTH_SHORT).show();
@@ -468,6 +468,14 @@ public class InputFragment extends Fragment {
 
 					updateModelSpinner();
 					Toast.makeText(getActivity(), "已选择: " + currentModel, Toast.LENGTH_SHORT).show();
+
+					// 确保ChatFragment也能获取到当前选择
+					if (getActivity() instanceof MainActivity) {
+						MainActivity mainActivity = (MainActivity) getActivity();
+						if (mainActivity.chatFragment != null) {
+							mainActivity.chatFragment.setCurrentProviderAndModel(currentProviderId, currentModel);
+						}
+					}
 				}
 			})
 			.setNegativeButton("取消", null);

@@ -144,28 +144,11 @@ public class ChatFragment extends Fragment {
 				}
 			});
     }
-	// 修复滚动方法
-	private void scrollToBottom() {
-		if (recyclerView != null && adapter != null) {
-			recyclerView.postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						if (messages != null && messages.size() > 0) {
-							try {
-								recyclerView.smoothScrollToPosition(messages.size() - 1);
-							} catch (Exception e) {
-								e.printStackTrace();
-							}
-						}
-					}
-				}, 100);
-		}
-	}
 
 
 	private boolean isUpdating = false;
 
-// 修改processStreamResponse方法，添加tokens提取
+// 修改流式响应处理，确保tokens正确提取
 	private void processStreamResponse(Response response, final ChatMessage aiMessage) {
 		try {
 			String line;
@@ -178,6 +161,7 @@ public class ChatFragment extends Fragment {
 			int promptTokens = 0;
 			int completionTokens = 0;
 			int totalTokens = 0;
+			boolean hasTokens = false;
 
 			while ((line = reader.readLine()) != null && isStreaming) {
 				if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
@@ -186,17 +170,30 @@ public class ChatFragment extends Fragment {
 						try {
 							JSONObject data = new JSONObject(jsonStr);
 
-							// 提取tokens信息（如果存在）
+							// 在流结束时提取tokens信息
 							if (data.has("usage")) {
 								JSONObject usage = data.getJSONObject("usage");
-								promptTokens = usage.optInt("prompt_tokens", promptTokens);
-								completionTokens = usage.optInt("completion_tokens", completionTokens);
-								totalTokens = usage.optInt("total_tokens", totalTokens);
+								promptTokens = usage.optInt("prompt_tokens", 0);
+								completionTokens = usage.optInt("completion_tokens", 0);
+								totalTokens = usage.optInt("total_tokens", 0);
+								hasTokens = true;
+								AppLogger.d("ChatFragment", "提取到tokens: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
 							}
 
 							JSONArray choices = data.getJSONArray("choices");
 							if (choices.length() > 0) {
 								JSONObject choice = choices.getJSONObject(0);
+								if (choice.has("finish_reason") && !choice.isNull("finish_reason")) {
+									// 流结束，可能有tokens信息
+									if (data.has("usage")) {
+										JSONObject usage = data.getJSONObject("usage");
+										promptTokens = usage.optInt("prompt_tokens", 0);
+										completionTokens = usage.optInt("completion_tokens", 0);
+										totalTokens = usage.optInt("total_tokens", 0);
+										hasTokens = true;
+									}
+								}
+
 								JSONObject delta = choice.getJSONObject("delta");
 								if (delta.has("content")) {
 									String chunk = delta.getString("content");
@@ -230,10 +227,30 @@ public class ChatFragment extends Fragment {
 				}
 			}
 
+			// 如果没有提取到tokens，尝试估算
+			if (!hasTokens && content.length() > 0) {
+				// 简单估算：中文字符算2个token，英文字符算1个token
+				int chineseCount = 0;
+				int englishCount = 0;
+				String text = content.toString();
+				for (char c : text.toCharArray()) {
+					if (Character.UnicodeScript.of(c) == Character.UnicodeScript.HAN) {
+						chineseCount++;
+					} else if (Character.isLetterOrDigit(c)) {
+						englishCount++;
+					}
+				}
+				completionTokens = (int) (chineseCount * 2 + englishCount * 0.7);
+				totalTokens = completionTokens + 50; // 估算prompt tokens
+				hasTokens = true;
+				AppLogger.d("ChatFragment", "估算tokens: " + completionTokens);
+			}
+
 			// 流式响应结束
 			final int finalPromptTokens = promptTokens;
 			final int finalCompletionTokens = completionTokens;
 			final int finalTotalTokens = totalTokens;
+			final boolean finalHasTokens = hasTokens;
 
 			if (getActivity() != null) {
 				getActivity().runOnUiThread(new Runnable() {
@@ -243,7 +260,12 @@ public class ChatFragment extends Fragment {
 								if (aiMessageIndex >= 0 && aiMessageIndex < messages.size()) {
 									aiMessage.setStreaming(false);
 									// 设置tokens信息
-									aiMessage.setTokensInfo(finalPromptTokens, finalCompletionTokens, finalTotalTokens);
+									if (finalHasTokens) {
+										aiMessage.setTokensInfo(finalPromptTokens, finalCompletionTokens, finalTotalTokens);
+									} else {
+										// 如果没有tokens信息，设置为0
+										aiMessage.setTokensInfo(0, 0, 0);
+									}
 									hidePauseButton();
 									if (adapter != null) {
 										adapter.safeNotifyItemChanged(aiMessageIndex);
@@ -969,6 +991,24 @@ public class ChatFragment extends Fragment {
 					});
 			}
 		}
+		
+		public void safeNotifyDataSetChanged() {
+			if (getActivity() != null) {
+				getActivity().runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							synchronized (lock) {
+								try {
+									notifyDataSetChanged();
+								} catch (Exception e) {
+									AppLogger.e("MessageAdapter", "notifyDataSetChanged失败", e);
+								}
+							}
+						}
+					});
+			}
+		}
+		
 
 		// UserMessageViewHolder - 为用户消息添加操作按钮
 		private class UserMessageViewHolder extends RecyclerView.ViewHolder {
@@ -1187,41 +1227,59 @@ public class ChatFragment extends Fragment {
 		}
 	}
 
-// 在ChatFragment类中添加改进的重新生成方法
+// 修改重新生成方法
 	private void regenerateMessage(ChatMessage message) {
-		AppLogger.d("ChatFragment", "重新生成消息，位置: " + messages.indexOf(message));
+		AppLogger.d("ChatFragment", "重新生成消息，类型: " + message.getType() + ", 位置: " + messages.indexOf(message));
 
-		if (currentProviderId == null || currentProviderId.isEmpty()) {
-			Toast.makeText(getActivity(), "请先选择供应商", Toast.LENGTH_SHORT).show();
+		// 检查供应商和模型选择
+		if (TextUtils.isEmpty(currentProviderId) || TextUtils.isEmpty(currentModel)) {
+			Toast.makeText(getActivity(), "请先选择供应商和模型", Toast.LENGTH_SHORT).show();
 			return;
 		}
 
-		if (currentModel == null || currentModel.isEmpty()) {
-			Toast.makeText(getActivity(), "请先选择模型", Toast.LENGTH_SHORT).show();
-			return;
-		}
-
-		// 找到用户的上一条消息
+		// 找到对应的用户消息
 		int messageIndex = messages.indexOf(message);
-		if (messageIndex > 0) {
-			ChatMessage userMessage = messages.get(messageIndex - 1);
-			if (userMessage.getType() == ChatMessage.TYPE_USER) {
-				// 删除原来的AI回复
-				messages.remove(message);
-				currentConversation.getMessages().remove(message);
+		String userMessageContent = null;
 
-				// 通知适配器 - 使用安全方法
-				if (adapter != null) {
-					adapter.safeNotifyItemRemoved(messageIndex);
+		if (message.getType() == ChatMessage.TYPE_ASSISTANT) {
+			// AI消息：找前一条用户消息
+			if (messageIndex > 0) {
+				ChatMessage userMessage = messages.get(messageIndex - 1);
+				if (userMessage.getType() == ChatMessage.TYPE_USER) {
+					userMessageContent = userMessage.getContent();
 				}
+			}
+		} else if (message.getType() == ChatMessage.TYPE_USER) {
+			// 用户消息：直接使用当前消息内容
+			userMessageContent = message.getContent();
+		}
 
-				// 重新发送用户消息
-				sendMessage(userMessage.getContent(), currentProviderId, currentModel);
-				return;
+		if (userMessageContent == null) {
+			Toast.makeText(getActivity(), "无法重新生成此消息", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		// 删除原来的AI回复（如果是重新生成AI消息）
+		if (message.getType() == ChatMessage.TYPE_ASSISTANT) {
+			messages.remove(message);
+			currentConversation.getMessages().remove(message);
+
+			// 使用安全方式更新UI
+			if (adapter != null) {
+				adapter.safeNotifyItemRemoved(messageIndex);
 			}
 		}
 
-		// 如果找不到对应的用户消息，提示错误
-		Toast.makeText(getActivity(), "无法重新生成此消息", Toast.LENGTH_SHORT).show();
+		// 重新发送用户消息
+		sendMessage(userMessageContent, currentProviderId, currentModel);
 	}
+	
+	// 在ChatFragment类中添加
+	public void setCurrentProviderAndModel(String providerId, String model) {
+		this.currentProviderId = providerId;
+		this.currentModel = model;
+		AppLogger.d("ChatFragment", "设置供应商和模型: " + providerId + ", " + model);
+	}
+	
+	
 }

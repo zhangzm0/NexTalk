@@ -86,14 +86,18 @@ public class ChatMessage {
 		this.tokens = totalTokens; // 向后兼容
 	}
 
-// 获取tokens显示文本
+// 在ChatMessage.java中修改getTokensText方法
 	public String getTokensText() {
 		if (totalTokens > 0) {
-			return promptTokens + "+" + completionTokens + "=" + totalTokens + " tokens";
+			if (promptTokens > 0 && completionTokens > 0) {
+				return promptTokens + "+" + completionTokens + "=" + totalTokens + " tokens";
+			} else {
+				return totalTokens + " tokens";
+			}
 		} else if (tokens > 0) {
 			return tokens + " tokens";
 		} else {
-			return "计算中...";
+			return "无统计"; // 改为"无统计"更准确
 		}
 	}
 	
