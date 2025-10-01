@@ -174,27 +174,6 @@ public class InputFragment extends Fragment {
 				}
 			});
     }
-	
-	private void sendMessage() {
-		String message = etMessage.getText().toString().trim();
-		if (!message.isEmpty()) {
-			if (currentProviderId.isEmpty() || currentModel.isEmpty() || currentModel.equals("点击选择模型")) {
-				Toast.makeText(getActivity(), "请先选择模型", Toast.LENGTH_SHORT).show();
-				return;
-			}
-
-			// 发送消息到ChatFragment
-			if (getActivity() instanceof MainActivity) {
-				MainActivity mainActivity = (MainActivity) getActivity();
-				mainActivity.sendChatMessage(message, currentProviderId, currentModel);
-
-				// 发送后跳转到聊天页面
-				mainActivity.switchToChatPage();
-			}
-
-			etMessage.setText("");
-		}
-	}
 
 
     private void uploadFile() {
@@ -585,6 +564,38 @@ public class InputFragment extends Fragment {
         if (currentModel.isEmpty()) {
             currentModel = "点击选择模型";
             updateModelSpinner();
+        }
+    }
+	
+
+    private void sendMessage() {
+        String message = etMessage.getText().toString().trim();
+        if (!message.isEmpty()) {
+            // 检查供应商和模型选择
+            if (currentProviderId == null || currentProviderId.isEmpty()) {
+                AppLogger.e("InputFragment", "供应商ID为空");
+                Toast.makeText(getActivity(), "请先选择供应商", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (currentModel == null || currentModel.isEmpty() || currentModel.equals("点击选择模型")) {
+                AppLogger.e("InputFragment", "模型未选择");
+                Toast.makeText(getActivity(), "请先选择模型", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            AppLogger.d("InputFragment", "发送消息 - Provider: " + currentProviderId + ", Model: " + currentModel);
+
+            // 发送消息到ChatFragment
+            if (getActivity() instanceof MainActivity) {
+                MainActivity mainActivity = (MainActivity) getActivity();
+                mainActivity.sendChatMessage(message, currentProviderId, currentModel);
+
+                // 发送后跳转到聊天页面
+                mainActivity.switchToChatPage();
+            }
+
+            etMessage.setText("");
         }
     }
 }

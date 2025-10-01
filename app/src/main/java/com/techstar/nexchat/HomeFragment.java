@@ -44,38 +44,38 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadData() {
-        items.clear();
+		items.clear();
 
-        // 添加菜单项
-        items.add(new HomeMenuItem(android.R.drawable.ic_menu_add, "新建对话", new View.OnClickListener() {
+		// 使用清晰的矢量图标
+		items.add(new HomeMenuItem(R.drawable.ic_add_white_24dp, "新建对话", new View.OnClickListener() {
 						  @Override
 						  public void onClick(View v) {
 							  createNewChat();
 						  }
 					  }));
 
-        items.add(new HomeMenuItem(android.R.drawable.ic_menu_delete, "清空所有对话", new View.OnClickListener() {
+		items.add(new HomeMenuItem(R.drawable.ic_delete_white_24dp, "清空所有对话", new View.OnClickListener() {
 						  @Override
 						  public void onClick(View v) {
 							  clearAllChats();
 						  }
 					  }));
 
-        items.add(new HomeMenuItem(android.R.drawable.ic_menu_preferences, "设置", new View.OnClickListener() {
+		items.add(new HomeMenuItem(R.drawable.ic_settings_white_24dp, "设置", new View.OnClickListener() {
 						  @Override
 						  public void onClick(View v) {
 							  openSettings();
 						  }
 					  }));
 
-        // 添加分隔符
-        items.add("分隔符");
+		// 添加分隔符
+		items.add("分隔符");
 
-        // 添加聊天历史
-        loadChatHistory();
+		// 添加聊天历史
+		loadChatHistory();
 
-        adapter.notifyDataSetChanged();
-    }
+		adapter.notifyDataSetChanged();
+	}
 
     private void loadChatHistory() {
         List<ChatConversation> conversations = chatManager.loadAllConversations();
