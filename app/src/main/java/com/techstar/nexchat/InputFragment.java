@@ -548,7 +548,7 @@ public class InputFragment extends Fragment {
             String providerIds = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
                 .getString("provider_ids", "");
 
-            Log.d("InputFragment", "加载供应商ID列表: " + providerIds);
+            AppLogger.d("InputFragment", "加载供应商ID列表: " + providerIds);
 
             if (!providerIds.isEmpty()) {
                 String[] ids = providerIds.split(",");
@@ -560,7 +560,7 @@ public class InputFragment extends Fragment {
                             provider.setId(id);
                         }
                         providers.add(provider);
-                        Log.d("InputFragment", "加载供应商: " + provider.getName() + ", ID: " + provider.getId());
+                        AppLogger.d("InputFragment", "加载供应商: " + provider.getName() + ", ID: " + provider.getId());
                     }
                 }
             }
@@ -570,12 +570,12 @@ public class InputFragment extends Fragment {
 
         // 如果没有数据，提示用户添加供应商
         if (providers.isEmpty()) {
-            Log.d("InputFragment", "没有找到供应商");
+            AppLogger.d("InputFragment", "没有找到供应商");
             // 不再添加示例数据，直接返回空列表
             Toast.makeText(getActivity(), "请先添加API供应商", Toast.LENGTH_LONG).show();
         }
 
-        Log.d("InputFragment", "最终供应商数量: " + providers.size());
+        AppLogger.d("InputFragment", "最终供应商数量: " + providers.size());
         return providers;
     }
 

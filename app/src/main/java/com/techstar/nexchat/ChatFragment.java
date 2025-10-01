@@ -192,9 +192,9 @@ public class ChatFragment extends Fragment {
 				provider.getApiUrl() + "/chat/completions";
 
 			// 日志输出用于调试
-			Log.d("ChatFragment", "API URL: " + apiUrl);
-			Log.d("ChatFragment", "Model: " + model);
-			Log.d("ChatFragment", "Provider: " + provider.getName());
+			AppLogger.d("ChatFragment", "API URL: " + apiUrl);
+			AppLogger.d("ChatFragment", "Model: " + model);
+			AppLogger.d("ChatFragment", "Provider: " + provider.getName());
 
 			RequestBody body = RequestBody.create(
 				MediaType.parse("application/json"), 
@@ -268,7 +268,7 @@ public class ChatFragment extends Fragment {
         if (getActivity() == null) return null;
 
         try {
-            Log.d("ChatFragment", "正在加载供应商: " + providerId);
+            AppLogger.d("ChatFragment", "正在加载供应商: " + providerId);
 
             // 从SharedPreferences加载供应商数据
             String name = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
@@ -280,7 +280,7 @@ public class ChatFragment extends Fragment {
             int modelCount = getActivity().getSharedPreferences("api_providers", Context.MODE_PRIVATE)
                 .getInt(providerId + "_model_count", 0);
 
-            Log.d("ChatFragment", "加载到供应商数据 - Name: " + name + ", URL: " + url);
+            AppLogger.d("ChatFragment", "加载到供应商数据 - Name: " + name + ", URL: " + url);
 
             if (!name.isEmpty()) {
                 ApiProvider provider = new ApiProvider(name, url, key);
@@ -295,13 +295,13 @@ public class ChatFragment extends Fragment {
                     }
                 }
 
-                Log.d("ChatFragment", "成功加载供应商: " + provider.getName() + ", 模型数量: " + provider.getModels().size());
+                AppLogger.d("ChatFragment", "成功加载供应商: " + provider.getName() + ", 模型数量: " + provider.getModels().size());
                 return provider;
             } else {
-                Log.d("ChatFragment", "供应商名称为空，可能不存在");
+                AppLogger.d("ChatFragment", "供应商名称为空，可能不存在");
             }
         } catch (Exception e) {
-            Log.e("ChatFragment", "加载供应商失败: " + e.getMessage());
+            AppLogger.e("ChatFragment", "加载供应商失败: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -535,7 +535,7 @@ public class ChatFragment extends Fragment {
 
 		// 检查是否正在更新
 		if (isUpdating) {
-			log.e("ChatFragment", "Already updating, skip new message");
+			AppLogger.e("ChatFragment", "Already updating, skip new message");
 			return;
 		}
 
@@ -664,7 +664,7 @@ public class ChatFragment extends Fragment {
 			}
 
 		} catch (final Exception e) {
-			log.e("ChatFragment", "Stream response processing failed", e);
+			AppLogger.e("ChatFragment", "Stream response processing failed", e);
 			if (getActivity() != null) {
 				getActivity().runOnUiThread(new Runnable() {
 						@Override
@@ -694,13 +694,13 @@ public class ChatFragment extends Fragment {
 											try {
 												recyclerView.smoothScrollToPosition(messages.size() - 1);
 											} catch (Exception e) {
-												log.e("ChatFragment", "Scroll failed", e);
+												AppLogger.e("ChatFragment", "Scroll failed", e);
 											}
 										}
 									});
 							}
 						} catch (Exception e) {
-							log.e("ChatFragment", "Safe scroll failed", e);
+							AppLogger.e("ChatFragment", "Safe scroll failed", e);
 						}
 					}
 				});
@@ -709,7 +709,7 @@ public class ChatFragment extends Fragment {
 
 	// 修复错误处理方法
 	private void handleError(final String error) {
-		log.e("ChatFragment", "Error: " + error);
+		AppLogger.e("ChatFragment", "Error: " + error);
 
 		if (getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {

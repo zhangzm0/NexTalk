@@ -12,6 +12,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import com.techstar.nexchat.AppLogger;
 
 public class CrashHandler implements UncaughtExceptionHandler {
 
@@ -31,7 +32,7 @@ public class CrashHandler implements UncaughtExceptionHandler {
         this.context = context.getApplicationContext();
         this.defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler(this);
-        Log.d(TAG, "CrashHandler initialized");
+        AppLogger.d(TAG, "CrashHandler initialized");
     }
 
     @Override
@@ -44,11 +45,11 @@ public class CrashHandler implements UncaughtExceptionHandler {
             writeCrashLog(errorInfo);
 
             // 3. 输出到Logcat
-            Log.e(TAG, "App Crashed: " + ex.getMessage(), ex);
+            AppLogger.e(TAG, "App Crashed: " + ex.getMessage(), ex);
 
         } catch (Exception e) {
             // 如果写文件也失败了，至少输出到Logcat
-            Log.e(TAG, "CrashHandler itself failed: " + e.getMessage());
+            AppLogger.e(TAG, "CrashHandler itself failed: " + e.getMessage());
         } finally {
             // 4. 调用系统默认处理（杀死进程）
             if (defaultHandler != null) {
@@ -100,16 +101,16 @@ public class CrashHandler implements UncaughtExceptionHandler {
             fos.write(errorInfo.getBytes());
             fos.flush();
 
-            Log.d(TAG, "Crash log saved: " + logFile.getAbsolutePath());
+            AppLogger.d(TAG, "Crash log saved: " + logFile.getAbsolutePath());
 
         } catch (Exception e) {
-            Log.e(TAG, "Failed to write crash log: " + e.getMessage());
+            AppLogger.e(TAG, "Failed to write crash log: " + e.getMessage());
         } finally {
             if (fos != null) {
                 try {
                     fos.close();
                 } catch (Exception e) {
-                    Log.e(TAG, "Failed to close file stream: " + e.getMessage());
+                    AppLogger.e(TAG, "Failed to close file stream: " + e.getMessage());
                 }
             }
         }
@@ -124,9 +125,9 @@ public class CrashHandler implements UncaughtExceptionHandler {
 				"=== End Log ===\n";
 
             writeCrashLog(logContent);
-            Log.d(TAG, "Error logged: " + message);
+            AppLogger.d(TAG, "Error logged: " + message);
         } catch (Exception e) {
-            Log.e(TAG, "Failed to log error: " + e.getMessage());
+            AppLogger.e(TAG, "Failed to log error: " + e.getMessage());
         }
     }
 
@@ -162,7 +163,7 @@ public class CrashHandler implements UncaughtExceptionHandler {
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Failed to read crash log: " + e.getMessage());
+            AppLogger.e(TAG, "Failed to read crash log: " + e.getMessage());
         }
         return "Error reading crash log";
     }

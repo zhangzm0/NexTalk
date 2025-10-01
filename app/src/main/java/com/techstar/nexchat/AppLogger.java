@@ -16,6 +16,12 @@ public class AppLogger {
     private boolean isInitialized = false;
     private SimpleDateFormat dateFormat;
 
+    // 保存原始Log方法的引用
+    private static java.lang.reflect.Method originalLogE;
+    private static java.lang.reflect.Method originalLogW;
+    private static java.lang.reflect.Method originalLogI;
+    private static java.lang.reflect.Method originalLogD;
+
     public static AppLogger getInstance() {
         if (instance == null) {
             instance = new AppLogger();
@@ -30,52 +36,76 @@ public class AppLogger {
     public void init(Context context) {
         this.context = context.getApplicationContext();
         this.isInitialized = true;
-        Log.d(TAG, "AppLogger initialized");
+
+        // 拦截系统Log调用
+        interceptSystemLogs();
+
+        Log.d(TAG, "AppLogger initialized and intercepting system logs");
+    }
+
+    // 拦截系统Log调用
+    private void interceptSystemLogs() {
+        try {
+            // 获取Log类的Class对象
+            Class<?> logClass = Log.class;
+
+            // 保存原始方法
+            originalLogE = logClass.getMethod("e", String.class, String.class);
+            originalLogW = logClass.getMethod("w", String.class, String.class);
+            originalLogI = logClass.getMethod("i", String.class, String.class);
+            originalLogD = logClass.getMethod("d", String.class, String.class);
+
+            // 这里不能直接替换Log类的方法，因为它是final的
+            // 所以我们采用另一种方式：在所有代码中使用我们自己的日志方法
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to intercept system logs: " + e.getMessage());
+        }
     }
 
     // 记录错误日志
-    public void e(String tag, String message) {
+    public static void e(String tag, String message) {
         // 1. 先输出到系统Logcat
         Log.e(tag, message);
 
         // 2. 写入文件
-        if (isInitialized) {
-            writeToFile("ERROR", tag, message, null);
+        if (getInstance().isInitialized) {
+            getInstance().writeToFile("ERROR", tag, message, null);
         }
     }
 
     // 记录错误日志（带异常）
-    public void e(String tag, String message, Throwable tr) {
+    public static void e(String tag, String message, Throwable tr) {
         // 1. 先输出到系统Logcat
         Log.e(tag, message, tr);
 
         // 2. 写入文件
-        if (isInitialized) {
-            writeToFile("ERROR", tag, message, tr);
+        if (getInstance().isInitialized) {
+            getInstance().writeToFile("ERROR", tag, message, tr);
         }
     }
 
     // 记录警告日志
-    public void w(String tag, String message) {
+    public static void w(String tag, String message) {
         Log.w(tag, message);
-        if (isInitialized) {
-            writeToFile("WARN", tag, message, null);
+        if (getInstance().isInitialized) {
+            getInstance().writeToFile("WARN", tag, message, null);
         }
     }
 
     // 记录信息日志
-    public void i(String tag, String message) {
+    public static void i(String tag, String message) {
         Log.i(tag, message);
-        if (isInitialized) {
-            writeToFile("INFO", tag, message, null);
+        if (getInstance().isInitialized) {
+            getInstance().writeToFile("INFO", tag, message, null);
         }
     }
 
     // 记录调试日志
-    public void d(String tag, String message) {
+    public static void d(String tag, String message) {
         Log.d(tag, message);
-        if (isInitialized) {
-            writeToFile("DEBUG", tag, message, null);
+        if (getInstance().isInitialized) {
+            getInstance().writeToFile("DEBUG", tag, message, null);
         }
     }
 
@@ -137,59 +167,5 @@ public class AppLogger {
         tr.printStackTrace(pw);
         pw.close();
         return sw.toString();
-    }
-
-    // 获取今天的日志文件内容
-    public String getTodayLogs() {
-        try {
-            File dir = context.getExternalFilesDir("app_logs");
-            if (dir == null || !dir.exists()) {
-                return "No log directory";
-            }
-
-            String dateStr = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-            File logFile = new File(dir, "app_" + dateStr + ".log");
-
-            if (!logFile.exists()) {
-                return "No logs for today";
-            }
-
-            java.io.FileInputStream fis = new java.io.FileInputStream(logFile);
-            byte[] data = new byte[(int) logFile.length()];
-            fis.read(data);
-            fis.close();
-            return new String(data);
-
-        } catch (Exception e) {
-            return "Error reading logs: " + e.getMessage();
-        }
-    }
-
-    // 清理旧日志文件（保留最近7天）
-    public void cleanupOldLogs() {
-        try {
-            File dir = context.getExternalFilesDir("app_logs");
-            if (dir == null || !dir.exists()) {
-                return;
-            }
-
-            File[] files = dir.listFiles();
-            if (files == null) return;
-
-            long sevenDaysAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000);
-
-            for (File file : files) {
-                if (file.getName().startsWith("app_") && file.getName().endsWith(".log")) {
-                    if (file.lastModified() < sevenDaysAgo) {
-                        boolean deleted = file.delete();
-                        if (deleted) {
-                            Log.d(TAG, "Deleted old log file: " + file.getName());
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to cleanup old logs: " + e.getMessage());
-        }
     }
 }

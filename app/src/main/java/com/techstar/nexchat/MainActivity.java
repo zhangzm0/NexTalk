@@ -18,26 +18,26 @@ public class MainActivity extends FragmentActivity {
     private ChatFragment chatFragment;
     private InputFragment inputFragment;
 
-    @Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+	@Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-		// 初始化异常捕获
-		CrashHandler.getInstance().init(this);
+        // 初始化异常捕获
+        CrashHandler.getInstance().init(this);
 
-		// 初始化全局日志记录器
-		AppLogger.getInstance().init(this);
+        // 初始化全局日志记录器
+        AppLogger.getInstance().init(this);
 
-		// 清理旧日志
-		AppLogger.getInstance().cleanupOldLogs();
+        
 
-		// 记录应用启动
-		AppLogger.getInstance().i("MainActivity", "App started");
+        // 使用新的日志方法
+        AppLogger.i("MainActivity", "App started");
 
-		setContentView(R.layout.activity_main);
-		initViewPager();
-	}
-	
+        setContentView(R.layout.activity_main);
+        initViewPager();
+    }
+
+
 
     private void initViewPager() {
         viewPager = findViewById(R.id.viewPager);
