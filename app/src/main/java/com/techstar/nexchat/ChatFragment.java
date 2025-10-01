@@ -531,6 +531,7 @@ public class ChatFragment extends Fragment {
 	private String currentProviderId = "";
 	private String currentModel = "";
 
+	// 在ChatFragment中添加更安全的消息发送方法
 	public void sendMessage(String messageText, String providerId, String model) {
 		this.currentProviderId = providerId;
 		this.currentModel = model;
@@ -572,11 +573,13 @@ public class ChatFragment extends Fragment {
 				String newTitle = messageText.length() > 20 ? messageText.substring(0, 20) + "..." : messageText;
 				currentConversation.setTitle(newTitle);
 				tvChatTitle.setText(newTitle);
-				chatManager.saveConversation(currentConversation);
 			}
 
+			// 立即保存对话
+			chatManager.saveConversation(currentConversation);
+
 			if (adapter != null) {
-				adapter.safeNotifyItemInserted(messages.size() - 1);
+				adapter.safeNotifyDataSetChanged();
 			}
 			safeScrollToBottom();
 
@@ -587,8 +590,11 @@ public class ChatFragment extends Fragment {
 			messages.add(aiMessage);
 			currentConversation.addMessage(aiMessage);
 
+			// 立即保存包含AI消息的对话
+			chatManager.saveConversation(currentConversation);
+
 			if (adapter != null) {
-				adapter.safeNotifyItemInserted(messages.size() - 1);
+				adapter.safeNotifyDataSetChanged();
 			}
 			safeScrollToBottom();
 
@@ -1010,7 +1016,7 @@ public class ChatFragment extends Fragment {
 		}
 		
 
-		// UserMessageViewHolder - 为用户消息添加操作按钮
+		// 在MessageAdapter的ViewHolder中移除长按事件
 		private class UserMessageViewHolder extends RecyclerView.ViewHolder {
 			private TextView tvMessage, tvTime;
 			private LinearLayout layoutActions;
@@ -1020,89 +1026,21 @@ public class ChatFragment extends Fragment {
 				super(itemView);
 				tvMessage = itemView.findViewById(R.id.tvMessage);
 				tvTime = itemView.findViewById(R.id.tvTime);
-
-				// 为用户消息添加操作布局（需要修改布局文件）
-				// 先检查是否存在，如果不存在就动态添加
 				layoutActions = itemView.findViewById(R.id.layoutActions);
-				if (layoutActions == null) {
-					// 动态创建操作按钮布局
-					createUserMessageActions(itemView);
-				} else {
-					btnCopy = itemView.findViewById(R.id.btnCopy);
-					btnRegenerate = itemView.findViewById(R.id.btnRegenerate);
-				}
-			}
+				btnCopy = itemView.findViewById(R.id.btnCopy);
+				btnRegenerate = itemView.findViewById(R.id.btnRegenerate);
 
-			// 在UserMessageViewHolder的createUserMessageActions方法中修复
-			private void createUserMessageActions(View itemView) {
-				// 如果布局文件中没有操作按钮，动态创建
-				if (itemView instanceof LinearLayout) {
-					LinearLayout rootLayout = (LinearLayout) itemView;
-
-					layoutActions = new LinearLayout(getActivity());
-					layoutActions.setId(R.id.layoutActions);
-					layoutActions.setOrientation(LinearLayout.HORIZONTAL); // 修复：HORIZONTAL
-					layoutActions.setLayoutParams(new LinearLayout.LayoutParams(
-													  LinearLayout.LayoutParams.WRAP_CONTENT, 
-													  LinearLayout.LayoutParams.WRAP_CONTENT
-												  ));
-					layoutActions.setGravity(android.view.Gravity.END);
-
-					
-
-					LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-						LinearLayout.LayoutParams.WRAP_CONTENT,
-						LinearLayout.LayoutParams.WRAP_CONTENT
-					);
-					params.setMargins(0, 4, 12, 0);
-					layoutActions.setLayoutParams(params);
-
-					// 复制按钮
-					btnCopy = new Button(getActivity());
-					btnCopy.setId(R.id.btnCopy);
-					btnCopy.setText("复制");
-					btnCopy.setTextColor(0xFF2196F3);
-					btnCopy.setTextSize(10);
-					btnCopy.setBackgroundColor(0x00000000); // 透明背景
-					btnCopy.setPadding(8, 0, 8, 0);
-
-					// 分割线
-					View divider = new View(getActivity());
-					LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(1, 12);
-					dividerParams.setMargins(4, 0, 4, 0);
-					divider.setLayoutParams(dividerParams);
-					divider.setBackgroundColor(0xFF666666);
-
-					// 重新生成按钮
-					btnRegenerate = new Button(getActivity());
-					btnRegenerate.setId(R.id.btnRegenerate);
-					btnRegenerate.setText("重新生成");
-					btnRegenerate.setTextColor(0xFF4CAF50);
-					btnRegenerate.setTextSize(10);
-					btnRegenerate.setBackgroundColor(0x00000000);
-					btnRegenerate.setPadding(8, 0, 8, 0);
-
-					layoutActions.addView(btnCopy);
-					layoutActions.addView(divider);
-					layoutActions.addView(btnRegenerate);
-
-					rootLayout.addView(layoutActions);
+				// 移除TextView的长按事件 - 让系统默认的部分复制生效
+				if (tvMessage != null) {
+					tvMessage.setOnLongClickListener(null);
+					tvMessage.setLongClickable(true); // 保持可长按，让系统处理
 				}
 			}
 
 			public void bind(final ChatMessage message) {
 				if (tvMessage != null) {
 					tvMessage.setText(message.getContent());
-
-					// 长按复制 - 修复崩溃问题
-					tvMessage.setOnLongClickListener(new View.OnLongClickListener() {
-							@Override
-							public boolean onLongClick(View v) {
-								copyToClipboard(message.getContent());
-								Toast.makeText(getActivity(), "已复制", Toast.LENGTH_SHORT).show();
-								return true;
-							}
-						});
+					// 不再设置长按监听器，让系统处理文本选择
 				}
 
 				if (tvTime != null) {
@@ -1131,7 +1069,6 @@ public class ChatFragment extends Fragment {
 			}
 		}
 
-		// AssistantMessageViewHolder - 修复复制崩溃
 		private class AssistantMessageViewHolder extends RecyclerView.ViewHolder {
 			private TextView tvMessage, tvTime, tvTokens, tvModelName;
 			private LinearLayout layoutActions;
@@ -1146,6 +1083,12 @@ public class ChatFragment extends Fragment {
 				layoutActions = itemView.findViewById(R.id.layoutActions);
 				btnCopy = itemView.findViewById(R.id.btnCopy);
 				btnRegenerate = itemView.findViewById(R.id.btnRegenerate);
+
+				// 移除TextView的长按事件
+				if (tvMessage != null) {
+					tvMessage.setOnLongClickListener(null);
+					tvMessage.setLongClickable(true);
+				}
 			}
 
 			public void bind(final ChatMessage message) {
@@ -1157,15 +1100,7 @@ public class ChatFragment extends Fragment {
 						markwon.setMarkdown(tvMessage, message.getContent());
 					}
 
-					// 修复长按复制崩溃
-					tvMessage.setOnLongClickListener(new View.OnLongClickListener() {
-							@Override
-							public boolean onLongClick(View v) {
-								copyToClipboard(message.getContent());
-								Toast.makeText(getActivity(), "已复制", Toast.LENGTH_SHORT).show();
-								return true;
-							}
-						});
+					// 不再设置长按监听器
 				}
 
 				// 设置模型名称
@@ -1181,7 +1116,7 @@ public class ChatFragment extends Fragment {
 					tvTokens.setText(" • " + message.getTokensText());
 				}
 
-				// 设置操作按钮可见性（只在非流式状态下显示）
+				// 设置操作按钮可见性
 				if (layoutActions != null) {
 					if (message.isStreaming()) {
 						layoutActions.setVisibility(View.GONE);
@@ -1190,7 +1125,7 @@ public class ChatFragment extends Fragment {
 					}
 				}
 
-				// 复制按钮 - 修复点击崩溃
+				// 复制按钮
 				if (btnCopy != null) {
 					btnCopy.setOnClickListener(new View.OnClickListener() {
 							@Override
@@ -1227,7 +1162,7 @@ public class ChatFragment extends Fragment {
 		}
 	}
 
-// 修改重新生成方法
+// 在ChatFragment.java中修改重新生成方法
 	private void regenerateMessage(ChatMessage message) {
 		AppLogger.d("ChatFragment", "重新生成消息，类型: " + message.getType() + ", 位置: " + messages.indexOf(message));
 
@@ -1240,6 +1175,7 @@ public class ChatFragment extends Fragment {
 		// 找到对应的用户消息
 		int messageIndex = messages.indexOf(message);
 		String userMessageContent = null;
+		int removeIndex = -1;
 
 		if (message.getType() == ChatMessage.TYPE_ASSISTANT) {
 			// AI消息：找前一条用户消息
@@ -1247,11 +1183,18 @@ public class ChatFragment extends Fragment {
 				ChatMessage userMessage = messages.get(messageIndex - 1);
 				if (userMessage.getType() == ChatMessage.TYPE_USER) {
 					userMessageContent = userMessage.getContent();
+					removeIndex = messageIndex; // 删除AI消息
 				}
 			}
 		} else if (message.getType() == ChatMessage.TYPE_USER) {
-			// 用户消息：直接使用当前消息内容
+			// 用户消息：直接使用当前消息内容，删除后面的AI消息
 			userMessageContent = message.getContent();
+			if (messageIndex + 1 < messages.size()) {
+				ChatMessage nextMessage = messages.get(messageIndex + 1);
+				if (nextMessage.getType() == ChatMessage.TYPE_ASSISTANT) {
+					removeIndex = messageIndex + 1; // 删除后面的AI消息
+				}
+			}
 		}
 
 		if (userMessageContent == null) {
@@ -1259,14 +1202,23 @@ public class ChatFragment extends Fragment {
 			return;
 		}
 
-		// 删除原来的AI回复（如果是重新生成AI消息）
-		if (message.getType() == ChatMessage.TYPE_ASSISTANT) {
-			messages.remove(message);
-			currentConversation.getMessages().remove(message);
+		// 安全删除消息
+		if (removeIndex != -1 && removeIndex < messages.size()) {
+			ChatMessage messageToRemove = messages.get(removeIndex);
+			messages.remove(removeIndex);
+			currentConversation.getMessages().remove(messageToRemove);
 
-			// 使用安全方式更新UI
+			// 使用安全方式更新UI - 先保存数据再更新UI
+			chatManager.saveConversation(currentConversation);
+
 			if (adapter != null) {
-				adapter.safeNotifyItemRemoved(messageIndex);
+				// 延迟更新UI确保数据同步
+				new android.os.Handler().postDelayed(new Runnable() {
+						@Override
+						public void run() {
+							adapter.safeNotifyDataSetChanged();
+						}
+					}, 50);
 			}
 		}
 

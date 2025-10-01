@@ -3,6 +3,7 @@ package com.techstar.nexchat.model;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import com.techstar.nexchat.AppLogger;
 
 public class ChatMessage {
     public static final int TYPE_USER = 0;
@@ -77,13 +78,16 @@ public class ChatMessage {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
         return sdf.format(new Date(timestamp));
     }
-	
-	// 在ChatMessage类中添加这些方法
+
+	// 修改ChatMessage.java的setTokensInfo方法
 	public void setTokensInfo(int promptTokens, int completionTokens, int totalTokens) {
 		this.promptTokens = promptTokens;
 		this.completionTokens = completionTokens;
 		this.totalTokens = totalTokens;
 		this.tokens = totalTokens; // 向后兼容
+
+		// 立即保存到对话
+		AppLogger.d("ChatMessage", "设置tokens: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
 	}
 
 // 在ChatMessage.java中修改getTokensText方法
@@ -100,7 +104,7 @@ public class ChatMessage {
 			return "无统计"; // 改为"无统计"更准确
 		}
 	}
-	
-	
-	
+
+
+
 }
