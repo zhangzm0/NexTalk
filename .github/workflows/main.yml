@@ -11,15 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-<<<<<<< HEAD
-          cache: gradle
-
-      - uses: gradle/actions/setup-gradle@v4
-=======
           # 移除这里的缓存配置，由 Gradle Action 统一处理
 
       - name: Setup Gradle
@@ -28,7 +24,6 @@ jobs:
           # 启用构建扫描，便于分析构建性能
           build-scan: true
           # 缓存配置已内置在此 Action 中
->>>>>>> parent of 56f0bab (first commit)
 
       # 1. 还原 keystore
       - name: Decode keystore
@@ -41,12 +36,8 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS:         ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
-<<<<<<< HEAD
-        run: ./gradlew assembleRelease   # 想打 Debug 就改成 assembleDebug
-=======
         # 添加构建缓存和配置缓存标志，加速构建
         run: ./gradlew assembleRelease --build-cache --configuration-cache
->>>>>>> parent of 56f0bab (first commit)
 
       # 3. 上传已签名 APK
       - name: Upload signed APK
