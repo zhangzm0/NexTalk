@@ -535,7 +535,7 @@ public class ChatFragment extends Fragment {
 
 		// 检查是否正在更新
 		if (isUpdating) {
-			log.e("ChatFragment", "Already updating, skip new message");
+			Log.e("ChatFragment", "Already updating, skip new message");
 			return;
 		}
 
@@ -664,7 +664,7 @@ public class ChatFragment extends Fragment {
 			}
 
 		} catch (final Exception e) {
-			log.e("ChatFragment", "Stream response processing failed", e);
+			Log.e("ChatFragment", "Stream response processing failed");
 			if (getActivity() != null) {
 				getActivity().runOnUiThread(new Runnable() {
 						@Override
@@ -694,13 +694,13 @@ public class ChatFragment extends Fragment {
 											try {
 												recyclerView.smoothScrollToPosition(messages.size() - 1);
 											} catch (Exception e) {
-												log.e("ChatFragment", "Scroll failed", e);
+												Log.e("ChatFragment", "Scroll failed");
 											}
 										}
 									});
 							}
 						} catch (Exception e) {
-							log.e("ChatFragment", "Safe scroll failed", e);
+							Log.e("ChatFragment", "Safe scroll failed");
 						}
 					}
 				});
@@ -709,7 +709,7 @@ public class ChatFragment extends Fragment {
 
 	// 修复错误处理方法
 	private void handleError(final String error) {
-		log.e("ChatFragment", "Error: " + error);
+		Log.e("ChatFragment", "Error: " + error);
 
 		if (getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {
