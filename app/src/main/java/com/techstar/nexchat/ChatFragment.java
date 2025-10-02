@@ -5,6 +5,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 import com.techstar.nexchat.model.ApiProvider;
 import com.techstar.nexchat.model.ChatConversation;
@@ -171,8 +173,10 @@ public class ChatFragment extends Fragment {
 					public void run() {
 						try {
 							if (messages != null && messages.size() > 0) {
-								// 直接滚动到最后一项
-								recyclerView.smoothScrollToPosition(messages.size() - 1);
+								// 使用自定义平滑滚动器
+								CustomSmoothScroller smoothScroller = new CustomSmoothScroller(getContext());
+								smoothScroller.setTargetPosition(messages.size() - 1);
+								recyclerView.getLayoutManager().startSmoothScroll(smoothScroller);
 							}
 						} catch (Exception e) {
 							AppLogger.e("ChatFragment", "滚动失败", e);
@@ -181,6 +185,40 @@ public class ChatFragment extends Fragment {
 				});
 		}
 	}
+
+// 自定义平滑滚动器类
+	private static class CustomSmoothScroller extends LinearSmoothScroller {
+		public CustomSmoothScroller(Context context) {
+			super(context);
+		}
+
+		@Override
+		protected int calculateTimeForDeceleration(int dx) {
+			// 减少减速时间，使滚动更快速
+			return super.calculateTimeForDeceleration(dx) / 2;
+		}
+
+		@Override
+		protected int calculateTimeForScrolling(int dx) {
+			// 减少滚动时间，使滚动更快速
+			return super.calculateTimeForScrolling(dx) / 2;
+		}
+
+		@Override
+		public int calculateDtToFit(int viewStart, int viewEnd, int boxStart, int boxEnd, int snapPreference) {
+			// 自定义滚动行为 - 将目标项对齐到底部
+			// 这对于聊天应用特别有用，因为我们希望最新消息显示在底部
+			return boxEnd - viewEnd;
+		}
+
+		@Override
+		protected float calculateSpeedPerPixel(DisplayMetrics displayMetrics) {
+			// 控制滚动速度 (单位: 毫秒/像素)
+			// 较小的值 = 较快的滚动
+			return 0.5f; // 默认是 25f/displayMetrics.densityDpi
+		}
+	}
+	
 
 // 添加平滑滚动方法（可选）
 	private void smoothScrollToBottom() {
