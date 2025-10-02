@@ -123,8 +123,8 @@ public class ChatFragment extends Fragment {
 
 		// 创建LinearLayoutManager并设置从底部开始堆叠
 		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-		layoutManager.setStackFromEnd(true); // 关键：从底部开始堆叠
-		layoutManager.setReverseLayout(false); // 正常顺序
+		layoutManager.setStackFromEnd(false); // 关键：从底部开始堆叠
+		layoutManager.setReverseLayout(true); // 正常顺序
 
 		recyclerView.setLayoutManager(layoutManager);
 
@@ -164,7 +164,7 @@ public class ChatFragment extends Fragment {
 
 // 在ChatFragment.java中彻底修复滚动逻辑
 	// 在ChatFragment.java中添加滚动控制变量和方法
-	private void scrollToBottom() {
+	private void scrollToBottom() {/*
 		if (recyclerView != null && adapter != null && getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {
 					@Override
@@ -182,7 +182,7 @@ public class ChatFragment extends Fragment {
 						}
 					}
 				});
-		}
+		}*/
 	}
 
 
