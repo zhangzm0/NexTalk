@@ -51,8 +51,6 @@ public class ChatFragment extends Fragment {
 	private static final int TYPE_USER = 0;
     private static final int TYPE_ASSISTANT = 1;
 
-	private int updateCount = 0; // 控制更新频率
-
 	private int userIndex = -1;
 	private int aiIndex = -1;
 
@@ -192,6 +190,7 @@ public class ChatFragment extends Fragment {
 	}
 
 // 修改流式响应结束时的处理
+	// 在ChatFragment.java中修改processStreamResponse方法
 	private void processStreamResponse(Response response, final ChatMessage aiMessage) {
 		try {
 			String line;
@@ -209,25 +208,45 @@ public class ChatFragment extends Fragment {
 			long lastUpdateTime = System.currentTimeMillis();
 
 			while ((line = reader.readLine()) != null && isStreaming) {
-				if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
+				if (line.startsWith("data: ")) {
+					if (line.equals("data: [DONE]")) {
+						// 流结束，这里可能会有tokens信息
+						AppLogger.d("ChatFragment", "流式响应结束");
+						break;
+					}
+
 					String jsonStr = line.substring(6);
 					if (!jsonStr.trim().isEmpty()) {
 						try {
 							JSONObject data = new JSONObject(jsonStr);
 
-							// 提取tokens信息
+							// 检查是否是流结束的消息，包含tokens信息
 							if (data.has("usage")) {
 								JSONObject usage = data.getJSONObject("usage");
 								promptTokens = usage.optInt("prompt_tokens", 0);
 								completionTokens = usage.optInt("completion_tokens", 0);
 								totalTokens = usage.optInt("total_tokens", 0);
 								hasTokens = true;
-								AppLogger.d("ChatFragment", "提取到tokens: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
+								AppLogger.d("ChatFragment", "提取到tokens信息: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
 							}
 
 							JSONArray choices = data.getJSONArray("choices");
 							if (choices.length() > 0) {
 								JSONObject choice = choices.getJSONObject(0);
+
+								// 检查是否是完成消息
+								if (choice.has("finish_reason") && choice.getString("finish_reason") != null) {
+									// 完成消息，可能包含tokens
+									if (data.has("usage")) {
+										JSONObject usage = data.getJSONObject("usage");
+										promptTokens = usage.optInt("prompt_tokens", 0);
+										completionTokens = usage.optInt("completion_tokens", 0);
+										totalTokens = usage.optInt("total_tokens", 0);
+										hasTokens = true;
+										AppLogger.d("ChatFragment", "从完成消息提取tokens: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
+									}
+								}
+
 								JSONObject delta = choice.getJSONObject("delta");
 								if (delta.has("content")) {
 									String chunk = delta.getString("content");
@@ -265,6 +284,27 @@ public class ChatFragment extends Fragment {
 				}
 			}
 
+			// 如果没有提取到tokens，尝试从响应头或估算
+			if (!hasTokens) {
+				// 方法1：尝试从响应头获取
+				try {
+					String organization = response.header("openai-organization");
+					String processingMs = response.header("openai-processing-ms");
+					AppLogger.d("ChatFragment", "响应头信息 - Organization: " + organization + ", ProcessingMs: " + processingMs);
+
+					// 如果还是没有，估算tokens
+					if (content.length() > 0) {
+						completionTokens = estimateTokens(content.toString());
+						promptTokens = 50; // 估算的prompt tokens
+						totalTokens = promptTokens + completionTokens;
+						hasTokens = true;
+						AppLogger.d("ChatFragment", "估算tokens: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
+					}
+				} catch (Exception e) {
+					AppLogger.e("ChatFragment", "估算tokens失败", e);
+				}
+			}
+
 			// 流结束时的处理
 			final int finalPromptTokens = promptTokens;
 			final int finalCompletionTokens = completionTokens;
@@ -283,15 +323,18 @@ public class ChatFragment extends Fragment {
 									if (finalHasTokens) {
 										// 设置tokens信息
 										aiMessage.setTokensInfo(finalPromptTokens, finalCompletionTokens, finalTotalTokens);
+										AppLogger.d("ChatFragment", "最终设置tokens: " + aiMessage.getTokensText());
+									} else {
+										AppLogger.w("ChatFragment", "未获取到tokens信息");
 									}
 									hidePauseButton();
 									if (adapter != null) {
 										adapter.safeNotifyItemChanged(aiMessageIndex);
 									}
 
-									// 关键：保存对话到持久化存储（包含tokens）
+									// 保存对话到持久化存储
 									chatManager.saveConversation(currentConversation);
-									AppLogger.d("ChatFragment", "对话已保存，包含tokens: " + aiMessage.getTokensText());
+									AppLogger.d("ChatFragment", "对话已保存");
 
 									delayedScrollToBottom();
 								}
@@ -314,6 +357,29 @@ public class ChatFragment extends Fragment {
 					});
 			}
 		}
+	}
+
+// 添加tokens估算方法
+	private int estimateTokens(String text) {
+		if (text == null || text.isEmpty()) return 0;
+
+		// 简单的tokens估算：中文字符算2个token，英文字符算0.7个token
+		int chineseCount = 0;
+		int englishCount = 0;
+		int otherCount = 0;
+
+		for (char c : text.toCharArray()) {
+			if (Character.UnicodeScript.of(c) == Character.UnicodeScript.HAN) {
+				chineseCount++;
+			} else if (Character.isLetterOrDigit(c)) {
+				englishCount++;
+			} else {
+				otherCount++;
+			}
+		}
+
+		int estimatedTokens = (int) (chineseCount * 2 + englishCount * 0.7 + otherCount * 0.5);
+		return Math.max(estimatedTokens, 1); // 至少1个token
 	}
 
 // 移除之前的saveTokensToPersistence方法，因为现在由ChatManager统一处理
