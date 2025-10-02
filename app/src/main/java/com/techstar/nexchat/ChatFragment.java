@@ -111,19 +111,18 @@ public class ChatFragment extends Fragment {
     private boolean isStreaming = false;
     private Call currentCall; // 用于暂停请求
 
-// 移除这些复杂的变量和方法：
-// private boolean shouldAutoScroll = true;
-// private boolean isAiResponding = false;
-// private void checkManualScroll() {}
-// private void forceScrollToBottom() {}
-
-// 简化initViews方法，移除滚动监听器
+// 在initViews方法中修改LayoutManager
 	private void initViews(View view) {
 		recyclerView = view.findViewById(R.id.recyclerViewMessages);
 		tvChatTitle = view.findViewById(R.id.tvChatTitle);
 		btnPause = view.findViewById(R.id.btnPause);
 
-		recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+		// 创建LinearLayoutManager并设置从底部开始堆叠
+		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+		layoutManager.setStackFromEnd(true); // 关键：从底部开始堆叠
+		layoutManager.setReverseLayout(false); // 正常顺序
+
+		recyclerView.setLayoutManager(layoutManager);
 
 		messages = new ArrayList<>();
 		adapter = new MessageAdapter(messages);
@@ -155,6 +154,8 @@ public class ChatFragment extends Fragment {
 	}
 
 
+
+
 	private boolean isUpdating = false;
 
 // 在ChatFragment.java中彻底修复滚动逻辑
@@ -163,7 +164,7 @@ public class ChatFragment extends Fragment {
 
 
 // 在ChatFragment.java中简化滚动逻辑
-	private void scrollToBottom() {/*
+	private void scrollToBottom() {
 		if (recyclerView != null && adapter != null && getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {
 					@Override
@@ -178,7 +179,7 @@ public class ChatFragment extends Fragment {
 						}
 					}
 				});
-		}*/
+		}
 	}
 
 // 添加平滑滚动方法（可选）
