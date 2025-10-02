@@ -111,7 +111,13 @@ public class ChatFragment extends Fragment {
     private boolean isStreaming = false;
     private Call currentCall; // 用于暂停请求
 
-    // 在initViews方法中添加滚动监听
+// 移除这些复杂的变量和方法：
+// private boolean shouldAutoScroll = true;
+// private boolean isAiResponding = false;
+// private void checkManualScroll() {}
+// private void forceScrollToBottom() {}
+
+// 简化initViews方法，移除滚动监听器
 	private void initViews(View view) {
 		recyclerView = view.findViewById(R.id.recyclerViewMessages);
 		tvChatTitle = view.findViewById(R.id.tvChatTitle);
@@ -123,18 +129,6 @@ public class ChatFragment extends Fragment {
 		adapter = new MessageAdapter(messages);
 		recyclerView.setAdapter(adapter);
 
-		// 添加滚动监听器
-		recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-				@Override
-				public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-					super.onScrolled(recyclerView, dx, dy);
-					// 用户手动滚动时检查滚动状态
-					if (dy != 0 && !isAiResponding) {
-						checkManualScroll();
-					}
-				}
-			});
-
 		// 暂停按钮点击事件
 		btnPause.setOnClickListener(new View.OnClickListener() {
 				@Override
@@ -142,7 +136,6 @@ public class ChatFragment extends Fragment {
 					if (isStreaming && currentCall != null) {
 						currentCall.cancel();
 						isStreaming = false;
-						isAiResponding = false;
 						btnPause.setVisibility(View.GONE);
 
 						if (!messages.isEmpty()) {
@@ -167,7 +160,7 @@ public class ChatFragment extends Fragment {
 // 在ChatFragment.java中彻底修复滚动逻辑
 	// 在ChatFragment.java中添加滚动控制变量和方法
 	private boolean shouldAutoScroll = true; // 控制是否自动滚动
-	private boolean isAiResponding = false; // 标记AI是否正在响应
+
 
 // 修改safeScrollToBottom方法，添加条件判断
 	private void safeScrollToBottom() {
@@ -192,45 +185,43 @@ public class ChatFragment extends Fragment {
 		}
 	}
 
-// 添加强制滚动方法（用于打开对话时）
-	private void forceScrollToBottom() {
+// 在ChatFragment.java中简化滚动逻辑
+	private void scrollToBottom() {
 		if (recyclerView != null && adapter != null && getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
 						try {
 							if (messages != null && messages.size() > 0) {
-								RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-								if (layoutManager instanceof LinearLayoutManager) {
-									LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
-									linearLayoutManager.scrollToPosition(messages.size() - 1);
-								}
+								// 直接滚动到最后一项
+								recyclerView.scrollToPosition(messages.size() - 1);
 							}
 						} catch (Exception e) {
-							AppLogger.e("ChatFragment", "强制滚动失败", e);
+							AppLogger.e("ChatFragment", "滚动失败", e);
 						}
 					}
 				});
 		}
 	}
 
-// 添加手动滚动检查方法
-	private void checkManualScroll() {
-		if (recyclerView != null && messages != null && messages.size() > 0) {
-			RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-			if (layoutManager instanceof LinearLayoutManager) {
-				LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
-				int lastVisiblePosition = linearLayoutManager.findLastVisibleItemPosition();
-				int totalItemCount = messages.size();
-
-				// 如果用户没有滚动到底部，就禁用自动滚动
-				shouldAutoScroll = (lastVisiblePosition >= totalItemCount - 2);
-				AppLogger.d("ChatFragment", "滚动状态: " + shouldAutoScroll + ", 最后可见位置: " + lastVisiblePosition + ", 总项目数: " + totalItemCount);
-			}
+// 添加平滑滚动方法（可选）
+	private void smoothScrollToBottom() {
+		if (recyclerView != null && adapter != null && getActivity() != null) {
+			getActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							if (messages != null && messages.size() > 0) {
+								recyclerView.smoothScrollToPosition(messages.size() - 1);
+							}
+						} catch (Exception e) {
+							AppLogger.e("ChatFragment", "平滑滚动失败", e);
+						}
+					}
+				});
 		}
 	}
-
-// 修改processStreamResponse方法
+// 修改processStreamResponse方法中的滚动逻辑
 	private void processStreamResponse(Response response, final ChatMessage aiMessage) {
 		try {
 			String line;
@@ -249,8 +240,6 @@ public class ChatFragment extends Fragment {
 			while ((line = reader.readLine()) != null && isStreaming) {
 				if (line.startsWith("data: ")) {
 					if (line.equals("data: [DONE]")) {
-						// 流结束
-						AppLogger.d("ChatFragment", "流式响应结束");
 						break;
 					}
 
@@ -259,14 +248,12 @@ public class ChatFragment extends Fragment {
 						try {
 							JSONObject data = new JSONObject(jsonStr);
 
-							// 检查tokens信息
 							if (data.has("usage")) {
 								JSONObject usage = data.getJSONObject("usage");
 								promptTokens = usage.optInt("prompt_tokens", 0);
 								completionTokens = usage.optInt("completion_tokens", 0);
 								totalTokens = usage.optInt("total_tokens", 0);
 								hasTokens = true;
-								AppLogger.d("ChatFragment", "提取到tokens信息: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
 							}
 
 							JSONArray choices = data.getJSONArray("choices");
@@ -278,8 +265,8 @@ public class ChatFragment extends Fragment {
 									content.append(chunk);
 									updateCount++;
 
-									// AI响应时保持自动滚动
-									if (isAiResponding) {
+									// 每3个chunk更新一次UI并滚动
+									if (updateCount % 3 == 0) {
 										final String currentContent = content.toString();
 										if (getActivity() != null) {
 											getActivity().runOnUiThread(new Runnable() {
@@ -292,8 +279,8 @@ public class ChatFragment extends Fragment {
 																if (adapter != null) {
 																	adapter.safeNotifyItemChanged(aiMessageIndex);
 																}
-																// AI响应时自动滚动
-																safeScrollToBottom();
+																// 流式响应时滚动到底部
+																scrollToBottom();
 															}
 														}
 													}
@@ -324,7 +311,6 @@ public class ChatFragment extends Fragment {
 								if (aiMessageIndex >= 0 && aiMessageIndex < messages.size()) {
 									aiMessage.setContent(finalContent);
 									aiMessage.setStreaming(false);
-									isAiResponding = false; // AI响应结束
 
 									if (finalHasTokens) {
 										aiMessage.setTokensInfo(finalPromptTokens, finalCompletionTokens, finalTotalTokens);
@@ -334,8 +320,8 @@ public class ChatFragment extends Fragment {
 										adapter.safeNotifyItemChanged(aiMessageIndex);
 									}
 
-									// AI响应结束时滚动到底部
-									safeScrollToBottom();
+									// 流结束时滚动到底部
+									scrollToBottom();
 
 									// 保存对话
 									chatManager.saveConversation(currentConversation);
@@ -351,7 +337,6 @@ public class ChatFragment extends Fragment {
 				getActivity().runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							isAiResponding = false; // AI响应结束（即使是错误）
 							if (isStreaming) {
 								handleError("响应解析失败: " + e.getMessage());
 							}
@@ -562,9 +547,6 @@ public class ChatFragment extends Fragment {
 		isUpdating = true;
 
 		try {
-			// 用户发送消息时，启用自动滚动
-			shouldAutoScroll = true;
-
 			// 创建用户消息
 			ChatMessage userMessage = new ChatMessage(ChatMessage.TYPE_USER, messageText);
 			messages.add(userMessage);
@@ -583,7 +565,7 @@ public class ChatFragment extends Fragment {
 			if (adapter != null) {
 				adapter.safeNotifyDataSetChanged();
 			}
-			safeScrollToBottom();
+			scrollToBottom(); // 发送消息后滚动到底部
 
 			// 创建AI消息（流式响应）
 			ChatMessage aiMessage = new ChatMessage(ChatMessage.TYPE_ASSISTANT, "");
@@ -592,17 +574,13 @@ public class ChatFragment extends Fragment {
 			messages.add(aiMessage);
 			currentConversation.addMessage(aiMessage);
 
-			// 标记AI开始响应
-			isAiResponding = true;
-			shouldAutoScroll = true;
-
 			// 立即保存包含AI消息的对话
 			chatManager.saveConversation(currentConversation);
 
 			if (adapter != null) {
 				adapter.safeNotifyDataSetChanged();
 			}
-			safeScrollToBottom();
+			scrollToBottom(); // AI消息创建后滚动到底部
 
 			// 发送API请求
 			sendChatRequest(messageText, providerId, model, aiMessage);
@@ -627,10 +605,6 @@ public class ChatFragment extends Fragment {
 		isUpdating = true;
 
 		try {
-			// 重新生成时启用自动滚动
-			shouldAutoScroll = true;
-			isAiResponding = true;
-
 			// 创建AI消息（流式响应）
 			ChatMessage aiMessage = new ChatMessage(ChatMessage.TYPE_ASSISTANT, "");
 			aiMessage.setStreaming(true);
@@ -644,7 +618,7 @@ public class ChatFragment extends Fragment {
 			if (adapter != null) {
 				adapter.safeNotifyDataSetChanged();
 			}
-			safeScrollToBottom();
+			scrollToBottom(); // 重新生成时滚动到底部
 
 			// 发送API请求
 			sendChatRequest(messageText, providerId, model, aiMessage);
@@ -913,7 +887,6 @@ public class ChatFragment extends Fragment {
 		// 获取当前对话
 		currentConversation = chatManager.getCurrentConversation();
 		if (currentConversation == null) {
-			// 如果没有当前对话，创建新的
 			currentConversation = chatManager.createNewConversation();
 			AppLogger.d("ChatFragment", "创建新对话: " + currentConversation.getId());
 		} else {
@@ -943,8 +916,16 @@ public class ChatFragment extends Fragment {
 			tvChatTitle.setText(currentConversation.getTitle());
 		}
 
-		// 打开对话时强制滚动到底部
-		forceScrollToBottom();
+		// 打开对话时延迟滚动到底部，确保布局完成
+		if (getActivity() != null) {
+			getActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						scrollToBottom();
+					}
+				});
+		}
+
 		AppLogger.d("ChatFragment", "对话加载完成: " + currentConversation.getTitle() + ", 消息数: " + messages.size());
 	}
 
