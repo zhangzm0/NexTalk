@@ -91,36 +91,65 @@ public class MainActivity extends FragmentActivity {
         viewPager.setCurrentItem(1); // 默认显示聊天页面
 
         // 添加页面切换监听
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+        // 修改页面切换监听器
+		viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 				@Override
 				public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
 
 				@Override
 				public void onPageSelected(int position) {
-					AppLogger.d("MainActivity", "切换到页面: " + position);
+					String pageName;
+					switch (position) {
+						case 0: pageName = "主页"; break;
+						case 1: pageName = "聊天"; break;
+						case 2: pageName = "输入"; break;
+						default: pageName = "未知";
+					}
+					AppLogger.d("MainActivity", "=== 切换到页面: " + position + " (" + pageName + ") ===");
 
-					// 当切换到聊天页面时，刷新对话显示
+					// 当切换到聊天页面时，通知 ChatFragment 开始页面切换保护
 					if (position == 1 && chatFragment != null) {
-						AppLogger.d("MainActivity", "刷新聊天页面");
-						chatFragment.refreshConversation();
+						AppLogger.d("MainActivity", "聊天页面已激活");
 					}
 				}
 
 				@Override
-				public void onPageScrollStateChanged(int state) {}
+				public void onPageScrollStateChanged(int state) {
+					String stateName;
+					switch (state) {
+						case ViewPager.SCROLL_STATE_IDLE: 
+							stateName = "空闲"; 
+							break;
+						case ViewPager.SCROLL_STATE_DRAGGING: 
+							stateName = "拖动"; 
+							break;
+						case ViewPager.SCROLL_STATE_SETTLING: 
+							stateName = "惯性滚动"; 
+							break;
+						default: stateName = "未知";
+					}
+					AppLogger.d("MainActivity", "ViewPager滚动状态: " + stateName);
+				}
 			});
     }
 
-    // 在 MainActivity 的 switchToChatPage 方法中
+    // 在 MainActivity 中添加页面切换延迟
 	public void switchToChatPage() {
 		if (viewPager != null) {
 			viewPager.setCurrentItem(1);
 			AppLogger.d("MainActivity", "切换到聊天页面");
 
-			// 只在真正需要时刷新，比如从主页点击对话进入时
-			if (chatFragment != null) {
-				chatFragment.refreshConversation();
-			}
+			// 延迟刷新，确保页面切换完成
+			new android.os.Handler().postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						if (chatFragment != null) {
+							chatFragment.refreshConversation();
+						}
+					}
+				}, 100);
 		}
 	}
+
+
 }
