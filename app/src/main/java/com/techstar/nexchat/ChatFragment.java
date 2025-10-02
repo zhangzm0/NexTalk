@@ -35,7 +35,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import androidx.annotation.Nullable;
 
 public class ChatFragment extends Fragment {
 
@@ -71,7 +70,9 @@ public class ChatFragment extends Fragment {
         return view;
     }
 
-    // 在 initViews 方法中添加状态保存禁用和详细日志
+
+
+// 修改 initViews 方法，添加更严格的滚动控制
 	private void initViews(View view) {
 		recyclerView = view.findViewById(R.id.recyclerViewMessages);
 		tvChatTitle = view.findViewById(R.id.tvChatTitle);
@@ -79,27 +80,43 @@ public class ChatFragment extends Fragment {
 
 		AppLogger.d("ChatFragment", "初始化视图 - 开始");
 
-		// 改为允许状态保存，但更精细地控制
-		recyclerView.setSaveEnabled(true);
+		// 关键：禁用 RecyclerView 的所有滚动和状态保存
+		recyclerView.setSaveEnabled(false);
+		recyclerView.setNestedScrollingEnabled(false); // 禁用嵌套滚动
+		AppLogger.d("ChatFragment", "已禁用 RecyclerView 状态保存和嵌套滚动");
 
-		// 使用标准LinearLayoutManager，不再完全禁用状态恢复
+		// 创建自定义 LayoutManager 来完全禁用状态恢复和过度滚动
 		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity()) {
 			@Override
 			public void onRestoreInstanceState(android.os.Parcelable state) {
-				AppLogger.d("ChatFragment", "LayoutManager 恢复状态");
-				// 仅在状态不为空时恢复
-				if (state != null) {
-					super.onRestoreInstanceState(state);
-				}
+				AppLogger.d("ChatFragment", "LayoutManager 尝试恢复状态，但已被阻止");
+				// 完全阻止状态恢复，不调用父类方法
 			}
 
 			@Override
 			public android.os.Parcelable onSaveInstanceState() {
-				AppLogger.d("ChatFragment", "LayoutManager 保存状态");
-				return super.onSaveInstanceState();
+				AppLogger.d("ChatFragment", "LayoutManager 尝试保存状态，但返回空");
+				return null; // 返回 null 阻止状态保存
+			}
+
+			@Override
+			public boolean supportsPredictiveItemAnimations() {
+				return false; // 禁用预测性动画
+			}
+
+			@Override
+			public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+				try {
+					super.onLayoutChildren(recycler, state);
+				} catch (Exception e) {
+					// 捕获布局异常，防止崩溃
+					AppLogger.e("ChatFragment", "LayoutChildren 异常: " + e.getMessage());
+				}
 			}
 		};
 
+		// 禁用过度滚动效果
+		recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 		recyclerView.setLayoutManager(layoutManager);
 		AppLogger.d("ChatFragment", "LayoutManager 已设置");
 
@@ -134,7 +151,6 @@ public class ChatFragment extends Fragment {
 
 		AppLogger.d("ChatFragment", "视图初始化完成");
 	}
-	
 
     private void initMarkwon() {
         markwon = Markwon.builder(getActivity())
@@ -157,10 +173,19 @@ public class ChatFragment extends Fragment {
 
 
 // 修改 onResume 方法，添加更详细的日志
+	// 在 ChatFragment.java 中添加以下代码
+
+	private boolean isPageSwitching = false;
+
+// 修改 onResume 方法
 	@Override
 	public void onResume() {
 		super.onResume();
 		AppLogger.d("ChatFragment", "=== onResume 开始 ===");
+
+		// 标记页面切换开始
+		isPageSwitching = true;
+		AppLogger.d("ChatFragment", "设置 isPageSwitching = true");
 
 		// 记录当前滚动状态（用于调试）
 		if (recyclerView != null && recyclerView.getLayoutManager() != null) {
@@ -168,6 +193,10 @@ public class ChatFragment extends Fragment {
 			int firstVisible = layoutManager.findFirstVisibleItemPosition();
 			int lastVisible = layoutManager.findLastVisibleItemPosition();
 			AppLogger.d("ChatFragment", "当前可见项: 第一个=" + firstVisible + ", 最后一个=" + lastVisible);
+
+			// 关键：立即停止所有滚动
+			recyclerView.stopScroll();
+			AppLogger.d("ChatFragment", "已调用 stopScroll()");
 		}
 
 		// 只同步模型选择，不刷新对话
@@ -180,14 +209,19 @@ public class ChatFragment extends Fragment {
 					this.currentProviderId = providerId;
 					this.currentModel = model;
 					AppLogger.d("ChatFragment", "从InputFragment同步选择: " + providerId + ", " + model);
-				} else {
-					AppLogger.d("ChatFragment", "InputFragment没有有效的选择");
 				}
-			} else {
-				AppLogger.d("ChatFragment", "InputFragment为null");
 			}
-		} else {
-			AppLogger.d("ChatFragment", "Activity不是MainActivity实例");
+		}
+
+		// 延迟重置页面切换标志，确保滚动被完全阻止
+		if (getActivity() != null) {
+			getActivity().getWindow().getDecorView().postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						isPageSwitching = false;
+						AppLogger.d("ChatFragment", "延迟重置 isPageSwitching = false");
+					}
+				}, 300); // 300ms 后重置
 		}
 
 		AppLogger.d("ChatFragment", "=== onResume 结束 ===");
@@ -550,15 +584,9 @@ public class ChatFragment extends Fragment {
     }
 
 
+// 修改 loadOrCreateConversation 方法，添加日志
 	private void loadOrCreateConversation() {
 		AppLogger.d("ChatFragment", "=== 加载或创建对话开始 ===");
-
-		// 保存当前滚动位置
-		int scrollPosition = 0;
-		if (recyclerView.getLayoutManager() instanceof LinearLayoutManager) {
-			scrollPosition = ((LinearLayoutManager) recyclerView.getLayoutManager())
-                .findFirstVisibleItemPosition();
-		}
 
 		if (chatManager == null) {
 			chatManager = ChatManager.getInstance(getActivity());
@@ -595,12 +623,6 @@ public class ChatFragment extends Fragment {
 			AppLogger.d("ChatFragment", "通知Adapter数据集改变");
 		}
 
-		// 恢复滚动位置
-		if (recyclerView.getLayoutManager() instanceof LinearLayoutManager) {
-			((LinearLayoutManager) recyclerView.getLayoutManager())
-                .scrollToPosition(scrollPosition);
-		}
-
 		if (tvChatTitle != null) {
 			tvChatTitle.setText(currentConversation.getTitle());
 			AppLogger.d("ChatFragment", "设置标题: " + currentConversation.getTitle());
@@ -608,7 +630,6 @@ public class ChatFragment extends Fragment {
 
 		AppLogger.d("ChatFragment", "=== 加载或创建对话结束 ===");
 	}
-	
 
     public void ensureInitialized() {
         if (!isInitialized && getView() != null) {
@@ -931,7 +952,9 @@ public class ChatFragment extends Fragment {
             .show();
     }
 	
-	// 添加 RecyclerView 的滚动监听器来调试滚动行为
+
+
+// 修改滚动监听器，在页面切换时阻止所有滚动
 	@Override
 	public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
@@ -948,9 +971,19 @@ public class ChatFragment extends Fragment {
 							break;
 						case RecyclerView.SCROLL_STATE_DRAGGING:
 							stateName = "拖动";
+							// 在页面切换时阻止用户拖动
+							if (isPageSwitching) {
+								recyclerView.stopScroll();
+								AppLogger.d("ChatFragment", "页面切换中，阻止用户拖动");
+							}
 							break;
 						case RecyclerView.SCROLL_STATE_SETTLING:
 							stateName = "惯性滚动";
+							// 关键：在页面切换时立即停止惯性滚动
+							if (isPageSwitching) {
+								recyclerView.stopScroll();
+								AppLogger.d("ChatFragment", "页面切换中，停止惯性滚动");
+							}
 							break;
 						default:
 							stateName = "未知";
@@ -963,43 +996,27 @@ public class ChatFragment extends Fragment {
 					super.onScrolled(recyclerView, dx, dy);
 					if (dy != 0) {
 						AppLogger.d("ChatFragment", "正在滚动: dx=" + dx + ", dy=" + dy);
+
+						// 在页面切换时阻止所有滚动
+						if (isPageSwitching && dy != 0) {
+							recyclerView.stopScroll();
+							AppLogger.d("ChatFragment", "页面切换中，检测到滚动，立即停止");
+						}
 					}
 				}
 			});
 
 		AppLogger.d("ChatFragment", "滚动监听器已添加");
 	}
-	
+
+// 添加 onPause 方法
 	@Override
-	public void onSaveInstanceState(@NonNull Bundle outState) {
-		super.onSaveInstanceState(outState);
-		AppLogger.d("ChatFragment", "onSaveInstanceState 调用");
-
-		// 保存当前滚动位置
-		if (recyclerView != null && recyclerView.getLayoutManager() instanceof LinearLayoutManager) {
-			int position = ((LinearLayoutManager) recyclerView.getLayoutManager())
-                .findFirstVisibleItemPosition();
-			outState.putInt("scroll_position", position);
-			AppLogger.d("ChatFragment", "保存滚动位置: " + position);
+	public void onPause() {
+		super.onPause();
+		AppLogger.d("ChatFragment", "onPause 调用，停止所有滚动");
+		if (recyclerView != null) {
+			recyclerView.stopScroll();
 		}
+		isPageSwitching = false;
 	}
-
-	@Override
-	public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
-		super.onViewStateRestored(savedInstanceState);
-		AppLogger.d("ChatFragment", "onViewStateRestored 调用");
-
-		// 恢复滚动位置
-		if (savedInstanceState != null && savedInstanceState.containsKey("scroll_position")) {
-			int position = savedInstanceState.getInt("scroll_position", 0);
-			if (recyclerView != null && recyclerView.getLayoutManager() instanceof LinearLayoutManager) {
-				((LinearLayoutManager) recyclerView.getLayoutManager())
-                    .scrollToPosition(position);
-				AppLogger.d("ChatFragment", "恢复滚动位置: " + position);
-			}
-		}
-	}
-	
-	
-	
 }
