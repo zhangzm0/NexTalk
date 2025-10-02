@@ -714,16 +714,17 @@ public class ChatFragment extends Fragment {
 
 
 	// 在ChatFragment.java中添加初始化方法
+	private boolean isInitialLoad = true;
+
 	@Override
 	public void onResume() {
 		super.onResume();
 		AppLogger.d("ChatFragment", "onResume called");
 
-		// 从InputFragment获取当前选择的模型
+		// 同步模型选择
 		if (getActivity() instanceof MainActivity) {
 			MainActivity mainActivity = (MainActivity) getActivity();
 			if (mainActivity.inputFragment != null) {
-				// 通过MainActivity同步模型选择
 				String providerId = mainActivity.inputFragment.getCurrentProviderId();
 				String model = mainActivity.inputFragment.getCurrentModel();
 				if (!TextUtils.isEmpty(providerId) && !TextUtils.isEmpty(model)) {
@@ -734,7 +735,15 @@ public class ChatFragment extends Fragment {
 			}
 		}
 
-		// 每次页面显示时检查是否需要更新对话
+		// 只在首次加载或需要强制刷新时检查
+		if (isInitialLoad || currentConversation == null) {
+			checkAndUpdateConversation();
+			isInitialLoad = false;
+		}
+	}
+
+	public void refreshConversation() {
+		AppLogger.d("ChatFragment", "强制刷新对话");
 		checkAndUpdateConversation();
 	}
 
@@ -862,11 +871,7 @@ public class ChatFragment extends Fragment {
 		AppLogger.d("ChatFragment", "对话加载完成: " + currentConversation.getTitle() + ", 消息数: " + messages.size());
 	}
 
-	// 添加一个公共方法来强制刷新对话
-	public void refreshConversation() {
-		AppLogger.d("ChatFragment", "强制刷新对话");
-		checkAndUpdateConversation();
-	}
+
 
 
 // 修改MessageAdapter类

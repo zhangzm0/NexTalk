@@ -60,20 +60,6 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private Fragment createFallbackFragment() {
-        return new Fragment() {
-            @Override
-            public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-                TextView textView = new TextView(getActivity());
-                textView.setText("页面加载中...");
-                textView.setTextColor(0xFFFFFFFF);
-                textView.setBackgroundColor(0xFF121212);
-                textView.setGravity(android.view.Gravity.CENTER);
-                return textView;
-            }
-        };
-    }
-// ... 其他代码不变
 
     private void initViewPager() {
         viewPager = findViewById(R.id.viewPager);
@@ -125,20 +111,16 @@ public class MainActivity extends FragmentActivity {
 			});
     }
 
-    public void switchToChatPage() {
-        if (viewPager != null) {
-            viewPager.setCurrentItem(1);
-            AppLogger.d("MainActivity", "切换到聊天页面");
+    // 在 MainActivity 的 switchToChatPage 方法中
+	public void switchToChatPage() {
+		if (viewPager != null) {
+			viewPager.setCurrentItem(1);
+			AppLogger.d("MainActivity", "切换到聊天页面");
 
-            // 延迟刷新，确保页面切换完成
-            new android.os.Handler().postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						if (chatFragment != null) {
-							chatFragment.refreshConversation();
-						}
-					}
-				}, 100);
-        }
-    }
+			// 只在真正需要时刷新，比如从主页点击对话进入时
+			if (chatFragment != null) {
+				chatFragment.refreshConversation();
+			}
+		}
+	}
 }
