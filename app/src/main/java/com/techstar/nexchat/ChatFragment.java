@@ -71,20 +71,23 @@ public class ChatFragment extends Fragment {
     }
 
     private void initViews(View view) {
-        recyclerView = view.findViewById(R.id.recyclerViewMessages);
-        tvChatTitle = view.findViewById(R.id.tvChatTitle);
-        btnPause = view.findViewById(R.id.btnPause);
+		recyclerView = view.findViewById(R.id.recyclerViewMessages);
+		tvChatTitle = view.findViewById(R.id.tvChatTitle);
+		btnPause = view.findViewById(R.id.btnPause);
 
-        // 最简单的LayoutManager，不干预任何滚动行为
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        recyclerView.setLayoutManager(layoutManager);
+		// 关键：禁用 RecyclerView 的自动状态保存
+		recyclerView.setSaveEnabled(false);
 
-        messages = new ArrayList<>();
-        adapter = new MessageAdapter(messages);
-        recyclerView.setAdapter(adapter);
+		// 最简单的LayoutManager，不干预任何滚动行为
+		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+		recyclerView.setLayoutManager(layoutManager);
 
-        // 暂停按钮点击事件
-        btnPause.setOnClickListener(new View.OnClickListener() {
+		messages = new ArrayList<>();
+		adapter = new MessageAdapter(messages);
+		recyclerView.setAdapter(adapter);
+
+		// 暂停按钮点击事件
+		btnPause.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
 					if (isStreaming && currentCall != null) {
@@ -105,7 +108,7 @@ public class ChatFragment extends Fragment {
 					}
 				}
 			});
-    }
+	}
 
     private void initMarkwon() {
         markwon = Markwon.builder(getActivity())
@@ -127,24 +130,26 @@ public class ChatFragment extends Fragment {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        AppLogger.d("ChatFragment", "onResume called");
+	public void onResume() {
+		super.onResume();
+		AppLogger.d("ChatFragment", "onResume called");
 
-        // 只同步模型选择，不刷新对话
-        if (getActivity() instanceof MainActivity) {
-            MainActivity mainActivity = (MainActivity) getActivity();
-            if (mainActivity.inputFragment != null) {
-                String providerId = mainActivity.inputFragment.getCurrentProviderId();
-                String model = mainActivity.inputFragment.getCurrentModel();
-                if (!TextUtils.isEmpty(providerId) && !TextUtils.isEmpty(model)) {
-                    this.currentProviderId = providerId;
-                    this.currentModel = model;
-                    AppLogger.d("ChatFragment", "从InputFragment同步选择: " + providerId + ", " + model);
-                }
-            }
-        }
-    }
+		// 只同步模型选择，不刷新对话
+		if (getActivity() instanceof MainActivity) {
+			MainActivity mainActivity = (MainActivity) getActivity();
+			if (mainActivity.inputFragment != null) {
+				String providerId = mainActivity.inputFragment.getCurrentProviderId();
+				String model = mainActivity.inputFragment.getCurrentModel();
+				if (!TextUtils.isEmpty(providerId) && !TextUtils.isEmpty(model)) {
+					this.currentProviderId = providerId;
+					this.currentModel = model;
+					AppLogger.d("ChatFragment", "从InputFragment同步选择: " + providerId + ", " + model);
+				}
+			}
+		}
+
+		// 完全移除 checkAndUpdateConversation() 调用
+	}
 
     public void sendMessage(String messageText, String providerId, String model) {
         this.currentProviderId = providerId;
