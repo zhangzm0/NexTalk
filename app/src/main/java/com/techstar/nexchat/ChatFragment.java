@@ -124,7 +124,7 @@ public class ChatFragment extends Fragment {
 		// 创建LinearLayoutManager并设置从底部开始堆叠
 		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
 		layoutManager.setStackFromEnd(true); // 关键：从底部开始堆叠
-		layoutManager.setReverseLayout(true); // 正常顺序
+		layoutManager.setReverseLayout(false); // 正常顺序
 
 		recyclerView.setLayoutManager(layoutManager);
 
@@ -954,6 +954,7 @@ public class ChatFragment extends Fragment {
 								if (position >= 0 && position < messages.size()) {
 									try {
 										notifyItemChanged(position);
+										AppLogger.d("MessageAdapter", "safeNotifyItemChanged调用");
 									} catch (Exception e) {
 										AppLogger.e("MessageAdapter", "notifyItemChanged失败", e);
 										// 不调用notifyDataSetChanged()，避免循环
