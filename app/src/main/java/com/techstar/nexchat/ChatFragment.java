@@ -122,6 +122,7 @@ public class ChatFragment extends Fragment {
 		btnPause = view.findViewById(R.id.btnPause);
 
 		// 创建LinearLayoutManager并设置从底部开始堆叠
+		AppLogger.d("ChatFragment", "创建LinearLayoutManager并设置从底部开始堆叠");
 		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
 		//layoutManager.setStackFromEnd(true); // 关键：从底部开始堆叠
 		layoutManager.setReverseLayout(false); // 正常顺序
