@@ -159,11 +159,11 @@ public class ChatFragment extends Fragment {
 
 // 在ChatFragment.java中彻底修复滚动逻辑
 	// 在ChatFragment.java中添加滚动控制变量和方法
-	private boolean shouldAutoScroll = true; // 控制是否自动滚动
+
 
 
 // 在ChatFragment.java中简化滚动逻辑
-	private void scrollToBottom() {
+	private void scrollToBottom() {/*
 		if (recyclerView != null && adapter != null && getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {
 					@Override
@@ -178,7 +178,7 @@ public class ChatFragment extends Fragment {
 						}
 					}
 				});
-		}
+		}*/
 	}
 
 // 添加平滑滚动方法（可选）
