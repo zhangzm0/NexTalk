@@ -31,7 +31,7 @@ public class MainActivity extends FragmentActivity {
 
 
         // 使用新的日志方法
-        AppLogger.i("MainActivity", "App started");
+        AppLogger.i("MainActivity", "=================App started===============");
 
         setContentView(R.layout.activity_main);
         initViewPager();

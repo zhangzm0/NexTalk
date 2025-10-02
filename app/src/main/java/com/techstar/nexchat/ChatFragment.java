@@ -162,29 +162,6 @@ public class ChatFragment extends Fragment {
 	private boolean shouldAutoScroll = true; // 控制是否自动滚动
 
 
-// 修改safeScrollToBottom方法，添加条件判断
-	private void safeScrollToBottom() {
-		if (recyclerView != null && adapter != null && getActivity() != null && shouldAutoScroll) {
-			getActivity().runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							if (messages != null && messages.size() > 0) {
-								RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-								if (layoutManager instanceof LinearLayoutManager) {
-									LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
-									// 直接滚动到底部
-									linearLayoutManager.scrollToPositionWithOffset(messages.size() - 1, 0);
-								}
-							}
-						} catch (Exception e) {
-							AppLogger.e("ChatFragment", "安全滚动失败", e);
-						}
-					}
-				});
-		}
-	}
-
 // 在ChatFragment.java中简化滚动逻辑
 	private void scrollToBottom() {
 		if (recyclerView != null && adapter != null && getActivity() != null) {
@@ -194,7 +171,7 @@ public class ChatFragment extends Fragment {
 						try {
 							if (messages != null && messages.size() > 0) {
 								// 直接滚动到最后一项
-								recyclerView.scrollToPosition(messages.size() - 1);
+								recyclerView.smoothScrollToPosition(messages.size() - 1);
 							}
 						} catch (Exception e) {
 							AppLogger.e("ChatFragment", "滚动失败", e);
@@ -370,19 +347,7 @@ public class ChatFragment extends Fragment {
 		return Math.max(estimatedTokens, 1); // 至少1个token
 	}
 
-// 移除之前的saveTokensToPersistence方法，因为现在由ChatManager统一处理
 
-// 延迟滚动确保稳定性
-	private void delayedScrollToBottom() {
-		if (recyclerView != null) {
-			recyclerView.postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						safeScrollToBottom();
-					}
-				}, 200);
-		}
-	}
 
 	@Override
 	public void onDestroyView() {
@@ -864,7 +829,7 @@ public class ChatFragment extends Fragment {
 					}
 				}
 
-				safeScrollToBottom();
+				scrollToBottom();
 				AppLogger.d("ChatFragment", "对话加载完成: " + currentConversation.getTitle() + ", 消息数: " + messages.size());
 			} else {
 				AppLogger.e("ChatFragment", "对话加载失败: " + conversationId);
