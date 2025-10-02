@@ -84,16 +84,15 @@
             android:textColor="#2196F3"
             android:textSize="10sp"
             android:background="@android:color/transparent"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"/>
 
         <View
             android:layout_width="1dp"
             android:layout_height="12dp"
             android:background="#666666"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"/>
+            />
 
         <Button
             android:id="@+id/btnRegenerate"
@@ -103,16 +102,15 @@
             android:textColor="#4CAF50"
             android:textSize="10sp"
             android:background="@android:color/transparent"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"/>
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"/>
 		
 		<View
 			android:layout_width="1dp"
 			android:layout_height="12dp"
 			android:background="#666666"
 			android:layout_gravity="center_vertical"
-			android:layout_marginStart="4dp"
-			android:layout_marginEnd="4dp"/>
+			/>
 		
 		<!-- 在item_message_user.xml和item_message_assistant.xml的layoutActions中添加 -->
 		<Button
@@ -123,8 +121,8 @@
 			android:textColor="#F44336"
 			android:textSize="10sp"
 			android:background="@android:color/transparent"
-			android:paddingStart="8dp"
-			android:paddingEnd="8dp"/>
+			android:paddingStart="6dp"
+			android:paddingEnd="6dp"/>
 
     </LinearLayout>
 
