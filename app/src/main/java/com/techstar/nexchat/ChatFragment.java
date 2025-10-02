@@ -79,13 +79,20 @@ public class ChatFragment extends Fragment {
 		recyclerView.setSaveEnabled(false);
 
 		// 最简单的LayoutManager，不干预任何滚动行为
-		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity()) {
+			@Override
+			public void onRestoreInstanceState(android.os.Parcelable state) {
+				// 重写此方法，不恢复状态
+				// 不调用 super.onRestoreInstanceState(state);
+			}
+		};
 		recyclerView.setLayoutManager(layoutManager);
 
 		messages = new ArrayList<>();
 		adapter = new MessageAdapter(messages);
 		recyclerView.setAdapter(adapter);
 
+		
 		// 暂停按钮点击事件
 		btnPause.setOnClickListener(new View.OnClickListener() {
 				@Override
