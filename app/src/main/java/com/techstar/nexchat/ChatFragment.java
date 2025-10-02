@@ -70,33 +70,46 @@ public class ChatFragment extends Fragment {
         return view;
     }
 
-    private void initViews(View view) {
+    // 在 initViews 方法中添加状态保存禁用和详细日志
+	private void initViews(View view) {
 		recyclerView = view.findViewById(R.id.recyclerViewMessages);
 		tvChatTitle = view.findViewById(R.id.tvChatTitle);
 		btnPause = view.findViewById(R.id.btnPause);
 
+		AppLogger.d("ChatFragment", "初始化视图 - 开始");
+
 		// 关键：禁用 RecyclerView 的自动状态保存
 		recyclerView.setSaveEnabled(false);
+		AppLogger.d("ChatFragment", "已禁用 RecyclerView 状态保存");
 
-		// 最简单的LayoutManager，不干预任何滚动行为
+		// 创建自定义 LayoutManager 来完全禁用状态恢复
 		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity()) {
 			@Override
 			public void onRestoreInstanceState(android.os.Parcelable state) {
-				// 重写此方法，不恢复状态
-				// 不调用 super.onRestoreInstanceState(state);
+				AppLogger.d("ChatFragment", "LayoutManager 尝试恢复状态，但已被阻止");
+				// 完全阻止状态恢复，不调用父类方法
+			}
+
+			@Override
+			public android.os.Parcelable onSaveInstanceState() {
+				AppLogger.d("ChatFragment", "LayoutManager 尝试保存状态，但返回空");
+				return null; // 返回 null 阻止状态保存
 			}
 		};
+
 		recyclerView.setLayoutManager(layoutManager);
+		AppLogger.d("ChatFragment", "LayoutManager 已设置");
 
 		messages = new ArrayList<>();
 		adapter = new MessageAdapter(messages);
 		recyclerView.setAdapter(adapter);
+		AppLogger.d("ChatFragment", "Adapter 已设置");
 
-		
 		// 暂停按钮点击事件
 		btnPause.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
+					AppLogger.d("ChatFragment", "暂停按钮被点击");
 					if (isStreaming && currentCall != null) {
 						currentCall.cancel();
 						isStreaming = false;
@@ -115,6 +128,8 @@ public class ChatFragment extends Fragment {
 					}
 				}
 			});
+
+		AppLogger.d("ChatFragment", "视图初始化完成");
 	}
 
     private void initMarkwon() {
@@ -136,10 +151,20 @@ public class ChatFragment extends Fragment {
         }
     }
 
-    @Override
+
+// 修改 onResume 方法，添加更详细的日志
+	@Override
 	public void onResume() {
 		super.onResume();
-		AppLogger.d("ChatFragment", "onResume called");
+		AppLogger.d("ChatFragment", "=== onResume 开始 ===");
+
+		// 记录当前滚动状态（用于调试）
+		if (recyclerView != null && recyclerView.getLayoutManager() != null) {
+			LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+			int firstVisible = layoutManager.findFirstVisibleItemPosition();
+			int lastVisible = layoutManager.findLastVisibleItemPosition();
+			AppLogger.d("ChatFragment", "当前可见项: 第一个=" + firstVisible + ", 最后一个=" + lastVisible);
+		}
 
 		// 只同步模型选择，不刷新对话
 		if (getActivity() instanceof MainActivity) {
@@ -151,11 +176,17 @@ public class ChatFragment extends Fragment {
 					this.currentProviderId = providerId;
 					this.currentModel = model;
 					AppLogger.d("ChatFragment", "从InputFragment同步选择: " + providerId + ", " + model);
+				} else {
+					AppLogger.d("ChatFragment", "InputFragment没有有效的选择");
 				}
+			} else {
+				AppLogger.d("ChatFragment", "InputFragment为null");
 			}
+		} else {
+			AppLogger.d("ChatFragment", "Activity不是MainActivity实例");
 		}
 
-		// 完全移除 checkAndUpdateConversation() 调用
+		AppLogger.d("ChatFragment", "=== onResume 结束 ===");
 	}
 
     public void sendMessage(String messageText, String providerId, String model) {
@@ -514,36 +545,53 @@ public class ChatFragment extends Fragment {
         return null;
     }
 
-    private void loadOrCreateConversation() {
-        if (chatManager == null) {
-            chatManager = ChatManager.getInstance(getActivity());
-        }
 
-        currentConversation = chatManager.getCurrentConversation();
-        if (currentConversation == null) {
-            currentConversation = chatManager.createNewConversation();
-        }
+// 修改 loadOrCreateConversation 方法，添加日志
+	private void loadOrCreateConversation() {
+		AppLogger.d("ChatFragment", "=== 加载或创建对话开始 ===");
 
-        if (messages == null) {
-            messages = new ArrayList<>();
-        } else {
-            messages.clear();
-        }
-        messages.addAll(currentConversation.getMessages());
+		if (chatManager == null) {
+			chatManager = ChatManager.getInstance(getActivity());
+			AppLogger.d("ChatFragment", "ChatManager重新初始化");
+		}
 
-        if (adapter == null) {
-            adapter = new MessageAdapter(messages);
-            if (recyclerView != null) {
-                recyclerView.setAdapter(adapter);
-            }
-        } else {
-            adapter.notifyDataSetChanged();
-        }
+		currentConversation = chatManager.getCurrentConversation();
+		if (currentConversation == null) {
+			currentConversation = chatManager.createNewConversation();
+			AppLogger.d("ChatFragment", "创建新对话: " + currentConversation.getId());
+		} else {
+			AppLogger.d("ChatFragment", "使用现有对话: " + currentConversation.getTitle() + " (" + currentConversation.getId() + ")");
+		}
 
-        if (tvChatTitle != null) {
-            tvChatTitle.setText(currentConversation.getTitle());
-        }
-    }
+		if (messages == null) {
+			messages = new ArrayList<>();
+			AppLogger.d("ChatFragment", "初始化消息列表");
+		} else {
+			messages.clear();
+			AppLogger.d("ChatFragment", "清空现有消息列表");
+		}
+
+		messages.addAll(currentConversation.getMessages());
+		AppLogger.d("ChatFragment", "添加了 " + currentConversation.getMessages().size() + " 条消息");
+
+		if (adapter == null) {
+			adapter = new MessageAdapter(messages);
+			if (recyclerView != null) {
+				recyclerView.setAdapter(adapter);
+			}
+			AppLogger.d("ChatFragment", "创建新Adapter");
+		} else {
+			adapter.notifyDataSetChanged();
+			AppLogger.d("ChatFragment", "通知Adapter数据集改变");
+		}
+
+		if (tvChatTitle != null) {
+			tvChatTitle.setText(currentConversation.getTitle());
+			AppLogger.d("ChatFragment", "设置标题: " + currentConversation.getTitle());
+		}
+
+		AppLogger.d("ChatFragment", "=== 加载或创建对话结束 ===");
+	}
 
     public void ensureInitialized() {
         if (!isInitialized && getView() != null) {
@@ -865,4 +913,44 @@ public class ChatFragment extends Fragment {
             .setNegativeButton("取消", null)
             .show();
     }
+	
+	// 添加 RecyclerView 的滚动监听器来调试滚动行为
+	@Override
+	public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+
+		// 添加滚动监听器来记录所有滚动事件
+		recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+				@Override
+				public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+					super.onScrollStateChanged(recyclerView, newState);
+					String stateName;
+					switch (newState) {
+						case RecyclerView.SCROLL_STATE_IDLE:
+							stateName = "空闲";
+							break;
+						case RecyclerView.SCROLL_STATE_DRAGGING:
+							stateName = "拖动";
+							break;
+						case RecyclerView.SCROLL_STATE_SETTLING:
+							stateName = "惯性滚动";
+							break;
+						default:
+							stateName = "未知";
+					}
+					AppLogger.d("ChatFragment", "滚动状态改变: " + stateName);
+				}
+
+				@Override
+				public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+					super.onScrolled(recyclerView, dx, dy);
+					if (dy != 0) {
+						AppLogger.d("ChatFragment", "正在滚动: dx=" + dx + ", dy=" + dy);
+					}
+				}
+			});
+
+		AppLogger.d("ChatFragment", "滚动监听器已添加");
+	}
+	
 }
