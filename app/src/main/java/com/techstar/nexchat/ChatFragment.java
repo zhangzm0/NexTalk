@@ -123,7 +123,7 @@ public class ChatFragment extends Fragment {
 
 		// 创建LinearLayoutManager并设置从底部开始堆叠
 		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-		layoutManager.setStackFromEnd(false); // 关键：从底部开始堆叠
+		layoutManager.setStackFromEnd(true); // 关键：从底部开始堆叠
 		layoutManager.setReverseLayout(true); // 正常顺序
 
 		recyclerView.setLayoutManager(layoutManager);
