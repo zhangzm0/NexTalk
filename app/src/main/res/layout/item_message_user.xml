@@ -83,6 +83,25 @@
 			android:paddingStart="8dp"
 			android:paddingEnd="8dp"/>
 
+		<View
+			android:layout_width="1dp"
+			android:layout_height="12dp"
+			android:background="#666666"
+			android:layout_gravity="center_vertical"
+			android:layout_marginStart="4dp"
+			android:layout_marginEnd="4dp"/>
+		
+		<!-- 在item_message_user.xml和item_message_assistant.xml的layoutActions中添加 -->
+		<Button
+			android:id="@+id/btnDelete"
+			android:layout_width="wrap_content"
+			android:layout_height="24dp"
+			android:text="删除"
+			android:textColor="#F44336"
+			android:textSize="10sp"
+			android:background="@android:color/transparent"
+			android:paddingStart="8dp"
+			android:paddingEnd="8dp"/>
 	</LinearLayout>
 
 </LinearLayout>

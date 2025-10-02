@@ -111,63 +111,75 @@ public class ChatManager {
     }
 
     // 私有方法：对话转JSON
-    private JSONObject conversationToJson(ChatConversation conversation) throws Exception {
-        JSONObject json = new JSONObject();
-        json.put("id", conversation.getId());
-        json.put("title", conversation.getTitle());
-        json.put("createTime", conversation.getCreateTime());
-        json.put("updateTime", conversation.getUpdateTime());
-        json.put("providerId", conversation.getProviderId());
-        json.put("model", conversation.getModel());
-        json.put("messageCount", conversation.getMessageCount());
-        json.put("isPinned", conversation.isPinned());
+    // 修改conversationToJson方法，添加tokens字段
+	private JSONObject conversationToJson(ChatConversation conversation) throws Exception {
+		JSONObject json = new JSONObject();
+		json.put("id", conversation.getId());
+		json.put("title", conversation.getTitle());
+		json.put("createTime", conversation.getCreateTime());
+		json.put("updateTime", conversation.getUpdateTime());
+		json.put("providerId", conversation.getProviderId());
+		json.put("model", conversation.getModel());
+		json.put("messageCount", conversation.getMessageCount());
+		json.put("isPinned", conversation.isPinned());
 
-        // 保存消息列表
-        JSONArray messagesArray = new JSONArray();
-        for (ChatMessage message : conversation.getMessages()) {
-            JSONObject messageJson = new JSONObject();
-            messageJson.put("id", message.getId());
-            messageJson.put("type", message.getType());
-            messageJson.put("content", message.getContent());
-            messageJson.put("timestamp", message.getTimestamp());
-            messageJson.put("isStreaming", message.isStreaming());
-            messageJson.put("model", message.getModel());
-            messagesArray.put(messageJson);
-        }
-        json.put("messages", messagesArray);
+		// 保存消息列表
+		JSONArray messagesArray = new JSONArray();
+		for (ChatMessage message : conversation.getMessages()) {
+			JSONObject messageJson = new JSONObject();
+			messageJson.put("id", message.getId());
+			messageJson.put("type", message.getType());
+			messageJson.put("content", message.getContent());
+			messageJson.put("timestamp", message.getTimestamp());
+			messageJson.put("isStreaming", message.isStreaming());
+			messageJson.put("model", message.getModel());
+			// 添加tokens相关字段
+			messageJson.put("tokens", message.getTokens());
+			messageJson.put("promptTokens", message.getPromptTokens());
+			messageJson.put("completionTokens", message.getCompletionTokens());
+			messageJson.put("totalTokens", message.getTotalTokens());
+			messageJson.put("responseId", message.getResponseId());
+			messagesArray.put(messageJson);
+		}
+		json.put("messages", messagesArray);
 
-        return json;
-    }
+		return json;
+	}
 
-    // 私有方法：JSON转对话
-    private ChatConversation jsonToConversation(JSONObject json) throws Exception {
-        ChatConversation conversation = new ChatConversation();
-        conversation.setId(json.getString("id"));
-        conversation.setTitle(json.getString("title"));
-        conversation.setCreateTime(json.getLong("createTime"));
-        conversation.setUpdateTime(json.getLong("updateTime"));
-        conversation.setProviderId(json.optString("providerId"));
-        conversation.setModel(json.optString("model"));
-        conversation.setMessageCount(json.optInt("messageCount"));
-        conversation.setPinned(json.optBoolean("isPinned"));
+// 修改jsonToConversation方法，读取tokens字段
+	private ChatConversation jsonToConversation(JSONObject json) throws Exception {
+		ChatConversation conversation = new ChatConversation();
+		conversation.setId(json.getString("id"));
+		conversation.setTitle(json.getString("title"));
+		conversation.setCreateTime(json.getLong("createTime"));
+		conversation.setUpdateTime(json.getLong("updateTime"));
+		conversation.setProviderId(json.optString("providerId"));
+		conversation.setModel(json.optString("model"));
+		conversation.setMessageCount(json.optInt("messageCount"));
+		conversation.setPinned(json.optBoolean("isPinned"));
 
-        // 加载消息列表
-        JSONArray messagesArray = json.getJSONArray("messages");
-        for (int i = 0; i < messagesArray.length(); i++) {
-            JSONObject messageJson = messagesArray.getJSONObject(i);
-            ChatMessage message = new ChatMessage();
-            message.setId(messageJson.getString("id"));
-            message.setType(messageJson.getInt("type"));
-            message.setContent(messageJson.getString("content"));
-            message.setTimestamp(messageJson.getLong("timestamp"));
-            message.setStreaming(messageJson.optBoolean("isStreaming"));
-            message.setModel(messageJson.optString("model"));
-            conversation.addMessage(message);
-        }
+		// 加载消息列表
+		JSONArray messagesArray = json.getJSONArray("messages");
+		for (int i = 0; i < messagesArray.length(); i++) {
+			JSONObject messageJson = messagesArray.getJSONObject(i);
+			ChatMessage message = new ChatMessage();
+			message.setId(messageJson.getString("id"));
+			message.setType(messageJson.getInt("type"));
+			message.setContent(messageJson.getString("content"));
+			message.setTimestamp(messageJson.getLong("timestamp"));
+			message.setStreaming(messageJson.optBoolean("isStreaming"));
+			message.setModel(messageJson.optString("model"));
+			// 读取tokens相关字段
+			message.setTokens(messageJson.optInt("tokens", 0));
+			message.setPromptTokens(messageJson.optInt("promptTokens", 0));
+			message.setCompletionTokens(messageJson.optInt("completionTokens", 0));
+			message.setTotalTokens(messageJson.optInt("totalTokens", 0));
+			message.setResponseId(messageJson.optString("responseId"));
+			conversation.addMessage(message);
+		}
 
-        return conversation;
-    }
-
+		return conversation;
+	}
     // 私有方法：管理对话ID列表
     private void addConversationId(String conversationId) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);

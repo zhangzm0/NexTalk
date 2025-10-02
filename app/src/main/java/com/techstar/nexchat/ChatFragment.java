@@ -41,7 +41,7 @@ public class ChatFragment extends Fragment {
     private RecyclerView recyclerView;
     private MessageAdapter adapter;
     private TextView tvChatTitle;
-	
+
 
     private ChatConversation currentConversation;
     private List<ChatMessage> messages;
@@ -50,8 +50,11 @@ public class ChatFragment extends Fragment {
 
 	private static final int TYPE_USER = 0;
     private static final int TYPE_ASSISTANT = 1;
-	
+
 	private int updateCount = 0; // 控制更新频率
+
+	private int userIndex = -1;
+	private int aiIndex = -1;
 
     private void initMarkwon() {
         markwon = Markwon.builder(getActivity())
@@ -151,7 +154,7 @@ public class ChatFragment extends Fragment {
 
 	private boolean isUpdating = false;
 
-// 在ChatFragment.java中修改滚动方法
+// 在ChatFragment.java中彻底修复滚动逻辑
 	private void safeScrollToBottom() {
 		if (recyclerView != null && adapter != null && getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {
@@ -159,23 +162,25 @@ public class ChatFragment extends Fragment {
 					public void run() {
 						try {
 							if (messages != null && messages.size() > 0) {
-								// 检查LayoutManager是否可用
 								RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-								if (layoutManager != null) {
-									// 使用smoothScrollToPosition但禁用动画避免跳动
-									recyclerView.scrollToPosition(messages.size() - 1);
+								if (layoutManager instanceof LinearLayoutManager) {
+									final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
 
-									// 延迟微调确保滚动到位
-									new android.os.Handler().postDelayed(new Runnable() {
+									// 直接滚动到底部，不使用动画
+									linearLayoutManager.scrollToPositionWithOffset(messages.size() - 1, 0);
+
+									// 确保滚动完成
+									recyclerView.post(new Runnable() {
 											@Override
 											public void run() {
 												try {
-													recyclerView.smoothScrollToPosition(messages.size() - 1);
+													// 再次确认滚动到底部
+													linearLayoutManager.scrollToPosition(messages.size() - 1);
 												} catch (Exception e) {
-													AppLogger.e("ChatFragment", "微调滚动失败", e);
+													AppLogger.e("ChatFragment", "二次滚动失败", e);
 												}
 											}
-										}, 100);
+										});
 								}
 							}
 						} catch (Exception e) {
@@ -186,7 +191,7 @@ public class ChatFragment extends Fragment {
 		}
 	}
 
-// 修改流式更新时的滚动策略
+// 修改流式响应结束时的处理
 	private void processStreamResponse(Response response, final ChatMessage aiMessage) {
 		try {
 			String line;
@@ -200,7 +205,8 @@ public class ChatFragment extends Fragment {
 			int completionTokens = 0;
 			int totalTokens = 0;
 			boolean hasTokens = false;
-			updateCount = 0; // 控制更新频率
+			int updateCount = 0;
+			long lastUpdateTime = System.currentTimeMillis();
 
 			while ((line = reader.readLine()) != null && isStreaming) {
 				if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
@@ -216,6 +222,7 @@ public class ChatFragment extends Fragment {
 								completionTokens = usage.optInt("completion_tokens", 0);
 								totalTokens = usage.optInt("total_tokens", 0);
 								hasTokens = true;
+								AppLogger.d("ChatFragment", "提取到tokens: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
 							}
 
 							JSONArray choices = data.getJSONArray("choices");
@@ -227,8 +234,9 @@ public class ChatFragment extends Fragment {
 									content.append(chunk);
 									updateCount++;
 
-									// 控制更新频率，避免频繁跳动
-									if (updateCount % 3 == 0) { // 每3个chunk更新一次
+									// 控制更新频率
+									long currentTime = System.currentTimeMillis();
+									if (updateCount % 5 == 0 || currentTime - lastUpdateTime > 500) {
 										final String currentContent = content.toString();
 										if (getActivity() != null) {
 											getActivity().runOnUiThread(new Runnable() {
@@ -241,14 +249,11 @@ public class ChatFragment extends Fragment {
 																if (adapter != null) {
 																	adapter.safeNotifyItemChanged(aiMessageIndex);
 																}
-																// 只在重要更新时滚动
-																if (updateCount % 6 == 0) {
-																	safeScrollToBottom();
-																}
 															}
 														}
 													}
 												});
+											lastUpdateTime = currentTime;
 										}
 									}
 								}
@@ -276,17 +281,19 @@ public class ChatFragment extends Fragment {
 									aiMessage.setContent(finalContent);
 									aiMessage.setStreaming(false);
 									if (finalHasTokens) {
+										// 设置tokens信息
 										aiMessage.setTokensInfo(finalPromptTokens, finalCompletionTokens, finalTotalTokens);
 									}
 									hidePauseButton();
 									if (adapter != null) {
 										adapter.safeNotifyItemChanged(aiMessageIndex);
 									}
-									// 最终滚动到底部
-									safeScrollToBottom();
 
-									// 保存对话
+									// 关键：保存对话到持久化存储（包含tokens）
 									chatManager.saveConversation(currentConversation);
+									AppLogger.d("ChatFragment", "对话已保存，包含tokens: " + aiMessage.getTokensText());
+
+									delayedScrollToBottom();
 								}
 							}
 						}
@@ -306,6 +313,20 @@ public class ChatFragment extends Fragment {
 						}
 					});
 			}
+		}
+	}
+
+// 移除之前的saveTokensToPersistence方法，因为现在由ChatManager统一处理
+
+// 延迟滚动确保稳定性
+	private void delayedScrollToBottom() {
+		if (recyclerView != null) {
+			recyclerView.postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						safeScrollToBottom();
+					}
+				}, 200);
 		}
 	}
 
@@ -447,40 +468,7 @@ public class ChatFragment extends Fragment {
 		}
 	}
 
-	// 添加一个更简单的测试方法
-	private void testHttpClient() {
-		try {
-			AppLogger.d("ChatFragment", "测试HTTP客户端");
 
-			if (client == null) {
-				AppLogger.e("ChatFragment", "客户端为null");
-				return;
-			}
-
-			// 测试一个简单的HTTP请求
-			Request testRequest = new Request.Builder()
-				.url("https://httpbin.org/get")
-				.get()
-				.build();
-
-			AppLogger.d("ChatFragment", "测试请求构建完成");
-
-			client.newCall(testRequest).enqueue(new Callback() {
-					@Override
-					public void onFailure(Call call, IOException e) {
-						AppLogger.e("ChatFragment", "HTTP客户端测试失败", e);
-					}
-
-					@Override
-					public void onResponse(Call call, Response response) throws IOException {
-						AppLogger.d("ChatFragment", "HTTP客户端测试成功: " + response.code());
-					}
-				});
-
-		} catch (Exception e) {
-			AppLogger.e("ChatFragment", "HTTP客户端测试异常", e);
-		}
-	}
 
 	// 修改sendMessage方法，保存providerId
 	private String currentProviderId = "";
@@ -759,6 +747,7 @@ public class ChatFragment extends Fragment {
 	}
 
 	// 加载指定对话
+	// 在加载对话时验证tokens是否正确加载
 	private void loadConversation(String conversationId) {
 		try {
 			AppLogger.d("ChatFragment", "加载对话: " + conversationId);
@@ -774,6 +763,13 @@ public class ChatFragment extends Fragment {
 					messages.clear();
 				}
 				messages.addAll(currentConversation.getMessages());
+
+				// 验证tokens是否正确加载
+				for (ChatMessage msg : messages) {
+					if (msg.getType() == ChatMessage.TYPE_ASSISTANT && msg.getTotalTokens() > 0) {
+						AppLogger.d("ChatFragment", "加载到tokens: " + msg.getTokensText());
+					}
+				}
 
 				// 更新UI
 				if (tvChatTitle != null) {
@@ -968,7 +964,7 @@ public class ChatFragment extends Fragment {
 					});
 			}
 		}
-		
+
 		public void safeNotifyDataSetChanged() {
 			if (getActivity() != null) {
 				getActivity().runOnUiThread(new Runnable() {
@@ -985,13 +981,13 @@ public class ChatFragment extends Fragment {
 					});
 			}
 		}
-		
 
-		// 在MessageAdapter的ViewHolder中移除长按事件
+
+		// 在MessageAdapter的ViewHolder中添加删除按钮
 		private class UserMessageViewHolder extends RecyclerView.ViewHolder {
 			private TextView tvMessage, tvTime;
 			private LinearLayout layoutActions;
-			private Button btnCopy, btnRegenerate;
+			private Button btnCopy, btnRegenerate, btnDelete;
 
 			public UserMessageViewHolder(@NonNull View itemView) {
 				super(itemView);
@@ -1000,18 +996,17 @@ public class ChatFragment extends Fragment {
 				layoutActions = itemView.findViewById(R.id.layoutActions);
 				btnCopy = itemView.findViewById(R.id.btnCopy);
 				btnRegenerate = itemView.findViewById(R.id.btnRegenerate);
+				btnDelete = itemView.findViewById(R.id.btnDelete);
 
-				// 移除TextView的长按事件 - 让系统默认的部分复制生效
 				if (tvMessage != null) {
 					tvMessage.setOnLongClickListener(null);
-					tvMessage.setLongClickable(true); // 保持可长按，让系统处理
+					tvMessage.setLongClickable(true);
 				}
 			}
 
 			public void bind(final ChatMessage message) {
 				if (tvMessage != null) {
 					tvMessage.setText(message.getContent());
-					// 不再设置长按监听器，让系统处理文本选择
 				}
 
 				if (tvTime != null) {
@@ -1037,13 +1032,22 @@ public class ChatFragment extends Fragment {
 							}
 						});
 				}
+
+				if (btnDelete != null) {
+					btnDelete.setOnClickListener(new View.OnClickListener() {
+							@Override
+							public void onClick(View v) {
+								deleteMessagePair(message);
+							}
+						});
+				}
 			}
 		}
 
 		private class AssistantMessageViewHolder extends RecyclerView.ViewHolder {
 			private TextView tvMessage, tvTime, tvTokens, tvModelName;
 			private LinearLayout layoutActions;
-			private Button btnCopy, btnRegenerate;
+			private Button btnCopy, btnRegenerate, btnDelete;
 
 			public AssistantMessageViewHolder(@NonNull View itemView) {
 				super(itemView);
@@ -1054,8 +1058,8 @@ public class ChatFragment extends Fragment {
 				layoutActions = itemView.findViewById(R.id.layoutActions);
 				btnCopy = itemView.findViewById(R.id.btnCopy);
 				btnRegenerate = itemView.findViewById(R.id.btnRegenerate);
+				btnDelete = itemView.findViewById(R.id.btnDelete);
 
-				// 移除TextView的长按事件
 				if (tvMessage != null) {
 					tvMessage.setOnLongClickListener(null);
 					tvMessage.setLongClickable(true);
@@ -1070,8 +1074,6 @@ public class ChatFragment extends Fragment {
 					} else {
 						markwon.setMarkdown(tvMessage, message.getContent());
 					}
-
-					// 不再设置长按监听器
 				}
 
 				// 设置模型名称
@@ -1116,8 +1118,91 @@ public class ChatFragment extends Fragment {
 							}
 						});
 				}
+
+				// 删除按钮
+				if (btnDelete != null) {
+					btnDelete.setOnClickListener(new View.OnClickListener() {
+							@Override
+							public void onClick(View v) {
+								deleteMessagePair(message);
+							}
+						});
+				}
 			}
 		}
+
+// 添加删除消息对的方法
+		// 在删除消息对的方法中确保保存
+		private void deleteMessagePair(ChatMessage message) {
+			int messageIndex = messages.indexOf(message);
+			if (messageIndex == -1) return;
+
+			// 找到要删除的消息对
+			userIndex = -1;
+			aiIndex = -1;
+
+			if (message.getType() == ChatMessage.TYPE_USER) {
+				userIndex = messageIndex;
+				// 找对应的AI消息
+				if (messageIndex + 1 < messages.size()) {
+					ChatMessage nextMessage = messages.get(messageIndex + 1);
+					if (nextMessage.getType() == ChatMessage.TYPE_ASSISTANT) {
+						aiIndex = messageIndex + 1;
+					}
+				}
+			} else if (message.getType() == ChatMessage.TYPE_ASSISTANT) {
+				aiIndex = messageIndex;
+				// 找对应的用户消息
+				if (messageIndex > 0) {
+					ChatMessage prevMessage = messages.get(messageIndex - 1);
+					if (prevMessage.getType() == ChatMessage.TYPE_USER) {
+						userIndex = messageIndex - 1;
+					}
+				}
+			}
+
+			if (userIndex == -1 && aiIndex == -1) {
+				Toast.makeText(getActivity(), "无法删除此消息", Toast.LENGTH_SHORT).show();
+				return;
+			}
+
+			// 确认删除
+			new android.app.AlertDialog.Builder(getActivity())
+				.setTitle("确认删除")
+				.setMessage("确定要删除这对消息吗？")
+				.setPositiveButton("删除", new android.content.DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(android.content.DialogInterface dialog, int which) {
+						// 安全删除消息对
+						List<ChatMessage> messagesToRemove = new ArrayList<>();
+
+						if (userIndex != -1 && userIndex < messages.size()) {
+							messagesToRemove.add(messages.get(userIndex));
+						}
+						if (aiIndex != -1 && aiIndex < messages.size()) {
+							messagesToRemove.add(messages.get(aiIndex));
+						}
+
+						// 从列表中移除
+						messages.removeAll(messagesToRemove);
+						currentConversation.getMessages().removeAll(messagesToRemove);
+
+						// 关键：立即持久化（通过ChatManager的JSON序列化）
+						chatManager.saveConversation(currentConversation);
+
+						// 更新UI
+						if (adapter != null) {
+							adapter.safeNotifyDataSetChanged();
+						}
+
+						Toast.makeText(getActivity(), "已删除消息对", Toast.LENGTH_SHORT).show();
+					}
+				})
+				.setNegativeButton("取消", null)
+				.show();
+		}
+
+
 	}
 
 	// 复制到剪贴板
@@ -1232,13 +1317,16 @@ public class ChatFragment extends Fragment {
 			isUpdating = false;
 		}
 	}
-	
+
 	// 在ChatFragment类中添加
 	public void setCurrentProviderAndModel(String providerId, String model) {
 		this.currentProviderId = providerId;
 		this.currentModel = model;
 		AppLogger.d("ChatFragment", "设置供应商和模型: " + providerId + ", " + model);
 	}
-	
-	
+
+
+
+
+
 }

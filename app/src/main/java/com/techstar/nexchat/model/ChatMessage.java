@@ -79,15 +79,16 @@ public class ChatMessage {
         return sdf.format(new Date(timestamp));
     }
 
-	// 修改ChatMessage.java的setTokensInfo方法
+
+// 修改setTokensInfo方法确保立即保存
 	public void setTokensInfo(int promptTokens, int completionTokens, int totalTokens) {
 		this.promptTokens = promptTokens;
 		this.completionTokens = completionTokens;
 		this.totalTokens = totalTokens;
-		this.tokens = totalTokens; // 向后兼容
+		this.tokens = totalTokens;
 
-		// 立即保存到对话
-		AppLogger.d("ChatMessage", "设置tokens: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
+		AppLogger.d("ChatMessage", "设置tokens并持久化: " + promptTokens + "+" + completionTokens + "=" + totalTokens);
+
 	}
 
 // 在ChatMessage.java中修改getTokensText方法
