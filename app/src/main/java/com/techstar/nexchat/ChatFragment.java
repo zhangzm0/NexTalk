@@ -55,6 +55,8 @@ public class ChatFragment extends Fragment {
 
 	private int userIndex = -1;
 	private int aiIndex = -1;
+	
+	private int updateCount = 0;
 
     private void initMarkwon() {
         markwon = Markwon.builder(getActivity())
@@ -113,47 +115,22 @@ public class ChatFragment extends Fragment {
     private boolean isStreaming = false;
     private Call currentCall; // 用于暂停请求
 
-// 在initViews方法中添加滚动监听
+// 在initViews方法中修改LayoutManager
 	private void initViews(View view) {
 		recyclerView = view.findViewById(R.id.recyclerViewMessages);
 		tvChatTitle = view.findViewById(R.id.tvChatTitle);
 		btnPause = view.findViewById(R.id.btnPause);
 
-		recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+		// 创建LinearLayoutManager并设置从底部开始堆叠
+		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+		layoutManager.setStackFromEnd(true); // 关键：从底部开始堆叠
+		layoutManager.setReverseLayout(false); // 正常顺序
+
+		recyclerView.setLayoutManager(layoutManager);
 
 		messages = new ArrayList<>();
 		adapter = new MessageAdapter(messages);
 		recyclerView.setAdapter(adapter);
-
-		// 添加滚动监听器
-		recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-				@Override
-				public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-					super.onScrollStateChanged(recyclerView, newState);
-
-					if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-						// 用户开始拖动
-						isUserScrolling = true;
-						lastUserScrollTime = System.currentTimeMillis();
-						AppLogger.d("ChatFragment", "用户开始手动滚动");
-					} else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-						// 滚动停止
-						isUserScrolling = false;
-						updateScrollState();
-						AppLogger.d("ChatFragment", "滚动停止，自动滚动: " + shouldAutoScroll);
-					}
-				}
-
-				@Override
-				public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-					super.onScrolled(recyclerView, dx, dy);
-
-					if (isUserScrolling && dy != 0) {
-						// 用户正在滚动，更新状态
-						updateScrollState();
-					}
-				}
-			});
 
 		// 暂停按钮点击事件
 		btnPause.setOnClickListener(new View.OnClickListener() {
@@ -185,14 +162,10 @@ public class ChatFragment extends Fragment {
 
 	private boolean isUpdating = false;
 
-// 在ChatFragment.java中添加滚动控制变量
-	private boolean shouldAutoScroll = true;
-	private boolean isUserScrolling = false;
-	private long lastUserScrollTime = 0;
-
-// 修改滚动方法
+// 在ChatFragment.java中彻底修复滚动逻辑
+	// 在ChatFragment.java中添加滚动控制变量和方法
 	private void scrollToBottom() {
-		if (recyclerView != null && adapter != null && getActivity() != null && shouldAutoScroll) {
+		if (recyclerView != null && adapter != null && getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
@@ -200,7 +173,7 @@ public class ChatFragment extends Fragment {
 							if (messages != null && messages.size() > 0) {
 								LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
 								if (layoutManager != null) {
-									// 一键直接到底部
+									// 一键直接到底部 - 这是最关键的代码
 									layoutManager.scrollToPositionWithOffset(messages.size() - 1, 0);
 								}
 							}
@@ -212,70 +185,8 @@ public class ChatFragment extends Fragment {
 		}
 	}
 
-// 添加平滑滚动方法
-	private void smoothScrollToBottom() {
-		if (recyclerView != null && adapter != null && getActivity() != null && shouldAutoScroll) {
-			getActivity().runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							if (messages != null && messages.size() > 0) {
-								recyclerView.smoothScrollToPosition(messages.size() - 1);
-							}
-						} catch (Exception e) {
-							AppLogger.e("ChatFragment", "平滑滚动失败", e);
-						}
-					}
-				});
-		}
-	}
 
-// 检查用户是否在底部
-	private boolean isUserAtBottom() {
-		if (recyclerView == null || messages == null || messages.isEmpty()) {
-			return true;
-		}
-
-		LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-		if (layoutManager == null) {
-			return true;
-		}
-
-		int lastVisiblePosition = layoutManager.findLastVisibleItemPosition();
-		int totalItemCount = messages.size();
-
-		// 如果最后可见项是最后一项或倒数第二项，认为用户在底部
-		return lastVisiblePosition >= totalItemCount - 2;
-	}
-
-// 更新滚动状态
-	private void updateScrollState() {
-		if (recyclerView == null) return;
-
-		LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-		if (layoutManager == null) return;
-
-		int lastVisiblePosition = layoutManager.findLastVisibleItemPosition();
-		int totalItemCount = messages.size();
-
-		// 如果用户手动滚动且不在底部，禁用自动滚动
-		if (isUserScrolling && lastVisiblePosition < totalItemCount - 2) {
-			shouldAutoScroll = false;
-		} 
-		// 如果用户在底部，启用自动滚动
-		else if (isUserAtBottom()) {
-			shouldAutoScroll = true;
-		}
-
-		AppLogger.d("ChatFragment", "滚动状态 - 自动滚动: " + shouldAutoScroll + 
-					", 用户滚动: " + isUserScrolling + 
-					", 最后可见: " + lastVisiblePosition + 
-					", 总数: " + totalItemCount);
-	}
-
-	
-
-// 修改processStreamResponse方法，减少闪烁
+// 修改processStreamResponse方法中的滚动逻辑
 	private void processStreamResponse(Response response, final ChatMessage aiMessage) {
 		try {
 			String line;
@@ -289,8 +200,7 @@ public class ChatFragment extends Fragment {
 			int completionTokens = 0;
 			int totalTokens = 0;
 			boolean hasTokens = false;
-			int updateCount = 0;
-			long lastUpdateTime = System.currentTimeMillis();
+			updateCount = 0;
 
 			while ((line = reader.readLine()) != null && isStreaming) {
 				if (line.startsWith("data: ")) {
@@ -320,9 +230,8 @@ public class ChatFragment extends Fragment {
 									content.append(chunk);
 									updateCount++;
 
-									// 减少更新频率：每5个字符或300ms更新一次
-									long currentTime = System.currentTimeMillis();
-									if (content.length() % 5 == 0 || currentTime - lastUpdateTime > 300) {
+									// 每3个chunk更新一次UI
+									if (updateCount % 3 == 0) {
 										final String currentContent = content.toString();
 										if (getActivity() != null) {
 											getActivity().runOnUiThread(new Runnable() {
@@ -335,15 +244,14 @@ public class ChatFragment extends Fragment {
 																if (adapter != null) {
 																	adapter.safeNotifyItemChanged(aiMessageIndex);
 																}
-																// 只在用户处于底部时滚动
-																if (shouldAutoScroll) {
-																	smoothScrollToBottom();
+																// 流式响应时每9个chunk滚动到底部
+																if (updateCount % 9 == 0){
+																	scrollToBottom();
 																}
 															}
 														}
 													}
 												});
-											lastUpdateTime = currentTime;
 										}
 									}
 								}
@@ -379,10 +287,10 @@ public class ChatFragment extends Fragment {
 										adapter.safeNotifyItemChanged(aiMessageIndex);
 									}
 
-									// 流结束时强制滚动到底部
+									// 流结束时滚动到底部
 									scrollToBottom();
-									shouldAutoScroll = true; // 重置自动滚动状态
 
+									// 保存对话
 									chatManager.saveConversation(currentConversation);
 								}
 							}
@@ -400,34 +308,10 @@ public class ChatFragment extends Fragment {
 								handleError("响应解析失败: " + e.getMessage());
 							}
 							hidePauseButton();
-							shouldAutoScroll = true; // 出错时重置自动滚动
 						}
 					});
 			}
 		}
-	}
-
-// 添加tokens估算方法
-	private int estimateTokens(String text) {
-		if (text == null || text.isEmpty()) return 0;
-
-		// 简单的tokens估算：中文字符算2个token，英文字符算0.7个token
-		int chineseCount = 0;
-		int englishCount = 0;
-		int otherCount = 0;
-
-		for (char c : text.toCharArray()) {
-			if (Character.UnicodeScript.of(c) == Character.UnicodeScript.HAN) {
-				chineseCount++;
-			} else if (Character.isLetterOrDigit(c)) {
-				englishCount++;
-			} else {
-				otherCount++;
-			}
-		}
-
-		int estimatedTokens = (int) (chineseCount * 2 + englishCount * 0.7 + otherCount * 0.5);
-		return Math.max(estimatedTokens, 1); // 至少1个token
 	}
 
 
@@ -595,11 +479,6 @@ public class ChatFragment extends Fragment {
 		isUpdating = true;
 
 		try {
-			
-			// 发送消息时强制滚动
-			scrollToBottom();
-			shouldAutoScroll = true; // 发送消息时启用自动滚动
-			
 			// 创建用户消息
 			ChatMessage userMessage = new ChatMessage(ChatMessage.TYPE_USER, messageText);
 			messages.add(userMessage);
@@ -970,13 +849,11 @@ public class ChatFragment extends Fragment {
 		}
 
 		// 打开对话时延迟滚动到底部，确保布局完成
-		// 打开对话时延迟滚动到底部
 		if (getActivity() != null) {
 			getActivity().runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
 						scrollToBottom();
-						shouldAutoScroll = true; // 打开对话时启用自动滚动
 					}
 				});
 		}
@@ -1186,7 +1063,6 @@ public class ChatFragment extends Fragment {
 			}
 		}
 
-		// 修改AssistantMessageViewHolder的bind方法
 		private class AssistantMessageViewHolder extends RecyclerView.ViewHolder {
 			private TextView tvMessage, tvTime, tvTokens, tvModelName;
 			private LinearLayout layoutActions;
@@ -1210,13 +1086,11 @@ public class ChatFragment extends Fragment {
 			}
 
 			public void bind(final ChatMessage message) {
-				// 设置消息内容 - 修复闪烁问题
+				// 设置消息内容
 				if (tvMessage != null) {
 					if (message.isStreaming()) {
-						// 流式响应时直接设置文本，避免Markwon渲染
 						tvMessage.setText(message.getContent() + " ▌");
 					} else {
-						// 非流式响应时才使用Markwon渲染
 						markwon.setMarkdown(tvMessage, message.getContent());
 					}
 				}
@@ -1231,12 +1105,7 @@ public class ChatFragment extends Fragment {
 					tvTime.setText(message.getFormattedTime());
 				}
 				if (tvTokens != null) {
-					String tokensText = message.getTokensText();
-					if (!"无".equals(tokensText)) {
-						tvTokens.setText(" • " + tokensText + " tokens");
-					} else {
-						tvTokens.setText("");
-					}
+					tvTokens.setText(" • " + message.getTokensText());
 				}
 
 				// 设置操作按钮可见性
@@ -1248,7 +1117,7 @@ public class ChatFragment extends Fragment {
 					}
 				}
 
-				// 操作按钮
+				// 复制按钮
 				if (btnCopy != null) {
 					btnCopy.setOnClickListener(new View.OnClickListener() {
 							@Override
@@ -1259,6 +1128,7 @@ public class ChatFragment extends Fragment {
 						});
 				}
 
+				// 重新生成按钮
 				if (btnRegenerate != null) {
 					btnRegenerate.setOnClickListener(new View.OnClickListener() {
 							@Override
@@ -1268,6 +1138,7 @@ public class ChatFragment extends Fragment {
 						});
 				}
 
+				// 删除按钮
 				if (btnDelete != null) {
 					btnDelete.setOnClickListener(new View.OnClickListener() {
 							@Override

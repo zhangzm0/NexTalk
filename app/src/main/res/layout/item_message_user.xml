@@ -20,7 +20,7 @@
             android:layout_marginStart="40dp"
             android:maxWidth="280dp"
             android:text="用户消息"
-            android:textColor="#000000"
+            android:textColor="#ffffff"
             android:textSize="14sp"
             android:lineSpacingExtra="2dp"
             android:background="@drawable/bubble_user"
