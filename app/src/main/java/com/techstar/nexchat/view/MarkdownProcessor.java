@@ -7,47 +7,32 @@ import com.techstar.nexchat.util.MarkdownParser;
 public class MarkdownProcessor {
     private static MarkdownProcessor instance;
     private MarkdownParser parser;
-    
+
     private MarkdownProcessor(Context context) {
         parser = new MarkdownParser();
-        // 可以根据主题设置颜色
-        // parser.setCodeBackgroundColor(ContextCompat.getColor(context, R.color.code_bg));
     }
-    
+
     public static synchronized MarkdownProcessor getInstance(Context context) {
         if (instance == null) {
             instance = new MarkdownProcessor(context);
         }
         return instance;
     }
-    
+
     public SpannableString process(String text) {
         if (text == null) {
             return new SpannableString("");
         }
-        
-        // 检查是否包含引用
-        if (text.contains("> ")) {
-            return parser.parseWithQuotes(text);
-        } else {
+
+        try {
             return parser.parse(text);
+        } catch (Exception e) {
+            // 如果解析失败，返回原始文本
+            return new SpannableString(text);
         }
     }
-    
+
     public SpannableString processSimple(String text) {
         return parser.parse(text);
-    }
-    
-    // 设置自定义配置
-    public void setCodeBackgroundColor(int color) {
-        parser.setCodeBackgroundColor(color);
-    }
-    
-    public void setCodeTextColor(int color) {
-        parser.setCodeTextColor(color);
-    }
-    
-    public void setLinkColor(int color) {
-        parser.setLinkColor(color);
     }
 }
