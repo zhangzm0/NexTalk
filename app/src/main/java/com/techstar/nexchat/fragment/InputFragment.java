@@ -6,8 +6,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment;
 import com.techstar.nexchat.R;
 import com.techstar.nexchat.database.ApiProviderDao;
 import com.techstar.nexchat.model.ApiProvider;
-import com.techstar.nexchat.service.ApiClient;
 import com.techstar.nexchat.util.FileLogger;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +23,7 @@ public class InputFragment extends Fragment {
     private static final String TAG = "InputFragment";
     
     private EditText etMessage;
-    private Button btnSend;
+    private ImageButton btnSend;
     private Spinner spinnerModel;
     private ApiProviderDao apiProviderDao;
     private FileLogger logger;
@@ -49,36 +48,39 @@ public class InputFragment extends Fragment {
     }
     
     private void initViews(View view) {
-        etMessage = view.findViewById(R.id.etMessage);
-        btnSend = view.findViewById(R.id.btnSend);
-        spinnerModel = view.findViewById(R.id.spinnerModel);
-        
-        // 初始化模型下拉列表
-        availableModels = new ArrayList<>();
-        modelAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, availableModels);
-        modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerModel.setAdapter(modelAdapter);
-        
-        // 发送按钮点击事件
-        btnSend.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendMessage();
-            }
-        });
-        
-        // 监听输入框回车键
-        etMessage.setOnEditorActionListener(new android.widget.TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(android.widget.TextView v, int actionId, android.view.KeyEvent event) {
-                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
-                    sendMessage();
-                    return true;
-                }
-                return false;
-            }
-        });
-    }
+		etMessage = view.findViewById(R.id.etMessage);
+		btnSend = view.findViewById(R.id.btnSend);  // 这个应该是 ImageButton
+		spinnerModel = view.findViewById(R.id.spinnerModel);
+
+		// 修改为 ImageButton
+		btnSend = (android.widget.ImageButton) view.findViewById(R.id.btnSend);
+
+		// 初始化模型下拉列表
+		availableModels = new ArrayList<>();
+		modelAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, availableModels);
+		modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinnerModel.setAdapter(modelAdapter);
+
+		// 发送按钮点击事件
+		btnSend.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					sendMessage();
+				}
+			});
+
+		// 监听输入框回车键
+		etMessage.setOnEditorActionListener(new android.widget.TextView.OnEditorActionListener() {
+				@Override
+				public boolean onEditorAction(android.widget.TextView v, int actionId, android.view.KeyEvent event) {
+					if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+						sendMessage();
+						return true;
+					}
+					return false;
+				}
+			});
+	}
     
     private void loadApiProviders() {
         new Thread(new Runnable() {

@@ -27,7 +27,8 @@
         <!-- 主活动 -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -38,21 +39,21 @@
         <activity
             android:name=".activity.SettingsActivity"
             android:label="设置"
-            android:theme="@style/AppTheme"
+            android:theme="@style/AppTheme.NoActionBar"
             android:exported="false"/>
 
         <!-- API供应商管理活动 -->
         <activity
             android:name=".activity.ApiProvidersActivity"
             android:label="API供应商管理"
-            android:theme="@style/AppTheme"
+            android:theme="@style/AppTheme.NoActionBar"
             android:exported="false"/>
 
         <!-- 添加供应商活动 -->
         <activity
             android:name=".activity.AddProviderActivity"
             android:label="添加API供应商"
-            android:theme="@style/AppTheme"
+            android:theme="@style/AppTheme.NoActionBar"
             android:exported="false"/>
 
         <!-- 崩溃处理活动 -->
@@ -62,7 +63,7 @@
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:allowTaskReparenting="false"
-            android:theme="@style/AppTheme"
+            android:theme="@style/AppTheme.NoActionBar"
             android:exported="false"/>
 
     </application>
