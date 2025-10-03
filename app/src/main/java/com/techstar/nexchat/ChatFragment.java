@@ -636,7 +636,7 @@ public class ChatFragment extends Fragment {
             if (message.isStreaming()) {
                 tvMessage.setText(message.getContent() + " ▌");
             } else {
-                markwon.setMarkdown(tvMessage, message.getContent());
+                //markwon.setMarkdown(tvMessage, message.getContent());
             }
             
             // 元数据
