@@ -20,6 +20,7 @@ import com.techstar.nexchat.model.HomeMenuItem;
 import com.techstar.nexchat.util.FileLogger;
 import java.util.ArrayList;
 import java.util.List;
+import com.techstar.nexchat.MainActivity;
 
 public class HomeFragment extends Fragment {
     private static final String TAG = "HomeFragment";

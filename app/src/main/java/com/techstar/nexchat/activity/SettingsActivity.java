@@ -1,5 +1,6 @@
 package com.techstar.nexchat.activity;
 
+import com.techstar.nexchat.R;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
