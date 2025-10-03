@@ -2,7 +2,7 @@ package com.techstar.nexchat;
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.viewpager2.widget.ViewPager2;
+import androidx.viewpager.widget.ViewPager;
 import com.techstar.nexchat.adapter.ViewPagerAdapter;
 import com.techstar.nexchat.util.CrashHandler;
 import com.techstar.nexchat.util.FileLogger;
@@ -10,7 +10,7 @@ import com.techstar.nexchat.util.FileLogger;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     
-    private ViewPager2 viewPager;
+    private ViewPager viewPager;
     private ViewPagerAdapter viewPagerAdapter;
     private FileLogger logger;
     
@@ -30,14 +30,14 @@ public class MainActivity extends AppCompatActivity {
     
     private void initViewPager() {
         viewPager = findViewById(R.id.viewPager);
-        viewPagerAdapter = new ViewPagerAdapter(this);
+        viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager());
         viewPager.setAdapter(viewPagerAdapter);
         
         // 设置默认页面为聊天页（中间页）
         viewPager.setCurrentItem(1, false);
         
         // 添加页面切换监听
-        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+        viewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);

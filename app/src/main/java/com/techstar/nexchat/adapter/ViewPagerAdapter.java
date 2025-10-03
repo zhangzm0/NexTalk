@@ -2,22 +2,22 @@ package com.techstar.nexchat.adapter;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
-import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
 import com.techstar.nexchat.fragment.HomeFragment;
 import com.techstar.nexchat.fragment.ChatFragment;
 import com.techstar.nexchat.fragment.InputFragment;
 
-public class ViewPagerAdapter extends FragmentStateAdapter {
+public class ViewPagerAdapter extends FragmentPagerAdapter {
     private static final int PAGE_COUNT = 3;
     
-    public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
-        super(fragmentActivity);
+    public ViewPagerAdapter(@NonNull FragmentManager fm) {
+        super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
     }
     
     @NonNull
     @Override
-    public Fragment createFragment(int position) {
+    public Fragment getItem(int position) {
         switch (position) {
             case 0:
                 return new HomeFragment();
@@ -31,7 +31,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     }
     
     @Override
-    public int getItemCount() {
+    public int getCount() {
         return PAGE_COUNT;
     }
 }
