@@ -409,8 +409,7 @@ public class HomeFragment extends Fragment {
 				});
 		}
 	}
-	// ... 其他代码不变
-
+// 在 HomeFragment.java 中修改切换方法
 	private void switchToChatAndLoad(String conversationId) {
 		AppLogger.d("HomeFragment", "切换到对话: " + conversationId);
 
@@ -422,16 +421,10 @@ public class HomeFragment extends Fragment {
 
 			// 切换到聊天页面
 			mainActivity.switchToChatPage();
+			AppLogger.d("HomeFragment", "已请求切换到聊天页面");
 
-			// 确保ChatFragment刷新
-			new android.os.Handler().postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						if (mainActivity.chatFragment != null) {
-							mainActivity.chatFragment.refreshConversation();
-						}
-					}
-				}, 200);
+			// 完全移除延迟刷新，避免任何自动滚动
+			// 不调用 chatFragment.refreshConversation()
 		}
 	}
 

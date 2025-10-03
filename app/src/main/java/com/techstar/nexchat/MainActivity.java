@@ -61,37 +61,53 @@ public class MainActivity extends FragmentActivity {
     }
 
 
-    private void initViewPager() {
-        viewPager = findViewById(R.id.viewPager);
+    // 在 MainActivity.java 的 initViewPager 方法中添加详细日志
+	private void initViewPager() {
+		viewPager = findViewById(R.id.viewPager);
+		AppLogger.d("MainActivity", "初始化ViewPager");
 
-        pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
-            @Override
-            public int getCount() {
-                return 3;
-            }
+		pagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
+			@Override
+			public int getCount() {
+				return 3;
+			}
 
-            @Override
-            public Fragment getItem(int position) {
-                switch (position) {
-                    case 0:
-                        return new HomeFragment();
-                    case 1:
-                        chatFragment = new ChatFragment();
-                        return chatFragment;
-                    case 2:
-                        inputFragment = new InputFragment();
-                        return inputFragment;
-                    default:
-                        return new Fragment();
-                }
-            }
-        };
+			@Override
+			public Fragment getItem(int position) {
+				AppLogger.d("MainActivity", "创建Fragment位置: " + position);
+				switch (position) {
+					case 0:
+						return new HomeFragment();
+					case 1:
+						chatFragment = new ChatFragment();
+						return chatFragment;
+					case 2:
+						inputFragment = new InputFragment();
+						return inputFragment;
+					default:
+						return new Fragment();
+				}
+			}
 
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(1); // 默认显示聊天页面
+			// 添加这个方法，确保Fragment不会重复创建
+			@Override
+			public Object instantiateItem(ViewGroup container, int position) {
+				AppLogger.d("MainActivity", "instantiateItem位置: " + position);
+				return super.instantiateItem(container, position);
+			}
 
-        // 添加页面切换监听
-        // 修改页面切换监听器
+			@Override
+			public void destroyItem(ViewGroup container, int position, Object object) {
+				AppLogger.d("MainActivity", "destroyItem位置: " + position);
+				super.destroyItem(container, position, object);
+			}
+		};
+
+		viewPager.setAdapter(pagerAdapter);
+		viewPager.setCurrentItem(1); // 默认显示聊天页面
+		AppLogger.d("MainActivity", "ViewPager设置完成，默认页面: 1");
+
+		// 添加页面切换监听器
 		viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 				@Override
 				public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
@@ -107,7 +123,7 @@ public class MainActivity extends FragmentActivity {
 					}
 					AppLogger.d("MainActivity", "=== 切换到页面: " + position + " (" + pageName + ") ===");
 
-					// 当切换到聊天页面时，通知 ChatFragment 开始页面切换保护
+					// 当切换到聊天页面时，记录状态但不强制刷新
 					if (position == 1 && chatFragment != null) {
 						AppLogger.d("MainActivity", "聊天页面已激活");
 					}
@@ -131,23 +147,18 @@ public class MainActivity extends FragmentActivity {
 					AppLogger.d("MainActivity", "ViewPager滚动状态: " + stateName);
 				}
 			});
-    }
+	}
 
     // 在 MainActivity 中添加页面切换延迟
+	// 在 MainActivity.java 中修改
 	public void switchToChatPage() {
 		if (viewPager != null) {
+			AppLogger.d("MainActivity", "switchToChatPage - 开始切换");
 			viewPager.setCurrentItem(1);
-			AppLogger.d("MainActivity", "切换到聊天页面");
+			AppLogger.d("MainActivity", "switchToChatPage - 切换完成");
 
-			// 延迟刷新，确保页面切换完成
-			new android.os.Handler().postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						if (chatFragment != null) {
-							chatFragment.refreshConversation();
-						}
-					}
-				}, 100);
+			// 完全移除任何刷新调用，避免触发滚动
+			// 不调用 chatFragment.refreshConversation()
 		}
 	}
 

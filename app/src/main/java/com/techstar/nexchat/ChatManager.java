@@ -47,18 +47,24 @@ public class ChatManager {
     }
 
     // 加载对话
-    public ChatConversation loadConversation(String conversationId) {
-        try {
-            SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-            String jsonStr = prefs.getString(conversationId, "");
-            if (!jsonStr.isEmpty()) {
-                return jsonToConversation(new JSONObject(jsonStr));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+    // 在 ChatManager.java 的 loadConversation 方法中添加日志
+	public ChatConversation loadConversation(String conversationId) {
+		try {
+			AppLogger.d("ChatManager", "加载对话: " + conversationId);
+
+			SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+			String jsonStr = prefs.getString(conversationId, "");
+			if (!jsonStr.isEmpty()) {
+				ChatConversation conversation = jsonToConversation(new JSONObject(jsonStr));
+				AppLogger.d("ChatManager", "对话加载成功: " + conversation.getTitle() + ", 消息数: " + conversation.getMessages().size());
+				return conversation;
+			}
+		} catch (Exception e) {
+			AppLogger.e("ChatManager", "加载对话异常", e);
+		}
+		AppLogger.d("ChatManager", "对话加载失败: " + conversationId);
+		return null;
+	}
 
     // 删除对话
     public void deleteConversation(String conversationId) {

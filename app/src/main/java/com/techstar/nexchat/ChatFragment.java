@@ -379,25 +379,35 @@ public class ChatFragment extends Fragment {
     /**
      * 简单的生命周期方法
      */
-    @Override
-    public void onResume() {
-        super.onResume();
-        AppLogger.d("ChatFragment", "onResume - 只同步模型选择，不刷新对话");
-        
-        // 只同步模型选择
-        if (getActivity() instanceof MainActivity) {
-            MainActivity mainActivity = (MainActivity) getActivity();
-            if (mainActivity.inputFragment != null) {
-                String providerId = mainActivity.inputFragment.getCurrentProviderId();
-                String model = mainActivity.inputFragment.getCurrentModel();
-                if (!TextUtils.isEmpty(providerId) && !TextUtils.isEmpty(model)) {
-                    this.currentProviderId = providerId;
-                    this.currentModel = model;
-                    AppLogger.d("ChatFragment", "同步模型选择: " + providerId + ", " + model);
-                }
-            }
-        }
-    }
+    // 在 ChatFragment.java 的 onResume 中添加额外检查
+	@Override
+	public void onResume() {
+		super.onResume();
+		AppLogger.d("ChatFragment", "onResume - 开始");
+
+		// 记录当前状态
+		if (recyclerView != null) {
+			AppLogger.d("ChatFragment", "RecyclerView状态: " + 
+						"isLayoutRequested=" + recyclerView.isLayoutRequested() +
+						", isAttachedToWindow=" + recyclerView.isAttachedToWindow());
+		}
+
+		// 只同步模型选择，不刷新对话
+		if (getActivity() instanceof MainActivity) {
+			MainActivity mainActivity = (MainActivity) getActivity();
+			if (mainActivity.inputFragment != null) {
+				String providerId = mainActivity.inputFragment.getCurrentProviderId();
+				String model = mainActivity.inputFragment.getCurrentModel();
+				if (!TextUtils.isEmpty(providerId) && !TextUtils.isEmpty(model)) {
+					this.currentProviderId = providerId;
+					this.currentModel = model;
+					AppLogger.d("ChatFragment", "同步模型选择: " + providerId + ", " + model);
+				}
+			}
+		}
+
+		AppLogger.d("ChatFragment", "onResume - 结束");
+	}
 
     @Override
     public void onDestroyView() {
