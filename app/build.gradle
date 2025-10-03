@@ -49,17 +49,16 @@ static def getDate() {
 }
 
 dependencies {
-
-    implementation 'io.noties.markwon:core:4.6.2'
-    implementation 'io.noties.markwon:html:4.6.2'
-    implementation 'io.noties.markwon:image:4.6.2'
-    implementation 'io.noties.markwon:linkify:4.6.2'
-	
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    // 必需的核心库
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.recyclerview:recyclerview:1.3.0'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'com.google.android.material:material:1.2.1'
-    implementation 'com.squareup.okhttp3:okhttp:3.12.12'
-    implementation 'com.google.code.gson:gson:2.8.6'
-
+    implementation 'com.google.android.material:material:1.8.0'
+    
+    // 必需的功能库
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // 推荐的现代组件
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
 }

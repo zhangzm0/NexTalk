@@ -1,19 +1,29 @@
 package com.techstar.nexchat.model;
 
-import android.view.View;
-
 public class HomeMenuItem {
-    private int iconRes;
     private String title;
-    private View.OnClickListener onClickListener;
-
-    public HomeMenuItem(int iconRes, String title, View.OnClickListener onClickListener) {
-        this.iconRes = iconRes;
-        this.title = title;
-        this.onClickListener = onClickListener;
+    private int iconResId;
+    private MenuItemClickListener clickListener;
+    
+    public interface MenuItemClickListener {
+        void onClick();
     }
-
-    public int getIconRes() { return iconRes; }
-    public String getTitle() { return title; }
-    public View.OnClickListener getOnClickListener() { return onClickListener; }
+    
+    public HomeMenuItem(String title, int iconResId, MenuItemClickListener clickListener) {
+        this.title = title;
+        this.iconResId = iconResId;
+        this.clickListener = clickListener;
+    }
+    
+    public String getTitle() {
+        return title;
+    }
+    
+    public int getIconResId() {
+        return iconResId;
+    }
+    
+    public MenuItemClickListener getClickListener() {
+        return clickListener;
+    }
 }
