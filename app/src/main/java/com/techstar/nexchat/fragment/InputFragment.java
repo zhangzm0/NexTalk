@@ -162,18 +162,26 @@ public class InputFragment extends Fragment {
     }
     
     private ChatFragment getChatFragment() {
-        if (getActivity() != null) {
-            // 通过 ViewPager 获取 ChatFragment
-            androidx.viewpager2.widget.ViewPager2 viewPager = getActivity().findViewById(R.id.viewPager);
-            if (viewPager != null && viewPager.getAdapter() != null) {
-                androidx.fragment.app.Fragment fragment = getParentFragmentManager().findFragmentByTag("f" + 1);
-                if (fragment instanceof ChatFragment) {
-                    return (ChatFragment) fragment;
-                }
-            }
-        }
-        return null;
-    }
+		if (getActivity() != null) {
+			// 通过 FragmentManager 获取 ChatFragment
+			androidx.fragment.app.FragmentManager fragmentManager = getParentFragmentManager();
+
+			// 尝试通过 tag 查找
+			Fragment fragment = fragmentManager.findFragmentByTag("android:switcher:" + R.id.viewPager + ":" + 1);
+			if (fragment instanceof ChatFragment) {
+				return (ChatFragment) fragment;
+			}
+
+			// 如果上面方法不行，尝试遍历所有 fragment
+			List<Fragment> fragments = fragmentManager.getFragments();
+			for (Fragment frag : fragments) {
+				if (frag instanceof ChatFragment) {
+					return (ChatFragment) frag;
+				}
+			}
+		}
+		return null;
+	}
     
     public void refreshModels() {
         loadApiProviders();
