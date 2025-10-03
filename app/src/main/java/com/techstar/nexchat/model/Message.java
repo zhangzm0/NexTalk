@@ -51,12 +51,4 @@ public class Message {
     public boolean isAssistant() {
         return role == ROLE_ASSISTANT;
     }
-    
-    public boolean isUser() {
-        return role == ROLE_USER;
-    }
-    
-    public boolean isAssistant() {
-        return role == ROLE_ASSISTANT;
-    }
 }
