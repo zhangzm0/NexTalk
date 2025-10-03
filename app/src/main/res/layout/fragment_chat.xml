@@ -23,7 +23,7 @@
         android:id="@+id/recyclerViewMessages"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/tvChatTitle"/>
+        />
 
     <!-- 悬浮暂停按钮 -->
     <ImageButton
