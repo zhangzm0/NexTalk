@@ -88,34 +88,33 @@ public class ApiProviderAdapter extends RecyclerView.Adapter<ApiProviderAdapter.
             addButtonView = itemView;
         }
         
-        public void bindAddButton() {
-            // 隐藏所有 provider 相关的视图
-            tvProviderName.setVisibility(View.GONE);
-            tvApiUrl.setVisibility(View.GONE);
-            tvModels.setVisibility(View.GONE);
-            tvBalance.setVisibility(View.GONE);
-            btnBalance.setVisibility(View.GONE);
-            btnEdit.setVisibility(View.GONE);
-            btnDelete.setVisibility(View.GONE);
-            
-            // 设置添加按钮
-            addButtonView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (actionListener != null) {
-                        actionListener.onAddProvider();
-                    }
-                }
-            });
-            
-            // 可以在这里添加一个添加按钮的样式
-            TextView addText = new TextView(context);
-            addText.setText("+ 添加API供应商");
-            addText.setTextColor(0xFF2196F3);
-            addText.setTextSize(18);
-            addText.setGravity(View.TEXT_ALIGNMENT_CENTER);
-            // 这里需要更好的方式来显示添加按钮
+        // 在 ApiProviderAdapter 的 bindAddButton 方法中改进：
+public void bindAddButton() {
+    // 隐藏所有 provider 相关的视图
+    tvProviderName.setVisibility(View.GONE);
+    tvApiUrl.setVisibility(View.GONE);
+    tvModels.setVisibility(View.GONE);
+    tvBalance.setVisibility(View.GONE);
+    btnBalance.setVisibility(View.GONE);
+    btnEdit.setVisibility(View.GONE);
+    btnDelete.setVisibility(View.GONE);
+
+    // 显示添加提示
+    tvProviderName.setVisibility(View.VISIBLE);
+    tvProviderName.setText("点击添加第一个API供应商");
+    tvProviderName.setTextColor(0xFF2196F3);
+    tvProviderName.setTextSize(16);
+    tvProviderName.setGravity(View.TEXT_ALIGNMENT_CENTER);
+
+    addButtonView.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (actionListener != null) {
+                actionListener.onAddProvider();
+            }
         }
+    });
+}
         
         public void bindProvider(final ApiProvider provider) {
             // 显示所有 provider 相关的视图
