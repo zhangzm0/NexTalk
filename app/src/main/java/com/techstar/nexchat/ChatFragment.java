@@ -402,17 +402,12 @@ public class ChatFragment extends Fragment {
      * 简单的生命周期方法
      */
     // 在 ChatFragment.java 的 onResume 中添加额外检查
+	// 在 ChatFragment.java 中添加性能监控
 	@Override
 	public void onResume() {
 		super.onResume();
+		long startTime = System.currentTimeMillis();
 		AppLogger.d("ChatFragment", "onResume - 开始");
-
-		// 记录当前状态
-		if (recyclerView != null) {
-			AppLogger.d("ChatFragment", "RecyclerView状态: " + 
-						"isLayoutRequested=" + recyclerView.isLayoutRequested() +
-						", isAttachedToWindow=" + recyclerView.isAttachedToWindow());
-		}
 
 		// 只同步模型选择，不刷新对话
 		if (getActivity() instanceof MainActivity) {
@@ -428,7 +423,8 @@ public class ChatFragment extends Fragment {
 			}
 		}
 
-		AppLogger.d("ChatFragment", "onResume - 结束");
+		long endTime = System.currentTimeMillis();
+		AppLogger.d("ChatFragment", "onResume - 结束, 耗时: " + (endTime - startTime) + "ms");
 	}
 
     @Override
