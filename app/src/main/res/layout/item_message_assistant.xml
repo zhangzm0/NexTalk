@@ -26,16 +26,17 @@
             android:layout_marginBottom="2dp"/>
 
         <!-- 消息内容 -->
-        <TextView
-            android:id="@+id/tvMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="AI回复"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:lineSpacingExtra="2dp"
-            android:padding="12dp"
-            android:textIsSelectable="true"/>
+        <!-- 消息内容 -->
+		<com.techstar.nexchat.view.MarkdownTextView
+			android:id="@+id/tvMessage"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="AI回复"
+			android:textColor="#ffffff"
+			android:textSize="14sp"
+			android:lineSpacingExtra="2dp"
+			android:padding="12dp"
+			android:textIsSelectable="true"/>
 
     </LinearLayout>
 
