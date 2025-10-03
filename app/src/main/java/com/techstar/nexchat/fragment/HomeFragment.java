@@ -11,7 +11,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.techstar.nexchat.R;
-import com.techstar.nexchat.SettingsActivity;
+import com.techstar.nexchat.activity.SettingsActivity;
 import com.techstar.nexchat.adapter.ChatHistoryAdapter;
 import com.techstar.nexchat.adapter.HomeMenuAdapter;
 import com.techstar.nexchat.database.ChatHistoryDao;
