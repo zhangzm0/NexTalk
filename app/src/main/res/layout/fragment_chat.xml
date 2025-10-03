@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#121212">
 
+    <!-- 标题栏 -->
     <TextView
         android:id="@+id/tvChatTitle"
         android:layout_width="match_parent"
@@ -19,23 +21,23 @@
         android:maxLines="1"
         android:ellipsize="end"/>
 
+    <!-- RecyclerView 占据剩余空间 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewMessages"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        />
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
 
     <!-- 悬浮暂停按钮 -->
     <ImageButton
         android:id="@+id/btnPause"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
+        android:layout_gravity="end|bottom"
         android:layout_margin="16dp"
         android:src="@drawable/ic_pause_24dp"
         android:background="@drawable/circle_background"
         android:visibility="gone"
         android:contentDescription="暂停响应"/>
 
-</RelativeLayout>
+</LinearLayout>

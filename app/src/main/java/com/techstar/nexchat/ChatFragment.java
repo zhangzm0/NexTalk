@@ -100,36 +100,58 @@ public class ChatFragment extends Fragment {
     /**
      * 初始化视图 - 极简版本
      */
-    private void initViews(View view) {
-        recyclerView = view.findViewById(R.id.recyclerViewMessages);
-        tvChatTitle = view.findViewById(R.id.tvChatTitle);
-        btnPause = view.findViewById(R.id.btnPause);
-        
-        AppLogger.d("ChatFragment", "开始初始化视图");
+    // 在 ChatFragment.java 的 initViews 方法中添加
+	private void initViews(View view) {
+		recyclerView = view.findViewById(R.id.recyclerViewMessages);
+		tvChatTitle = view.findViewById(R.id.tvChatTitle);
+		btnPause = view.findViewById(R.id.btnPause);
 
-        // 最简单的RecyclerView配置 - 不干预任何滚动行为
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        recyclerView.setLayoutManager(layoutManager);
-        
-        // 禁用所有可能引起自动滚动的功能
-        recyclerView.setSaveEnabled(false);
-        recyclerView.setNestedScrollingEnabled(false);
-        recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        
-        // 适配器
-        adapter = new MessageAdapter();
-        recyclerView.setAdapter(adapter);
-        
-        // 暂停按钮
-        btnPause.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                handlePauseClick();
-            }
-        });
-        
-        AppLogger.d("ChatFragment", "视图初始化完成");
-    }
+		AppLogger.d("ChatFragment", "开始初始化视图");
+
+		// 添加布局变化监听器
+		recyclerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+				@Override
+				public void onLayoutChange(View v, int left, int top, int right, int bottom, 
+										   int oldLeft, int oldTop, int oldRight, int oldBottom) {
+					AppLogger.d("ChatFragment", "RecyclerView布局变化: " +
+								"[" + left + "," + top + "," + right + "," + bottom + "] -> " +
+								"[" + oldLeft + "," + oldTop + "," + oldRight + "," + oldBottom + "]");
+				}
+			});
+
+		// 最简单的RecyclerView配置 - 不干预任何滚动行为
+		LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity()) {
+			@Override
+			public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+				AppLogger.d("ChatFragment", "LayoutManager开始布局子视图");
+				long startTime = System.currentTimeMillis();
+				super.onLayoutChildren(recycler, state);
+				long endTime = System.currentTimeMillis();
+				AppLogger.d("ChatFragment", "LayoutManager完成布局子视图, 耗时: " + (endTime - startTime) + "ms");
+			}
+		};
+
+		recyclerView.setLayoutManager(layoutManager);
+
+		// 禁用所有可能引起自动滚动的功能
+		recyclerView.setSaveEnabled(false);
+		recyclerView.setNestedScrollingEnabled(false);
+		recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+
+		// 适配器
+		adapter = new MessageAdapter();
+		recyclerView.setAdapter(adapter);
+
+		// 暂停按钮
+		btnPause.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					handlePauseClick();
+				}
+			});
+
+		AppLogger.d("ChatFragment", "视图初始化完成");
+	}
 
     /**
      * 加载对话 - 简单直接

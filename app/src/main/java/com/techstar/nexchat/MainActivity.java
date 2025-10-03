@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.viewpager.widget.ViewPager;
+import android.view.ViewTreeObserver;
 
 public class MainActivity extends FragmentActivity {
 
@@ -33,8 +34,20 @@ public class MainActivity extends FragmentActivity {
         // 使用新的日志方法
         AppLogger.i("MainActivity", "=================App started===============");
 
-        setContentView(R.layout.activity_main);
-        initViewPager();
+        
+		// 设置布局回调监听
+		getWindow().getDecorView().getViewTreeObserver().addOnGlobalLayoutListener(
+			new ViewTreeObserver.OnGlobalLayoutListener() {
+				@Override
+				public void onGlobalLayout() {
+					AppLogger.d("MainActivity", "全局布局完成");
+					// 移除监听，避免重复调用
+					getWindow().getDecorView().getViewTreeObserver().removeOnGlobalLayoutListener(this);
+				}
+			});
+
+		setContentView(R.layout.activity_main);
+		initViewPager();
     }
 
     public void sendChatMessage(final String message, final String providerId, final String model) {
