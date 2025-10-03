@@ -31,9 +31,9 @@ android {
         release {
             signingConfig signingConfigs.release
 			// 1. 必须同时启用代码混淆，资源缩减才有效
-            minifyEnabled true
+            //minifyEnabled true
             // 2. 启用资源缩减
-            shrinkResources true
+            //shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
