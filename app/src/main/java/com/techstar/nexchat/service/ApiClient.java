@@ -95,7 +95,7 @@ public class ApiClient {
         });
     }
     
-    public void streamChat(ApiProvider provider, String model, List<Message> messages, 
+    public void streamChat(ApiProvider provider, String model, List<com.techstar.nexchat.model.Message> messages, 
                           final ChatCallback callback) {
         String url = provider.getApiUrl() + "/chat/completions";
         
@@ -104,7 +104,7 @@ public class ApiClient {
         requestBody.addProperty("stream", true);
         
         JsonArray messagesArray = new JsonArray();
-        for (Message message : messages) {
+        for (com.techstar.nexchat.model.Message message : messages) {
             JsonObject msg = new JsonObject();
             if (message.isUser()) {
                 msg.addProperty("role", "user");
@@ -200,19 +200,5 @@ public class ApiClient {
             logger.e(TAG, "Failed to parse chat response", e);
         }
         return null;
-    }
-    
-    // 内部消息类，用于构建请求
-    public static class Message {
-        private String role;
-        private String content;
-        
-        public Message(String role, String content) {
-            this.role = role;
-            this.content = content;
-        }
-        
-        public String getRole() { return role; }
-        public String getContent() { return content; }
     }
 }
