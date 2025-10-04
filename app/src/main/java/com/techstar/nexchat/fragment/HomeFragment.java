@@ -127,35 +127,35 @@ public class HomeFragment extends Fragment {
     }
     
     private void createNewChat() {
-        logger.i(TAG, "Creating new chat");
-        
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ChatHistory newChat = new ChatHistory("新对话");
-                long chatId = chatHistoryDao.insertChat(newChat);
-                
-                if (chatId != -1) {
-                    newChat.setId((int) chatId);
-                    
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                // 添加到列表顶部
-                                chatHistories.add(0, newChat);
-                                chatHistoryAdapter.notifyItemInserted(0);
-                                chatHistoryRecyclerView.scrollToPosition(0);
-                                
-                                // 切换到该对话
-                                switchToChat((int) chatId);
-                            }
-                        });
-                    }
-                }
-            }
-        }).start();
-    }
+		logger.i(TAG, "Creating new chat");
+
+		new Thread(new Runnable() {
+				@Override
+				public void run() {
+					ChatHistory newChat = new ChatHistory("新对话");
+					long chatId = chatHistoryDao.insertChat(newChat);
+
+					if (chatId != -1) {
+						newChat.setId((int) chatId);
+
+						if (getActivity() != null) {
+							getActivity().runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										// 添加到列表顶部
+										chatHistories.add(0, newChat);
+										chatHistoryAdapter.notifyItemInserted(0);
+										chatHistoryRecyclerView.scrollToPosition(0);
+
+										// 切换到该对话
+										switchToChat((int) chatId);
+									}
+								});
+						}
+					}
+				}
+			}).start();
+	}
     
     private void openSettings() {
         logger.i(TAG, "Opening settings");
@@ -164,16 +164,39 @@ public class HomeFragment extends Fragment {
     }
     
     private void switchToChat(int chatId) {
-        logger.i(TAG, "Switching to chat: " + chatId);
-        // 通知 ChatFragment 切换对话
-        if (getActivity() instanceof MainActivity) {
-            MainActivity mainActivity = (MainActivity) getActivity();
-            mainActivity.switchToChatPage();
-            
-            // 这里需要通过某种方式通知 ChatFragment 加载指定对话
-            // 可以使用 EventBus 或者接口回调，这里先用简单方式
-        }
-    }
+		logger.i(TAG, "Switching to chat: " + chatId);
+		if (getActivity() instanceof MainActivity) {
+			MainActivity mainActivity = (MainActivity) getActivity();
+			mainActivity.switchToChatPage();
+
+			// 延迟一下确保页面切换完成
+			new android.os.Handler().postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						// 通知 ChatFragment 加载指定对话
+						ChatFragment chatFragment = getChatFragment();
+						if (chatFragment != null) {
+							chatFragment.loadChat(chatId);
+						}
+					}
+				}, 300);
+		}
+	}
+	
+	private ChatFragment getChatFragment() {
+		if (getActivity() != null && getActivity() instanceof MainActivity) {
+			MainActivity mainActivity = (MainActivity) getActivity();
+			androidx.viewpager.widget.ViewPager viewPager = mainActivity.findViewById(R.id.viewPager);
+			if (viewPager != null && viewPager.getAdapter() != null) {
+				// 获取第1个位置的 fragment（ChatFragment）
+				androidx.fragment.app.Fragment fragment = ((androidx.fragment.app.FragmentPagerAdapter) viewPager.getAdapter()).getItem(1);
+				if (fragment instanceof ChatFragment) {
+					return (ChatFragment) fragment;
+				}
+			}
+		}
+		return null;
+	}
     
     private void showDeleteChatDialog(final ChatHistory chatHistory) {
         // 简单的确认对话框

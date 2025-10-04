@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -91,34 +92,47 @@ public class ChatFragment extends Fragment {
     }
     
     public void loadChat(int chatId) {
-        currentChatId = chatId;
-        
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final List<Message> chatMessages = messageDao.getMessagesByChatId(chatId);
-                final ChatHistory chat = chatHistoryDao.getChatById(chatId);
-                
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            messages.clear();
-                            messages.addAll(chatMessages);
-                            messageAdapter.notifyDataSetChanged();
-                            
-                            // 滚动到底部
-                            if (!messages.isEmpty()) {
-                                recyclerViewMessages.scrollToPosition(messages.size() - 1);
-                            }
-                            
-                            logger.i(TAG, "Loaded " + messages.size() + " messages for chat: " + chatId);
-                        }
-                    });
-                }
-            }
-        }).start();
-    }
+		if (this.currentChatId == chatId) {
+			// 已经是当前对话，不需要重新加载
+			return;
+		}
+
+		this.currentChatId = chatId;
+
+		new Thread(new Runnable() {
+				@Override
+				public void run() {
+					final List<Message> chatMessages = messageDao.getMessagesByChatId(chatId);
+					final ChatHistory chat = chatHistoryDao.getChatById(chatId);
+
+					if (getActivity() != null) {
+						getActivity().runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									messages.clear();
+									messages.addAll(chatMessages);
+									messageAdapter.notifyDataSetChanged();
+
+									// 更新标题
+									if (chat != null) {
+										TextView tvChatTitle = getView().findViewById(R.id.tvChatTitle);
+										if (tvChatTitle != null) {
+											tvChatTitle.setText(chat.getTitle());
+										}
+									}
+
+									// 滚动到底部
+									if (!messages.isEmpty()) {
+										recyclerViewMessages.scrollToPosition(messages.size() - 1);
+									}
+
+									logger.i(TAG, "Loaded " + messages.size() + " messages for chat: " + chatId);
+								}
+							});
+					}
+				}
+			}).start();
+	}
     
     private void createNewChat() {
         new Thread(new Runnable() {

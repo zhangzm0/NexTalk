@@ -202,67 +202,69 @@ public class AddProviderActivity extends AppCompatActivity {
     }
     
     private void saveProvider() {
-        String providerName = etProviderName.getText().toString().trim();
-        String apiUrl = etApiUrl.getText().toString().trim();
-        String apiKey = etApiKey.getText().toString().trim();
-        
-        if (TextUtils.isEmpty(providerName)) {
-            showError("请输入供应商名称");
-            return;
-        }
-        
-        if (TextUtils.isEmpty(apiUrl)) {
-            showError("请输入API URL");
-            return;
-        }
-        
-        if (TextUtils.isEmpty(apiKey)) {
-            showError("请输入API Key");
-            return;
-        }
-        
-        if (fetchedModels == null || fetchedModels.isEmpty()) {
-            showError("请先获取模型列表");
-            return;
-        }
-        
-        final ApiProvider provider;
-        if (editingProvider != null) {
-            provider = editingProvider;
-            provider.setName(providerName);
-            provider.setApiUrl(apiUrl);
-            provider.setApiKey(apiKey);
-            provider.setModels(fetchedModels);
-        } else {
-            provider = new ApiProvider(providerName, apiUrl, apiKey);
-            provider.setModels(fetchedModels);
-        }
-        
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                boolean success;
-                if (editingProvider != null) {
-                    success = apiProviderDao.updateProvider(provider);
-                } else {
-                    long id = apiProviderDao.insertProvider(provider);
-                    success = id != -1;
-                }
-                
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (success) {
-                            logger.i(TAG, "Saved provider: " + provider.getName());
-                            finish();
-                        } else {
-                            showError("保存失败");
-                        }
-                    }
-                });
-            }
-        }).start();
-    }
+		String providerName = etProviderName.getText().toString().trim();
+		String apiUrl = etApiUrl.getText().toString().trim();
+		String apiKey = etApiKey.getText().toString().trim();
+
+		if (TextUtils.isEmpty(providerName)) {
+			showError("请输入供应商名称");
+			return;
+		}
+
+		if (TextUtils.isEmpty(apiUrl)) {
+			showError("请输入API URL");
+			return;
+		}
+
+		if (TextUtils.isEmpty(apiKey)) {
+			showError("请输入API Key");
+			return;
+		}
+
+		if (fetchedModels == null || fetchedModels.isEmpty()) {
+			showError("请先获取模型列表");
+			return;
+		}
+
+		final ApiProvider provider;
+		if (editingProvider != null) {
+			provider = editingProvider;
+			provider.setName(providerName);
+			provider.setApiUrl(apiUrl);
+			provider.setApiKey(apiKey);
+			provider.setModels(fetchedModels);
+		} else {
+			provider = new ApiProvider(providerName, apiUrl, apiKey);
+			provider.setModels(fetchedModels);
+		}
+
+		new Thread(new Runnable() {
+				@Override
+				public void run() {
+					boolean success;
+					if (editingProvider != null) {
+						success = apiProviderDao.updateProvider(provider);
+					} else {
+						long id = apiProviderDao.insertProvider(provider);
+						success = id != -1;
+					}
+
+					runOnUiThread(new Runnable() {
+							@Override
+							public void run() {
+								if (success) {
+									logger.i(TAG, "Saved provider: " + provider.getName());
+									// 设置结果并关闭
+									setResult(RESULT_OK);
+									finish();
+								} else {
+									showError("保存失败");
+								}
+							}
+						});
+				}
+			}).start();
+	}
     
     private void showProgress(boolean show) {
         progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
