@@ -49,11 +49,8 @@ public class InputFragment extends Fragment {
     
     private void initViews(View view) {
 		etMessage = view.findViewById(R.id.etMessage);
-		btnSend = view.findViewById(R.id.btnSend);  // 这个应该是 ImageButton
-		spinnerModel = view.findViewById(R.id.spinnerModel);
-
-		// 修改为 ImageButton
 		btnSend = (android.widget.ImageButton) view.findViewById(R.id.btnSend);
+		spinnerModel = view.findViewById(R.id.spinnerModel);
 
 		// 初始化模型下拉列表
 		availableModels = new ArrayList<>();
@@ -61,11 +58,26 @@ public class InputFragment extends Fragment {
 		modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		spinnerModel.setAdapter(modelAdapter);
 
+		// 加载保存的模型选择
+		loadSelectedModel();
+
 		// 发送按钮点击事件
 		btnSend.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
 					sendMessage();
+				}
+			});
+
+		// 监听模型选择变化，保存选择
+		spinnerModel.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+				@Override
+				public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+					saveSelectedModel(position);
+				}
+
+				@Override
+				public void onNothingSelected(android.widget.AdapterView<?> parent) {
 				}
 			});
 
@@ -81,6 +93,26 @@ public class InputFragment extends Fragment {
 				}
 			});
 	}
+	
+	private void saveSelectedModel(int position) {
+		if (position >= 0 && position < availableModels.size()) {
+			String selectedModel = availableModels.get(position);
+			android.content.SharedPreferences prefs = getContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+			prefs.edit().putString("selected_model", selectedModel).apply();
+			logger.d(TAG, "Saved selected model: " + selectedModel);
+		}
+	}
+
+	private void loadSelectedModel() {
+		android.content.SharedPreferences prefs = getContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+		String savedModel = prefs.getString("selected_model", "");
+
+		if (!savedModel.isEmpty() && availableModels.contains(savedModel)) {
+			int position = availableModels.indexOf(savedModel);
+			spinnerModel.setSelection(position);
+			logger.d(TAG, "Loaded saved model: " + savedModel);
+		}
+	}
     
     private void loadApiProviders() {
         new Thread(new Runnable() {
@@ -93,58 +125,66 @@ public class InputFragment extends Fragment {
     }
     
     private void updateModelsList() {
-        availableModels.clear();
-        
-        for (ApiProvider provider : apiProviders) {
-            if (provider.getModels() != null) {
-                availableModels.addAll(provider.getModels());
-            }
-        }
-        
-        // 如果没有模型，添加一个默认提示
-        if (availableModels.isEmpty()) {
-            availableModels.add("请先添加API供应商");
-        }
-        
-        if (getActivity() != null) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    modelAdapter.notifyDataSetChanged();
-                    logger.i(TAG, "Updated models list, count: " + availableModels.size());
-                }
-            });
-        }
-    }
+		availableModels.clear();
+
+		for (ApiProvider provider : apiProviders) {
+			if (provider.getModels() != null) {
+				for (String model : provider.getModels()) {
+					// 格式：供应商名 - 模型名
+					availableModels.add(provider.getName() + " - " + model);
+				}
+			}
+		}
+
+		// 如果没有模型，添加一个默认提示
+		if (availableModels.isEmpty()) {
+			availableModels.add("请先添加API供应商");
+		}
+
+		if (getActivity() != null) {
+			getActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						modelAdapter.notifyDataSetChanged();
+						// 重新加载保存的模型选择
+						loadSelectedModel();
+						logger.i(TAG, "Updated models list, count: " + availableModels.size());
+					}
+				});
+		}
+	}
     
     private void sendMessage() {
-        String message = etMessage.getText().toString().trim();
-        if (TextUtils.isEmpty(message)) {
-            android.widget.Toast.makeText(getContext(), "请输入消息", android.widget.Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        // 获取选中的模型
-        String selectedModel = (String) spinnerModel.getSelectedItem();
-        if (selectedModel == null || selectedModel.equals("请先添加API供应商")) {
-            android.widget.Toast.makeText(getContext(), "请先添加API供应商并获取模型", android.widget.Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        // 清空输入框
-        etMessage.setText("");
-        
-        // 添加到聊天界面
-        ChatFragment chatFragment = getChatFragment();
-        if (chatFragment != null) {
-            chatFragment.addUserMessage(message);
-            
-            // 模拟AI回复（后续替换为真实的API调用）
-            simulateAIResponse(chatFragment, message, selectedModel);
-        }
-        
-        logger.i(TAG, "Sent message: " + message + ", model: " + selectedModel);
-    }
+		String message = etMessage.getText().toString().trim();
+		if (TextUtils.isEmpty(message)) {
+			android.widget.Toast.makeText(getContext(), "请输入消息", android.widget.Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		// 获取选中的模型
+		String selectedModelWithProvider = (String) spinnerModel.getSelectedItem();
+		if (selectedModelWithProvider == null || selectedModelWithProvider.equals("请先添加API供应商")) {
+			android.widget.Toast.makeText(getContext(), "请先添加API供应商并获取模型", android.widget.Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		// 清空输入框
+		etMessage.setText("");
+
+		// 直接获取 ChatFragment 并发送消息
+		ChatFragment chatFragment = getChatFragment();
+		if (chatFragment != null) {
+			chatFragment.addUserMessage(message);
+
+			// 模拟AI回复
+			simulateAIResponse(chatFragment, message, selectedModelWithProvider);
+		} else {
+			logger.w(TAG, "ChatFragment is null, cannot send message");
+			android.widget.Toast.makeText(getContext(), "无法发送消息，请重试", android.widget.Toast.LENGTH_SHORT).show();
+		}
+
+		logger.i(TAG, "Sent message: " + message + ", model: " + selectedModelWithProvider);
+	}
     
     private void simulateAIResponse(final ChatFragment chatFragment, final String userMessage, final String model) {
         // 模拟网络延迟
