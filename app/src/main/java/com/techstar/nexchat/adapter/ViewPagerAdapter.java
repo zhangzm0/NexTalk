@@ -16,19 +16,19 @@ public class ViewPagerAdapter extends FragmentPagerAdapter {
     }
     
     @NonNull
-    @Override
-    public Fragment getItem(int position) {
-        switch (position) {
-            case 0:
-                return new HomeFragment();
-            case 1:
-                return new ChatFragment();
-            case 2:
-                return new InputFragment();
-            default:
-                return new ChatFragment();
-        }
-    }
+	@Override
+	public Fragment getItem(int position) {
+		switch (position) {
+			case 0:
+				return new HomeFragment();
+			case 1:
+				return ChatFragment.newInstance(); // 使用工厂方法
+			case 2:
+				return new InputFragment();
+			default:
+				return new ChatFragment();
+		}
+	}
     
     @Override
     public int getCount() {

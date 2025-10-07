@@ -4,12 +4,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.techstar.nexchat.MainActivity;
 import com.techstar.nexchat.R;
 import com.techstar.nexchat.adapter.MessageAdapter;
 import com.techstar.nexchat.database.ChatHistoryDao;
@@ -92,47 +92,40 @@ public class ChatFragment extends Fragment {
     }
     
     public void loadChat(int chatId) {
-		if (this.currentChatId == chatId) {
-			// 已经是当前对话，不需要重新加载
+		if (chatId == -1) {
+			logger.w(TAG, "Invalid chat ID, skipping load");
 			return;
 		}
-
-		this.currentChatId = chatId;
-
-		new Thread(new Runnable() {
-				@Override
-				public void run() {
-					final List<Message> chatMessages = messageDao.getMessagesByChatId(chatId);
-					final ChatHistory chat = chatHistoryDao.getChatById(chatId);
-
-					if (getActivity() != null) {
-						getActivity().runOnUiThread(new Runnable() {
-								@Override
-								public void run() {
-									messages.clear();
-									messages.addAll(chatMessages);
-									messageAdapter.notifyDataSetChanged();
-
-									// 更新标题
-									if (chat != null) {
-										TextView tvChatTitle = getView().findViewById(R.id.tvChatTitle);
-										if (tvChatTitle != null) {
-											tvChatTitle.setText(chat.getTitle());
-										}
-									}
-
-									// 滚动到底部
-									if (!messages.isEmpty()) {
-										recyclerViewMessages.scrollToPosition(messages.size() - 1);
-									}
-
-									logger.i(TAG, "Loaded " + messages.size() + " messages for chat: " + chatId);
-								}
-							});
-					}
-				}
-			}).start();
-	}
+		
+		
+        currentChatId = chatId;
+        
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final List<Message> chatMessages = messageDao.getMessagesByChatId(chatId);
+                final ChatHistory chat = chatHistoryDao.getChatById(chatId);
+                
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            messages.clear();
+                            messages.addAll(chatMessages);
+                            messageAdapter.notifyDataSetChanged();
+                            
+                            // 滚动到底部
+                            if (!messages.isEmpty()) {
+                                recyclerViewMessages.scrollToPosition(messages.size() - 1);
+                            }
+                            
+                            logger.i(TAG, "Loaded " + messages.size() + " messages for chat: " + chatId);
+                        }
+                    });
+                }
+            }
+        }).start();
+    }
     
     private void createNewChat() {
         new Thread(new Runnable() {
@@ -275,4 +268,25 @@ public class ChatFragment extends Fragment {
     public int getCurrentChatId() {
         return currentChatId;
     }
+	
+	// 添加工厂方法
+	public static ChatFragment newInstance() {
+		return new ChatFragment();
+	}
+
+// 在 onResume 中添加刷新逻辑
+	@Override
+	public void onResume() {
+		super.onResume();
+		// 检查是否有需要加载的对话
+		if (getActivity() instanceof MainActivity) {
+			MainActivity mainActivity = (MainActivity) getActivity();
+			int chatId = mainActivity.getCurrentChatId();
+			if (chatId != -1 && chatId != currentChatId) {
+				loadChat(chatId);
+			}
+		}
+	}
+
+
 }

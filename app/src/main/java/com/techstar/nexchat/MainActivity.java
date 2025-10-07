@@ -2,8 +2,10 @@ package com.techstar.nexchat;
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 import com.techstar.nexchat.adapter.ViewPagerAdapter;
+import com.techstar.nexchat.fragment.ChatFragment;
 import com.techstar.nexchat.util.CrashHandler;
 import com.techstar.nexchat.util.FileLogger;
 
@@ -63,4 +65,34 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         logger.i(TAG, "MainActivity destroyed");
     }
+	
+	// 在 MainActivity 类中添加以下字段和方法
+	private int currentChatId = -1;
+
+	public void setCurrentChatId(int chatId) {
+		this.currentChatId = chatId;
+		logger.d(TAG, "Set current chat ID: " + chatId);
+
+		// 通知 ChatFragment 刷新
+		notifyChatFragmentRefresh();
+	}
+
+	public int getCurrentChatId() {
+		return currentChatId;
+	}
+
+	private void notifyChatFragmentRefresh() {
+		// 获取 ChatFragment 实例并刷新数据
+		Fragment fragment = getSupportFragmentManager().findFragmentByTag("android:switcher:" + R.id.viewPager + ":1");
+		if (fragment instanceof ChatFragment) {
+			((ChatFragment) fragment).loadChat(currentChatId);
+		}
+	}
+
+	public void switchToChatPage(int chatId) {
+		setCurrentChatId(chatId);
+		if (viewPager != null) {
+			viewPager.setCurrentItem(1, true);
+		}
+	}
 }
