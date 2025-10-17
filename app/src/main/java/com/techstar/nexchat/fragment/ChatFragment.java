@@ -92,12 +92,12 @@ public class ChatFragment extends Fragment {
     }
     
     public void loadChat(int chatId) {
-		if (this.currentChatId == chatId) {
-			// 已经是当前对话，不需要重新加载
+		if (chatId == currentChatId) {
+			logger.d(TAG, "Same chat ID, skipping load: " + chatId);
 			return;
 		}
 
-		this.currentChatId = chatId;
+		currentChatId = chatId;
 
 		new Thread(new Runnable() {
 				@Override
@@ -112,14 +112,6 @@ public class ChatFragment extends Fragment {
 									messages.clear();
 									messages.addAll(chatMessages);
 									messageAdapter.notifyDataSetChanged();
-
-									// 更新标题
-									if (chat != null) {
-										TextView tvChatTitle = getView().findViewById(R.id.tvChatTitle);
-										if (tvChatTitle != null) {
-											tvChatTitle.setText(chat.getTitle());
-										}
-									}
 
 									// 滚动到底部
 									if (!messages.isEmpty()) {

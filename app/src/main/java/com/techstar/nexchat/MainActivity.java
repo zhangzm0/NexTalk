@@ -63,4 +63,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         logger.i(TAG, "MainActivity destroyed");
     }
+	
+	
+	
 }

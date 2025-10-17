@@ -166,33 +166,47 @@ public class HomeFragment extends Fragment {
     private void switchToChat(int chatId) {
 		logger.i(TAG, "Switching to chat: " + chatId);
 
-		// 使用与 InputFragment 相同的方式获取 ChatFragment
+		// 1. 先直接获取 ChatFragment 并加载对话数据
 		ChatFragment chatFragment = getChatFragment();
 		if (chatFragment != null) {
 			chatFragment.loadChat(chatId);
-			// 切换到聊天页面
-			if (getActivity() instanceof MainActivity) {
-				((MainActivity) getActivity()).switchToChatPage();
-			}
+			logger.i(TAG, "Directly loaded chat: " + chatId);
 		} else {
 			logger.w(TAG, "ChatFragment not found when switching to chat: " + chatId);
 		}
-	}
-	
-	private ChatFragment getChatFragment() {
-		if (getActivity() != null && getActivity() instanceof MainActivity) {
+
+		// 2. 再切换到聊天页面
+		if (getActivity() instanceof MainActivity) {
 			MainActivity mainActivity = (MainActivity) getActivity();
-			androidx.viewpager.widget.ViewPager viewPager = mainActivity.findViewById(R.id.viewPager);
-			if (viewPager != null && viewPager.getAdapter() != null) {
-				// 获取第1个位置的 fragment（ChatFragment）
-				androidx.fragment.app.Fragment fragment = ((androidx.fragment.app.FragmentPagerAdapter) viewPager.getAdapter()).getItem(1);
-				if (fragment instanceof ChatFragment) {
-					return (ChatFragment) fragment;
+			mainActivity.switchToChatPage();
+			logger.i(TAG, "Switched to chat page");
+		}
+	}
+
+// 添加与 InputFragment 相同的获取 ChatFragment 方法
+	private ChatFragment getChatFragment() {
+		if (getActivity() != null) {
+			// 通过 FragmentManager 获取 ChatFragment
+			androidx.fragment.app.FragmentManager fragmentManager = getParentFragmentManager();
+
+			// 使用与 InputFragment 相同的 tag 查找方式
+			Fragment fragment = fragmentManager.findFragmentByTag("android:switcher:" + R.id.viewPager + ":1");
+			if (fragment instanceof ChatFragment) {
+				return (ChatFragment) fragment;
+			}
+
+			// 备用方案：遍历所有 fragment
+			List<Fragment> fragments = fragmentManager.getFragments();
+			for (Fragment frag : fragments) {
+				if (frag instanceof ChatFragment) {
+					return (ChatFragment) frag;
 				}
 			}
 		}
 		return null;
 	}
+	
+	
     
     private void showDeleteChatDialog(final ChatHistory chatHistory) {
         // 简单的确认对话框
