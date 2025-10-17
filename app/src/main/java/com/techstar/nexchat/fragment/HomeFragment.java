@@ -165,21 +165,17 @@ public class HomeFragment extends Fragment {
     
     private void switchToChat(int chatId) {
 		logger.i(TAG, "Switching to chat: " + chatId);
-		if (getActivity() instanceof MainActivity) {
-			MainActivity mainActivity = (MainActivity) getActivity();
-			mainActivity.switchToChatPage();
 
-			// 延迟一下确保页面切换完成
-			new android.os.Handler().postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						// 通知 ChatFragment 加载指定对话
-						ChatFragment chatFragment = getChatFragment();
-						if (chatFragment != null) {
-							chatFragment.loadChat(chatId);
-						}
-					}
-				}, 300);
+		// 使用与 InputFragment 相同的方式获取 ChatFragment
+		ChatFragment chatFragment = getChatFragment();
+		if (chatFragment != null) {
+			chatFragment.loadChat(chatId);
+			// 切换到聊天页面
+			if (getActivity() instanceof MainActivity) {
+				((MainActivity) getActivity()).switchToChatPage();
+			}
+		} else {
+			logger.w(TAG, "ChatFragment not found when switching to chat: " + chatId);
 		}
 	}
 	
