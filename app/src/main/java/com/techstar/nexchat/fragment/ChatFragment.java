@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -16,6 +15,8 @@ import com.techstar.nexchat.database.ChatHistoryDao;
 import com.techstar.nexchat.database.MessageDao;
 import com.techstar.nexchat.model.ChatHistory;
 import com.techstar.nexchat.model.Message;
+import com.techstar.nexchat.model.StreamingMessage;
+import com.techstar.nexchat.service.UIUpdateCoordinator;
 import com.techstar.nexchat.util.FileLogger;
 import java.util.ArrayList;
 import java.util.List;
@@ -184,43 +185,106 @@ public class ChatFragment extends Fragment {
         }).start();
     }
     
-    public void addAssistantMessage(String content, String model) {
-        if (currentChatId == -1) {
-            logger.w(TAG, "No active chat, cannot add message");
-            return;
-        }
-        
-        final Message assistantMessage = new Message(currentChatId, Message.ROLE_ASSISTANT, content);
-        assistantMessage.setModel(model);
-        
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                long messageId = messageDao.insertMessage(assistantMessage);
-                if (messageId != -1) {
-                    assistantMessage.setId((int) messageId);
-                    
-                    // 更新聊天预览
-                    String preview = content.length() > 50 ? content.substring(0, 50) + "..." : content;
-                    chatHistoryDao.updateChatPreview(currentChatId, preview);
-                    chatHistoryDao.incrementMessageCount(currentChatId);
-                    
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                messages.add(assistantMessage);
-                                messageAdapter.notifyItemInserted(messages.size() - 1);
-                                recyclerViewMessages.scrollToPosition(messages.size() - 1);
-                                
-                                logger.i(TAG, "Added assistant message from model: " + model);
-                            }
-                        });
-                    }
+    // 在 ChatFragment.java 中添加流式支持
+
+// 修改 addAssistantMessage 方法，支持流式初始化
+	public int addAssistantMessage(String content, String model, boolean isStreaming) {
+		if (currentChatId == -1) {
+			logger.w(TAG, "No active chat, cannot add message");
+			return -1;
+		}
+
+		final Message assistantMessage = new Message(currentChatId, Message.ROLE_ASSISTANT, content);
+		assistantMessage.setModel(model);
+
+		// 如果是流式消息，先创建空消息
+		if (isStreaming) {
+			assistantMessage.setContent(""); // 初始为空
+		}
+
+		final int[] messageId = {-1};
+
+		new Thread(new Runnable() {
+				@Override
+				public void run() {
+					long id = messageDao.insertMessage(assistantMessage);
+					if (id != -1) {
+						assistantMessage.setId((int) id);
+						messageId[0] = (int) id;
+
+						if (isStreaming) {
+							// 注册流式消息
+							StreamingMessage streamingMessage = new StreamingMessage(assistantMessage);
+							UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
+							uiCoordinator.registerStreamingMessage((int) id, streamingMessage);
+						}
+
+						if (getActivity() != null) {
+							getActivity().runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										messages.add(assistantMessage);
+										messageAdapter.notifyItemInserted(messages.size() - 1);
+										recyclerViewMessages.scrollToPosition(messages.size() - 1);
+
+										logger.i(TAG, "Added assistant message with ID: " + id);
+									}
+								});
+						}
+					}
+				}
+			}).start();
+
+		return messageId[0];
+	}
+
+// 添加流式更新方法
+	/*
+	public void updateAssistantMessage(int messageId, String contentChunk) {
+		UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
+		uiCoordinator.updateMessageContent(currentChatId, messageId, contentChunk);
+	}
+	*/
+
+// 完成流式消息
+	// 在 ChatFragment.java 中修改 completeAssistantMessage 方法
+public void completeAssistantMessage(int messageId, String fullContent) {
+    // 更新数据库中的完整内容
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            // 找到对应的消息对象并更新
+            for (Message message : messages) {
+                if (message.getId() == messageId) {
+                    message.setContent(fullContent);
+                    messageDao.updateMessage(message);  // 使用现有的 updateMessage 方法
+                    break;
                 }
             }
-        }).start();
-    }
+            
+            // 更新聊天预览
+            String preview = fullContent.length() > 50 ? fullContent.substring(0, 50) + "..." : fullContent;
+            chatHistoryDao.updateChatPreview(currentChatId, preview);
+            chatHistoryDao.incrementMessageCount(currentChatId);
+        }
+    }).start();
+    
+    UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
+    uiCoordinator.completeStreaming(currentChatId, messageId);
+}
+
+// 在 Fragment 销毁时清理
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		if (messageAdapter != null) {
+			messageAdapter.cleanup();
+		}
+		if (currentChatId != -1) {
+			UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
+			uiCoordinator.cleanupChat(currentChatId);
+		}
+	}
     
     private void copyMessage(Message message) {
         // 复制消息内容到剪贴板
