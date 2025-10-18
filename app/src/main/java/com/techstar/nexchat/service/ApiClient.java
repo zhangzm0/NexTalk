@@ -103,6 +103,17 @@ public class ApiClient {
     // 在 ApiClient.java 中修改 streamChat 方法
 	public void streamChat(ApiProvider provider, String model, List<com.techstar.nexchat.model.Message> messages, 
 						   final int chatId, final int pendingMessageId, final ChatCallback callback) {
+
+		logger.i(TAG, "=== API CLIENT START ===");
+		logger.i(TAG, "Provider: " + provider.getName());
+		logger.i(TAG, "Model: " + model);
+		logger.i(TAG, "Messages count: " + messages.size());
+		logger.i(TAG, "Chat ID: " + chatId);
+		logger.i(TAG, "Pending Message ID: " + pendingMessageId);
+		logger.i(TAG, "API URL: " + provider.getApiUrl());
+
+		// ... 原有代码
+	
 		String url = provider.getApiUrl() + "/chat/completions";
 
 		JsonObject requestBody = new JsonObject();

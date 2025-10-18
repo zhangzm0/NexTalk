@@ -187,15 +187,19 @@ public class ChatFragment extends Fragment {
 			}).start();
     }
 
-    public void addUserMessage(String content) {
-        if (currentChatId == -1) {
-            logger.w(TAG, "No active chat, cannot add message");
-            return;
-        }
+    // 在 ChatFragment.java 中添加这个新方法
+	public void addUserMessage(String content, final Runnable onMessageAdded) {
+		if (currentChatId == -1) {
+			logger.w(TAG, "No active chat, cannot add message");
+			if (onMessageAdded != null) {
+				onMessageAdded.run();
+			}
+			return;
+		}
 
-        final Message userMessage = new Message(currentChatId, Message.ROLE_USER, content);
+		final Message userMessage = new Message(currentChatId, Message.ROLE_USER, content);
 
-        new Thread(new Runnable() {
+		new Thread(new Runnable() {
 				@Override
 				public void run() {
 					long messageId = messageDao.insertMessage(userMessage);
@@ -216,13 +220,33 @@ public class ChatFragment extends Fragment {
 										recyclerViewMessages.scrollToPosition(messages.size() - 1);
 
 										logger.i(TAG, "Added user message: " + content);
+
+										// 执行回调
+										if (onMessageAdded != null) {
+											onMessageAdded.run();
+										}
+									}
+								});
+						}
+					} else {
+						// 插入失败也执行回调
+						if (onMessageAdded != null && getActivity() != null) {
+							getActivity().runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										onMessageAdded.run();
 									}
 								});
 						}
 					}
 				}
 			}).start();
-    }
+	}
+
+// 保留原有的无回调方法（兼容性）
+	public void addUserMessage(String content) {
+		addUserMessage(content, null);
+	}
 
     // 在 ChatFragment.java 中添加流式支持
 

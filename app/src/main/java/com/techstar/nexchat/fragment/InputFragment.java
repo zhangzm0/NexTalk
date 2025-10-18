@@ -164,6 +164,7 @@ public class InputFragment extends Fragment {
 
 // 替换当前的 sendMessage 方法
 	// 替换 InputFragment.java 中的 sendMessage 方法：
+	// 完全替换 InputFragment.java 中的 sendMessage 方法：
 	private void sendMessage() {
 		String message = etMessage.getText().toString().trim();
 		if (TextUtils.isEmpty(message)) {
@@ -194,113 +195,14 @@ public class InputFragment extends Fragment {
 		// 获取 ChatFragment
 		final ChatFragment chatFragment = getChatFragment();
 		if (chatFragment != null) {
-			// 添加用户消息
+			// 立即添加用户消息
 			chatFragment.addUserMessage(message);
 
-			// 在后台线程中准备API调用
+			// 直接启动API调用线程（不等待用户消息完成）
 			new Thread(new Runnable() {
 					@Override
 					public void run() {
-						try {
-							// 获取API供应商信息
-							ApiProvider provider = apiProviderDao.getProviderByName(providerName);
-
-							if (provider == null) {
-								showToast("API供应商未找到: " + providerName);
-								return;
-							}
-
-							// 获取当前聊天的历史消息
-							int chatId = chatFragment.getCurrentChatId();
-							com.techstar.nexchat.database.MessageDao messageDao = 
-								new com.techstar.nexchat.database.MessageDao(getContext());
-							List<com.techstar.nexchat.model.Message> historyMessages = 
-								messageDao.getMessagesByChatId(chatId);
-
-							// 创建AI客户端并调用流式API
-							ApiClient apiClient = new ApiClient(getContext());
-
-							// 添加空的助理消息并获取其ID
-							final int pendingMessageId = chatFragment.addAssistantMessage("", modelName, true);
-
-							if (pendingMessageId != -1) {
-								// 在调用 apiClient.streamChat 之前添加：
-								logger.i(TAG, "Starting API call with provider: " + provider.getName() + 
-										 ", model: " + modelName + ", history messages: " + historyMessages.size());
-								
-								// 执行流式聊天请求
-								apiClient.streamChat(provider, modelName, historyMessages, 
-									chatId, pendingMessageId, 
-									new ApiClient.ChatCallback() {
-										@Override
-										public void onResponse(String contentChunk) {
-											// 实时更新消息内容
-											if (getActivity() != null) {
-												getActivity().runOnUiThread(new Runnable() {
-														@Override
-														public void run() {
-															UIUpdateCoordinator uiCoordinator = 
-																UIUpdateCoordinator.getInstance(logger);
-															uiCoordinator.updateMessageContent(chatId, pendingMessageId, contentChunk);
-														}
-													});
-											}
-										}
-
-										@Override
-										public void onError(String error) {
-											logger.e(TAG, "API call failed: " + error);
-											showToast("请求失败: " + error);
-
-											// 更新消息状态为错误
-											if (getActivity() != null) {
-												getActivity().runOnUiThread(new Runnable() {
-														@Override
-														public void run() {
-															chatFragment.completeAssistantMessage(pendingMessageId, "错误: " + error);
-														}
-													});
-											}
-										}
-
-										@Override
-										public void onComplete() {
-											logger.i(TAG, "API call completed for message: " + pendingMessageId);
-
-											// 获取完整内容并完成消息
-											UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
-											StreamingMessage streamingMessage = uiCoordinator.getStreamingMessage(pendingMessageId);
-											if (streamingMessage != null) {
-												final String fullContent = streamingMessage.getFullContent();
-												if (getActivity() != null) {
-													getActivity().runOnUiThread(new Runnable() {
-															@Override
-															public void run() {
-																chatFragment.completeAssistantMessage(pendingMessageId, fullContent);
-															}
-														});
-												}
-											}
-										}
-
-										@Override
-										public void onStreamStart() {
-											logger.d(TAG, "Stream started");
-											// 可选：流式开始处理
-										}
-
-										@Override
-										public void onStreamEnd() {
-											logger.d(TAG, "Stream ended");
-											// 可选：流式结束处理
-										}
-									});
-							}
-
-						} catch (Exception e) {
-							logger.e(TAG, "Failed to send message", e);
-							showToast("发送失败: " + e.getMessage());
-						}
+						callRealAPI(chatFragment, providerName, modelName);
 					}
 				}).start();
 
@@ -310,6 +212,112 @@ public class InputFragment extends Fragment {
 		}
 
 		logger.i(TAG, "Sent message: " + message + ", model: " + selectedModelWithProvider);
+	}
+
+	private void callRealAPI(final ChatFragment chatFragment, final String providerName, final String modelName) {
+		try {
+			// 获取API供应商信息
+			ApiProvider provider = apiProviderDao.getProviderByName(providerName);
+
+			if (provider == null) {
+				showToast("API供应商未找到: " + providerName);
+				return;
+			}
+
+			logger.i(TAG, "Found provider: " + provider.getName() + ", URL: " + provider.getApiUrl());
+
+			// 获取当前聊天的历史消息
+			int chatId = chatFragment.getCurrentChatId();
+			com.techstar.nexchat.database.MessageDao messageDao = 
+				new com.techstar.nexchat.database.MessageDao(getContext());
+			List<com.techstar.nexchat.model.Message> historyMessages = 
+				messageDao.getMessagesByChatId(chatId);
+
+			logger.i(TAG, "Starting real API call with " + historyMessages.size() + " history messages, chatId: " + chatId);
+
+			// 创建AI客户端并调用流式API
+			ApiClient apiClient = new ApiClient(getContext());
+
+			// 添加空的助理消息并获取其ID
+			final int pendingMessageId = chatFragment.addAssistantMessage("", modelName, true);
+
+			logger.i(TAG, "Created pending assistant message with ID: " + pendingMessageId);
+
+			if (pendingMessageId != -1) {
+				// 执行流式聊天请求
+				apiClient.streamChat(provider, modelName, historyMessages, 
+					chatId, pendingMessageId, 
+					new ApiClient.ChatCallback() {
+						@Override
+						public void onResponse(String contentChunk) {
+							logger.d(TAG, "Received stream chunk: " + contentChunk);
+							// 实时更新消息内容
+							if (getActivity() != null) {
+								getActivity().runOnUiThread(new Runnable() {
+										@Override
+										public void run() {
+											UIUpdateCoordinator uiCoordinator = 
+												UIUpdateCoordinator.getInstance(logger);
+											uiCoordinator.updateMessageContent(chatId, pendingMessageId, contentChunk);
+										}
+									});
+							}
+						}
+
+						@Override
+						public void onError(String error) {
+							logger.e(TAG, "API call error: " + error);
+							showToast("请求失败: " + error);
+
+							// 更新消息状态为错误
+							if (getActivity() != null) {
+								getActivity().runOnUiThread(new Runnable() {
+										@Override
+										public void run() {
+											chatFragment.completeAssistantMessage(pendingMessageId, "错误: " + error);
+										}
+									});
+							}
+						}
+
+						@Override
+						public void onComplete() {
+							logger.i(TAG, "API call completed successfully for message: " + pendingMessageId);
+
+							// 获取完整内容并完成消息
+							UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
+							StreamingMessage streamingMessage = uiCoordinator.getStreamingMessage(pendingMessageId);
+							if (streamingMessage != null) {
+								final String fullContent = streamingMessage.getFullContent();
+								if (getActivity() != null) {
+									getActivity().runOnUiThread(new Runnable() {
+											@Override
+											public void run() {
+												chatFragment.completeAssistantMessage(pendingMessageId, fullContent);
+											}
+										});
+								}
+							}
+						}
+
+						@Override
+						public void onStreamStart() {
+							logger.d(TAG, "Stream started for message: " + pendingMessageId);
+						}
+
+						@Override
+						public void onStreamEnd() {
+							logger.d(TAG, "Stream ended for message: " + pendingMessageId);
+						}
+					});
+			} else {
+				logger.e(TAG, "Failed to create pending assistant message");
+			}
+
+		} catch (Exception e) {
+			logger.e(TAG, "Failed to call API", e);
+			showToast("API调用失败: " + e.getMessage());
+		}
 	}
 
 // 添加工具方法
