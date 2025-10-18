@@ -191,4 +191,32 @@ public class ApiProviderDao {
         
         return provider;
     }
+	
+	// 在 ApiProviderDao 类中添加：
+	public ApiProvider getProviderByName(String name) {
+		SQLiteDatabase db = dbHelper.getReadableDatabase();
+		Cursor cursor = null;
+		ApiProvider provider = null;
+
+		try {
+			cursor = db.query(DatabaseHelper.TABLE_API_PROVIDERS, 
+							  null, "name = ?", new String[]{name}, 
+							  null, null, null);
+
+			if (cursor != null && cursor.moveToFirst()) {
+				provider = cursorToProvider(cursor);
+			}
+
+		} catch (Exception e) {
+			logger.e(TAG, "Failed to get provider by name: " + name, e);
+		} finally {
+			if (cursor != null) {
+				cursor.close();
+			}
+			db.close();
+		}
+
+		return provider;
+	}
+	
 }

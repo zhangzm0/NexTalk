@@ -15,7 +15,11 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.techstar.nexchat.R;
 import com.techstar.nexchat.database.ApiProviderDao;
+import com.techstar.nexchat.database.MessageDao;
 import com.techstar.nexchat.model.ApiProvider;
+import com.techstar.nexchat.model.StreamingMessage;
+import com.techstar.nexchat.service.ApiClient;
+import com.techstar.nexchat.service.UIUpdateCoordinator;
 import com.techstar.nexchat.util.FileLogger;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,7 +162,7 @@ public class InputFragment extends Fragment {
     // 删除整个 simulateAIResponse 方法
 	
 
-// 修改 sendMessage 方法，移除模拟调用
+// 替换当前的 sendMessage 方法
 	private void sendMessage() {
 		String message = etMessage.getText().toString().trim();
 		if (TextUtils.isEmpty(message)) {
@@ -173,23 +177,145 @@ public class InputFragment extends Fragment {
 			return;
 		}
 
+		// 解析供应商和模型名称
+		String[] parts = selectedModelWithProvider.split(" - ");
+		if (parts.length != 2) {
+			android.widget.Toast.makeText(getContext(), "模型格式错误", android.widget.Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		String providerName = parts[0];
+		String modelName = parts[1];
+
 		// 清空输入框
 		etMessage.setText("");
 
-		// 直接获取 ChatFragment 并发送消息
-		ChatFragment chatFragment = getChatFragment();
+		// 获取 ChatFragment
+		final ChatFragment chatFragment = getChatFragment();
 		if (chatFragment != null) {
+			// 添加用户消息
 			chatFragment.addUserMessage(message);
 
-			// TODO: 这里将来要调用真正的API流式请求
-			// 暂时先添加一个空的AI消息作为占位
-			chatFragment.addAssistantMessage("思考中...", selectedModelWithProvider, false);
+			// 在后台线程中准备API调用
+			new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							// 获取API供应商信息
+							ApiProviderDao apiProviderDao = new ApiProviderDao(getContext());
+							ApiProvider provider = apiProviderDao.getProviderByName(providerName);
+
+							if (provider == null) {
+								showToast("API供应商未找到: " + providerName);
+								return;
+							}
+
+							// 获取当前聊天的历史消息
+							int chatId = chatFragment.getCurrentChatId();
+							MessageDao messageDao = new MessageDao(getContext());
+							List<com.techstar.nexchat.model.Message> historyMessages = 
+								messageDao.getMessagesByChatId(chatId);
+
+							// 创建AI客户端并调用流式API
+							ApiClient apiClient = new ApiClient(getContext());
+
+							// 添加空的助理消息并获取其ID
+							final int pendingMessageId = chatFragment.addAssistantMessage("", modelName, true);
+
+							if (pendingMessageId != -1) {
+								// 执行流式聊天请求
+								apiClient.streamChat(provider, modelName, historyMessages, 
+									chatId, pendingMessageId, 
+									new ApiClient.ChatCallback() {
+										@Override
+										public void onStreamStart() {
+											logger.d(TAG, "Stream started for message: " + pendingMessageId);
+										}
+
+										@Override
+										public void onResponse(String contentChunk) {
+											// 实时更新消息内容
+											if (getActivity() != null) {
+												getActivity().runOnUiThread(new Runnable() {
+														@Override
+														public void run() {
+															// 这里需要通过UIUpdateCoordinator更新消息内容
+															UIUpdateCoordinator uiCoordinator = 
+																UIUpdateCoordinator.getInstance(logger);
+															uiCoordinator.updateMessageContent(chatId, pendingMessageId, contentChunk);
+														}
+													});
+											}
+										}
+
+										@Override
+										public void onError(String error) {
+											logger.e(TAG, "API call failed: " + error);
+											showToast("请求失败: " + error);
+
+											// 更新消息状态为错误
+											if (getActivity() != null) {
+												getActivity().runOnUiThread(new Runnable() {
+														@Override
+														public void run() {
+															chatFragment.completeAssistantMessage(pendingMessageId, "错误: " + error);
+														}
+													});
+											}
+										}
+
+										@Override
+										public void onComplete() {
+											logger.i(TAG, "API call completed for message: " + pendingMessageId);
+
+											// 获取完整内容并完成消息
+											UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
+											StreamingMessage streamingMessage = uiCoordinator.getStreamingMessage(pendingMessageId);
+											if (streamingMessage != null) {
+												final String fullContent = streamingMessage.getFullContent();
+												if (getActivity() != null) {
+													getActivity().runOnUiThread(new Runnable() {
+															@Override
+															public void run() {
+																chatFragment.completeAssistantMessage(pendingMessageId, fullContent);
+															}
+														});
+												}
+											}
+										}
+
+										@Override
+										public void onStreamEnd() {
+											logger.d(TAG, "Stream ended for message: " + pendingMessageId);
+										}
+									});
+							}
+
+						} catch (Exception e) {
+							logger.e(TAG, "Failed to send message", e);
+							showToast("发送失败: " + e.getMessage());
+						}
+					}
+				}).start();
+
 		} else {
 			logger.w(TAG, "ChatFragment is null, cannot send message");
 			android.widget.Toast.makeText(getContext(), "无法发送消息，请重试", android.widget.Toast.LENGTH_SHORT).show();
 		}
 
 		logger.i(TAG, "Sent message: " + message + ", model: " + selectedModelWithProvider);
+	}
+
+// 添加工具方法
+	private void showToast(final String message) {
+		if (getActivity() != null) {
+			getActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						android.widget.Toast.makeText(getContext(), message, android.widget.Toast.LENGTH_SHORT).show();
+					}
+				});
+		}
 	}
     
     

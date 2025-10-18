@@ -73,17 +73,9 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 // 添加成员变量
 	private Map<Integer, StreamingMessage> streamingMessages;
 
-// 在构造函数中初始化
+// 在 MessageAdapter.java 中添加：
 	public MessageAdapter(Context context, List<Message> messages) {
-		this.context = context;
-		this.messages = messages;
-		this.logger = FileLogger.getInstance(context);
-		this.timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
-		this.streamingMessages = new HashMap<>();
-
-		// 初始化UI协调器
-		UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
-		// 注意：这里需要chatId，需要在Adapter中添加chatId字段
+		this(context, messages, -1); // 使用-1作为默认chatId
 	}
 
 // 添加新的构造方法支持chatId
