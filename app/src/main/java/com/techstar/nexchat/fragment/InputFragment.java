@@ -163,6 +163,7 @@ public class InputFragment extends Fragment {
 	
 
 // 替换当前的 sendMessage 方法
+	// 替换 InputFragment.java 中的 sendMessage 方法：
 	private void sendMessage() {
 		String message = etMessage.getText().toString().trim();
 		if (TextUtils.isEmpty(message)) {
@@ -184,8 +185,8 @@ public class InputFragment extends Fragment {
 			return;
 		}
 
-		String providerName = parts[0];
-		String modelName = parts[1];
+		final String providerName = parts[0];
+		final String modelName = parts[1];
 
 		// 清空输入框
 		etMessage.setText("");
@@ -202,7 +203,6 @@ public class InputFragment extends Fragment {
 					public void run() {
 						try {
 							// 获取API供应商信息
-							ApiProviderDao apiProviderDao = new ApiProviderDao(getContext());
 							ApiProvider provider = apiProviderDao.getProviderByName(providerName);
 
 							if (provider == null) {
@@ -212,7 +212,8 @@ public class InputFragment extends Fragment {
 
 							// 获取当前聊天的历史消息
 							int chatId = chatFragment.getCurrentChatId();
-							MessageDao messageDao = new MessageDao(getContext());
+							com.techstar.nexchat.database.MessageDao messageDao = 
+								new com.techstar.nexchat.database.MessageDao(getContext());
 							List<com.techstar.nexchat.model.Message> historyMessages = 
 								messageDao.getMessagesByChatId(chatId);
 
@@ -223,15 +224,14 @@ public class InputFragment extends Fragment {
 							final int pendingMessageId = chatFragment.addAssistantMessage("", modelName, true);
 
 							if (pendingMessageId != -1) {
+								// 在调用 apiClient.streamChat 之前添加：
+								logger.i(TAG, "Starting API call with provider: " + provider.getName() + 
+										 ", model: " + modelName + ", history messages: " + historyMessages.size());
+								
 								// 执行流式聊天请求
 								apiClient.streamChat(provider, modelName, historyMessages, 
 									chatId, pendingMessageId, 
 									new ApiClient.ChatCallback() {
-										@Override
-										public void onStreamStart() {
-											logger.d(TAG, "Stream started for message: " + pendingMessageId);
-										}
-
 										@Override
 										public void onResponse(String contentChunk) {
 											// 实时更新消息内容
@@ -239,7 +239,6 @@ public class InputFragment extends Fragment {
 												getActivity().runOnUiThread(new Runnable() {
 														@Override
 														public void run() {
-															// 这里需要通过UIUpdateCoordinator更新消息内容
 															UIUpdateCoordinator uiCoordinator = 
 																UIUpdateCoordinator.getInstance(logger);
 															uiCoordinator.updateMessageContent(chatId, pendingMessageId, contentChunk);
@@ -285,8 +284,15 @@ public class InputFragment extends Fragment {
 										}
 
 										@Override
+										public void onStreamStart() {
+											logger.d(TAG, "Stream started");
+											// 可选：流式开始处理
+										}
+
+										@Override
 										public void onStreamEnd() {
-											logger.d(TAG, "Stream ended for message: " + pendingMessageId);
+											logger.d(TAG, "Stream ended");
+											// 可选：流式结束处理
 										}
 									});
 							}
@@ -317,6 +323,8 @@ public class InputFragment extends Fragment {
 				});
 		}
 	}
+
+
     
     
     

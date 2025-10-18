@@ -50,17 +50,23 @@ public class ChatFragment extends Fragment {
     }
 
     // 在 ChatFragment.java 的 initViews 方法中修改：
+	// 在 ChatFragment.java 的 initViews 方法中修改：
 	private void initViews(View view) {
 		recyclerViewMessages = view.findViewById(R.id.recyclerViewMessages);
 
 		messages = new ArrayList<>();
-		// 修复：使用正确的构造方法，传入chatId
-		messageAdapter = new MessageAdapter(getContext(), messages, currentChatId);
-		recyclerViewMessages.setLayoutManager(new LinearLayoutManager(getContext()));
+		messageAdapter = new MessageAdapter(getContext(), messages);
+
+		// 修复：设置线性布局管理器，从底部开始显示
+		LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+		layoutManager.setStackFromEnd(true); // 关键：从底部开始布局
+		layoutManager.setReverseLayout(false); // 正常顺序
+		recyclerViewMessages.setLayoutManager(layoutManager);
+
 		recyclerViewMessages.setAdapter(messageAdapter);
 
-		// ... 其余代码保持不变
-		
+		// ... 其余代码不变
+	
         // 设置消息操作监听
         messageAdapter.setOnMessageActionListener(new MessageAdapter.OnMessageActionListener() {
 				@Override
