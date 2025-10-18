@@ -251,10 +251,14 @@ public class ChatFragment extends Fragment {
     // 在 ChatFragment.java 中添加流式支持
 
 // 修改 addAssistantMessage 方法，支持流式初始化
-	public int addAssistantMessage(String content, String model, boolean isStreaming) {
+	// 在 ChatFragment.java 中修改 addAssistantMessage 方法：
+	public void addAssistantMessage(final String content, final String model, final boolean isStreaming, final MessageCallback callback) {
 		if (currentChatId == -1) {
 			logger.w(TAG, "No active chat, cannot add message");
-			return -1;
+			if (callback != null) {
+				callback.onMessageCreated(-1);
+			}
+			return;
 		}
 
 		final Message assistantMessage = new Message(currentChatId, Message.ROLE_ASSISTANT, content);
@@ -265,15 +269,12 @@ public class ChatFragment extends Fragment {
 			assistantMessage.setContent(""); // 初始为空
 		}
 
-		final int[] messageId = {-1};
-
 		new Thread(new Runnable() {
 				@Override
 				public void run() {
 					long id = messageDao.insertMessage(assistantMessage);
 					if (id != -1) {
 						assistantMessage.setId((int) id);
-						messageId[0] = (int) id;
 
 						if (isStreaming) {
 							// 注册流式消息
@@ -291,14 +292,39 @@ public class ChatFragment extends Fragment {
 										recyclerViewMessages.scrollToPosition(messages.size() - 1);
 
 										logger.i(TAG, "Added assistant message with ID: " + id);
+
+										// 回调返回消息ID
+										if (callback != null) {
+											callback.onMessageCreated((int) id);
+										}
+									}
+								});
+						}
+					} else {
+						// 插入失败
+						if (callback != null && getActivity() != null) {
+							getActivity().runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										callback.onMessageCreated(-1);
 									}
 								});
 						}
 					}
 				}
 			}).start();
+	}
 
-		return messageId[0];
+// 添加回调接口
+	public interface MessageCallback {
+		void onMessageCreated(int messageId);
+	}
+
+// 保留原有的同步方法（兼容性）
+	public int addAssistantMessage(String content, String model, boolean isStreaming) {
+		// 这个方法已废弃，不应该再使用
+		logger.w(TAG, "Using deprecated synchronous addAssistantMessage method");
+		return -1;
 	}
 
 // 添加流式更新方法
