@@ -155,7 +155,11 @@ public class InputFragment extends Fragment {
 		}
 	}
     
-    private void sendMessage() {
+    // 删除整个 simulateAIResponse 方法
+	
+
+// 修改 sendMessage 方法，移除模拟调用
+	private void sendMessage() {
 		String message = etMessage.getText().toString().trim();
 		if (TextUtils.isEmpty(message)) {
 			android.widget.Toast.makeText(getContext(), "请输入消息", android.widget.Toast.LENGTH_SHORT).show();
@@ -177,8 +181,9 @@ public class InputFragment extends Fragment {
 		if (chatFragment != null) {
 			chatFragment.addUserMessage(message);
 
-			// 模拟AI回复
-			simulateAIResponse(chatFragment, message, selectedModelWithProvider);
+			// TODO: 这里将来要调用真正的API流式请求
+			// 暂时先添加一个空的AI消息作为占位
+			chatFragment.addAssistantMessage("思考中...", selectedModelWithProvider, false);
 		} else {
 			logger.w(TAG, "ChatFragment is null, cannot send message");
 			android.widget.Toast.makeText(getContext(), "无法发送消息，请重试", android.widget.Toast.LENGTH_SHORT).show();
@@ -187,20 +192,7 @@ public class InputFragment extends Fragment {
 		logger.i(TAG, "Sent message: " + message + ", model: " + selectedModelWithProvider);
 	}
     
-    private void simulateAIResponse(final ChatFragment chatFragment, final String userMessage, final String model) {
-        // 模拟网络延迟
-        new android.os.Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                String response = "这是AI的模拟回复。你说了: \"" + userMessage + "\"\n\n" +
-                        "这是一个**加粗**的文本，*斜体*文本，还有`行内代码`。\n\n" +
-                        "支持基本的 Markdown 格式渲染。";
-                
-                chatFragment.addAssistantMessage(response, model);
-                logger.i(TAG, "Simulated AI response for: " + userMessage);
-            }
-        }, 1000);
-    }
+    
     
     private ChatFragment getChatFragment() {
 		if (getActivity() != null) {

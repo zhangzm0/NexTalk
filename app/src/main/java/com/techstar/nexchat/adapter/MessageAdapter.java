@@ -267,10 +267,7 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 			}
 
 			// 检查流式状态
-			UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(
-				itemView.getContext().getApplicationContext() instanceof android.app.Application ? 
-				(android.app.Application) itemView.getContext().getApplicationContext() : null
-			);
+			UIUpdateCoordinator uiCoordinator = UIUpdateCoordinator.getInstance(logger);
 
 			boolean isStreaming = false;
 			if (uiCoordinator != null) {
