@@ -91,7 +91,7 @@ public class ApiClient {
                     callback.onSuccess(models);
                     
                 } catch (Exception e) {
-                    logger.e(TAG, "Failed to parse models response", e);
+logger.e(TAG, "Failed to parse models response: " + e.getMessage());
                     callback.onError("解析响应失败: " + e.getMessage());
                 }
             }
@@ -151,7 +151,7 @@ public class ApiClient {
                     processStreamResponse(response, callback);
                     
                 } catch (Exception e) {
-                    logger.e(TAG, "Failed to process stream response", e);
+logger.e(TAG, "Failed to process stream response: " + e.getMessage());
                     callback.onError("处理流式响应失败: " + e.getMessage());
                 }
             }
@@ -200,8 +200,8 @@ public class ApiClient {
                                 }
                             }
                         }
-                    } catch (Exception e) {
-                        logger.w(TAG, "Failed to parse stream data: " + data, e);
+} catch (Exception e) {
+                        logger.w(TAG, "Failed to parse stream data: " + data + ", error: " + e.getMessage());
                     }
                 }
             }
@@ -271,7 +271,7 @@ public class ApiClient {
                     }
                     
                 } catch (Exception e) {
-                    logger.e(TAG, "Failed to parse chat response", e);
+logger.e(TAG, "Failed to parse chat response: " + e.getMessage());
                     callback.onError("解析响应失败: " + e.getMessage());
                 }
             }
@@ -292,7 +292,7 @@ public class ApiClient {
                 }
             }
         } catch (Exception e) {
-            logger.e(TAG, "Failed to parse models response", e);
+logger.e(TAG, "Failed to parse models response: " + e.getMessage());
         }
         return models;
     }
@@ -309,7 +309,7 @@ public class ApiClient {
                 }
             }
         } catch (Exception e) {
-            logger.e(TAG, "Failed to parse chat response", e);
+logger.e(TAG, "Failed to parse chat response: " + e.getMessage());
         }
         return null;
     }
