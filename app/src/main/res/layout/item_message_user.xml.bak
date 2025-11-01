@@ -42,7 +42,8 @@
         android:layout_marginTop="2dp"
         android:layout_marginEnd="12dp"/>
 
-    <!-- 操作按钮 -->
+    <!-- 操作按钮 - 新增 -->
+    <!-- 在item_message_user.xml的LinearLayout内添加操作按钮 -->
 	<LinearLayout
 		android:id="@+id/layoutActions"
 		android:layout_width="wrap_content"
@@ -51,7 +52,7 @@
 		android:layout_gravity="end"
 		android:layout_marginTop="4dp"
 		android:layout_marginEnd="12dp"
-		android:visibility="gone">
+		android:visibility="visible">
 
 		<Button
 			android:id="@+id/btnCopy"
@@ -88,25 +89,8 @@
 			android:background="#666666"
 			android:layout_gravity="center_vertical"
 			/>
-
-		<Button
-			android:id="@+id/btnBranch"
-			android:layout_width="wrap_content"
-			android:layout_height="24dp"
-			android:text="分支"
-			android:textColor="#9C27B0"
-			android:textSize="10sp"
-			android:background="@android:color/transparent"
-			android:paddingStart="6dp"
-			android:paddingEnd="6dp"/>
-
-		<View
-			android:layout_width="1dp"
-			android:layout_height="12dp"
-			android:background="#666666"
-			android:layout_gravity="center_vertical"
-			/>
-
+		
+		<!-- 在item_message_user.xml和item_message_assistant.xml的layoutActions中添加 -->
 		<Button
 			android:id="@+id/btnDelete"
 			android:layout_width="wrap_content"

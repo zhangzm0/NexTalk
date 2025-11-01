@@ -15,7 +15,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.techstar.nexchat.R;
 import com.techstar.nexchat.database.ApiProviderDao;
+import com.techstar.nexchat.database.MessageDao;
 import com.techstar.nexchat.model.ApiProvider;
+import com.techstar.nexchat.model.Message;
+import com.techstar.nexchat.service.ApiClient;
 import com.techstar.nexchat.util.FileLogger;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +30,8 @@ public class InputFragment extends Fragment {
     private ImageButton btnSend;
     private Spinner spinnerModel;
     private ApiProviderDao apiProviderDao;
+    private MessageDao messageDao;
+    private ApiClient apiClient;
     private FileLogger logger;
     
     private List<ApiProvider> apiProviders;
@@ -39,6 +44,8 @@ public class InputFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_input, container, false);
         logger = FileLogger.getInstance(getContext());
         apiProviderDao = new ApiProviderDao(getContext());
+        messageDao = new MessageDao(getContext());
+        apiClient = new ApiClient(getContext());
         
         logger.i(TAG, "InputFragment created");
         
@@ -173,12 +180,12 @@ public class InputFragment extends Fragment {
 		etMessage.setText("");
 
 		// 直接获取 ChatFragment 并发送消息
-		ChatFragment chatFragment = getChatFragment();
+		final ChatFragment chatFragment = getChatFragment();
 		if (chatFragment != null) {
 			chatFragment.addUserMessage(message);
 
-			// 模拟AI回复
-			simulateAIResponse(chatFragment, message, selectedModelWithProvider);
+			// 发送到真正的AI API
+			sendToAI(chatFragment, message, selectedModelWithProvider);
 		} else {
 			logger.w(TAG, "ChatFragment is null, cannot send message");
 			android.widget.Toast.makeText(getContext(), "无法发送消息，请重试", android.widget.Toast.LENGTH_SHORT).show();
@@ -187,19 +194,116 @@ public class InputFragment extends Fragment {
 		logger.i(TAG, "Sent message: " + message + ", model: " + selectedModelWithProvider);
 	}
     
-    private void simulateAIResponse(final ChatFragment chatFragment, final String userMessage, final String model) {
-        // 模拟网络延迟
-        new android.os.Handler().postDelayed(new Runnable() {
+    private void sendToAI(final ChatFragment chatFragment, final String userMessage, final String modelWithProvider) {
+        new Thread(new Runnable() {
             @Override
             public void run() {
-                String response = "这是AI的模拟回复。你说了: \"" + userMessage + "\"\n\n" +
-                        "这是一个**加粗**的文本，*斜体*文本，还有`行内代码`。\n\n" +
-                        "支持基本的 Markdown 格式渲染。";
-                
-                chatFragment.addAssistantMessage(response, model);
-                logger.i(TAG, "Simulated AI response for: " + userMessage);
+                try {
+                    // 解析模型和供应商
+                    String[] parts = modelWithProvider.split(" - ");
+                    if (parts.length < 2) {
+                        logger.e(TAG, "Invalid model format: " + modelWithProvider);
+                        return;
+                    }
+                    
+                    String providerName = parts[0];
+                    String modelName = parts[1];
+                    
+                    // 获取API供应商
+                    ApiProvider provider = null;
+                    for (ApiProvider p : apiProviders) {
+                        if (p.getName().equals(providerName)) {
+                            provider = p;
+                            break;
+                        }
+                    }
+                    
+                    if (provider == null) {
+                        logger.e(TAG, "Provider not found: " + providerName);
+                        return;
+                    }
+                    
+                    // 获取当前聊天的历史消息
+                    int chatId = chatFragment.getCurrentChatId();
+                    List<Message> historyMessages = messageDao.getMessagesByBranch(chatId, chatFragment.getCurrentBranchId());
+                    
+                    // 开始流式响应
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                chatFragment.startStreamingAssistantMessage(modelName);
+                            }
+                        });
+                    }
+                    
+                    // 发送流式请求
+                    apiClient.streamChat(provider, modelName, historyMessages, new ApiClient.StreamChatCallback() {
+                        @Override
+                        public void onContentChunk(String content) {
+                            if (getActivity() != null) {
+                                getActivity().runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        chatFragment.updateStreamingMessage(content, null);
+                                    }
+                                });
+                            }
+                        }
+                        
+                        @Override
+                        public void onReasoningChunk(String reasoning) {
+                            if (getActivity() != null) {
+                                getActivity().runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        chatFragment.updateStreamingMessage(null, reasoning);
+                                    }
+                                });
+                            }
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            logger.e(TAG, "Stream chat error: " + error);
+                            if (getActivity() != null) {
+                                getActivity().runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        // 标记流式消息为错误状态
+                                        chatFragment.completeStreamingMessage();
+                                        android.widget.Toast.makeText(getContext(), "AI响应失败: " + error, android.widget.Toast.LENGTH_LONG).show();
+                                    }
+                                });
+                            }
+                        }
+                        
+                        @Override
+                        public void onComplete() {
+                            if (getActivity() != null) {
+                                getActivity().runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        chatFragment.completeStreamingMessage();
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    
+                } catch (Exception e) {
+                    logger.e(TAG, "Failed to send to AI", e);
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                android.widget.Toast.makeText(getContext(), "发送失败: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    }
+                }
             }
-        }, 1000);
+        }).start();
     }
     
     private ChatFragment getChatFragment() {

@@ -25,18 +25,66 @@
             android:layout_marginStart="12dp"
             android:layout_marginBottom="2dp"/>
 
+        <!-- 流式指示器 -->
+        <TextView
+            android:id="@+id/tvStreamingIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="流式响应中..."
+            android:textColor="#FF9800"
+            android:textSize="10sp"
+            android:layout_marginStart="12dp"
+            android:layout_marginBottom="2dp"
+            android:visibility="gone"/>
+
+        <!-- 思考过程 -->
+        <LinearLayout
+            android:id="@+id/layoutReasoning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="4dp"
+            android:padding="8dp"
+            android:visibility="gone"
+            android:clickable="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="思考过程"
+                android:textColor="#AAAAAA"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+
+            <com.techstar.nexchat.view.MarkdownTextView
+                android:id="@+id/tvReasoning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="思考内容..."
+                android:textColor="#CCCCCC"
+                android:textSize="12sp"
+                android:lineSpacingExtra="2dp"
+                android:maxLines="3"
+                android:ellipsize="end"
+                android:textIsSelectable="true"/>
+
+        </LinearLayout>
+
         <!-- 消息内容 -->
-        <!-- 消息内容 -->
-		<com.techstar.nexchat.view.MarkdownTextView
-			android:id="@+id/tvMessage"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:text="AI回复"
-			android:textColor="#ffffff"
-			android:textSize="14sp"
-			android:lineSpacingExtra="2dp"
-			android:padding="12dp"
-			android:textIsSelectable="true"/>
+        <com.techstar.nexchat.view.MarkdownTextView
+            android:id="@+id/tvMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AI回复"
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:lineSpacingExtra="2dp"
+            android:padding="12dp"
+            android:textIsSelectable="true"/>
 
     </LinearLayout>
 
@@ -105,25 +153,42 @@
             android:background="@android:color/transparent"
             android:paddingStart="6dp"
             android:paddingEnd="6dp"/>
-		
-		<View
-			android:layout_width="1dp"
-			android:layout_height="12dp"
-			android:background="#666666"
-			android:layout_gravity="center_vertical"
-			/>
-		
-		<!-- 在item_message_user.xml和item_message_assistant.xml的layoutActions中添加 -->
-		<Button
-			android:id="@+id/btnDelete"
-			android:layout_width="wrap_content"
-			android:layout_height="24dp"
-			android:text="删除"
-			android:textColor="#F44336"
-			android:textSize="10sp"
-			android:background="@android:color/transparent"
-			android:paddingStart="6dp"
-			android:paddingEnd="6dp"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="12dp"
+            android:background="#666666"
+            android:layout_gravity="center_vertical"
+            />
+
+        <Button
+            android:id="@+id/btnBranch"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:text="分支"
+            android:textColor="#9C27B0"
+            android:textSize="10sp"
+            android:background="@android:color/transparent"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="12dp"
+            android:background="#666666"
+            android:layout_gravity="center_vertical"
+            />
+
+        <Button
+            android:id="@+id/btnDelete"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:text="删除"
+            android:textColor="#F44336"
+            android:textSize="10sp"
+            android:background="@android:color/transparent"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"/>
 
     </LinearLayout>
 

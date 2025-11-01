@@ -32,6 +32,14 @@ public class MessageDao {
             values.put("tokens", message.getTokens());
             values.put("model", message.getModel());
             
+            // 新增字段
+            values.put("reasoning_content", message.getReasoningContent());
+            values.put("tool_calls", message.getToolCalls());
+            values.put("parent_id", message.getParentId());
+            values.put("branch_id", message.getBranchId());
+            values.put("has_reasoning", message.hasReasoning() ? 1 : 0);
+            values.put("status", message.getStatus());
+            
             id = db.insert(DatabaseHelper.TABLE_MESSAGES, null, values);
             logger.i(TAG, "Inserted message for chat ID: " + message.getChatId() + 
                     ", role: " + message.getRole() + ", ID: " + id);
@@ -66,6 +74,71 @@ public class MessageDao {
             
         } catch (Exception e) {
             logger.e(TAG, "Failed to retrieve messages for chat ID: " + chatId, e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+        
+        return messages;
+    }
+    
+    // 获取指定分支的消息
+    public List<Message> getMessagesByBranch(int chatId, String branchId) {
+        List<Message> messages = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        
+        try {
+            cursor = db.query(DatabaseHelper.TABLE_MESSAGES, 
+                    null, "chat_id = ? AND branch_id = ?", 
+                    new String[]{String.valueOf(chatId), branchId}, 
+                    null, null, "timestamp ASC");
+            
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    Message message = cursorToMessage(cursor);
+                    messages.add(message);
+                } while (cursor.moveToNext());
+            }
+            
+            logger.i(TAG, "Retrieved " + messages.size() + " messages for branch: " + branchId);
+            
+        } catch (Exception e) {
+            logger.e(TAG, "Failed to retrieve messages for branch: " + branchId, e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
+        }
+        
+        return messages;
+    }
+    
+    // 获取指定父节点的子消息
+    public List<Message> getChildMessages(int parentId) {
+        List<Message> messages = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        
+        try {
+            cursor = db.query(DatabaseHelper.TABLE_MESSAGES, 
+                    null, "parent_id = ?", new String[]{String.valueOf(parentId)}, 
+                    null, null, "timestamp ASC");
+            
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    Message message = cursorToMessage(cursor);
+                    messages.add(message);
+                } while (cursor.moveToNext());
+            }
+            
+            logger.i(TAG, "Retrieved " + messages.size() + " child messages for parent: " + parentId);
+            
+        } catch (Exception e) {
+            logger.e(TAG, "Failed to retrieve child messages for parent: " + parentId, e);
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -111,6 +184,14 @@ public class MessageDao {
             values.put("content", message.getContent());
             values.put("tokens", message.getTokens());
             values.put("model", message.getModel());
+            
+            // 新增字段
+            values.put("reasoning_content", message.getReasoningContent());
+            values.put("tool_calls", message.getToolCalls());
+            values.put("parent_id", message.getParentId());
+            values.put("branch_id", message.getBranchId());
+            values.put("has_reasoning", message.hasReasoning() ? 1 : 0);
+            values.put("status", message.getStatus());
             
             int rowsAffected = db.update(DatabaseHelper.TABLE_MESSAGES, 
                     values, "id = ?", new String[]{String.valueOf(message.getId())});
@@ -201,6 +282,15 @@ public class MessageDao {
         message.setTimestamp(cursor.getLong(cursor.getColumnIndexOrThrow("timestamp")));
         message.setTokens(cursor.getInt(cursor.getColumnIndexOrThrow("tokens")));
         message.setModel(cursor.getString(cursor.getColumnIndexOrThrow("model")));
+        
+        // 新增字段
+        message.setReasoningContent(cursor.getString(cursor.getColumnIndexOrThrow("reasoning_content")));
+        message.setToolCalls(cursor.getString(cursor.getColumnIndexOrThrow("tool_calls")));
+        message.setParentId(cursor.getInt(cursor.getColumnIndexOrThrow("parent_id")));
+        message.setBranchId(cursor.getString(cursor.getColumnIndexOrThrow("branch_id")));
+        message.setHasReasoning(cursor.getInt(cursor.getColumnIndexOrThrow("has_reasoning")) == 1);
+        message.setStatus(cursor.getInt(cursor.getColumnIndexOrThrow("status")));
+        
         return message;
     }
 }

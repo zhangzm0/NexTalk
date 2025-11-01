@@ -8,7 +8,7 @@ import com.techstar.nexchat.util.FileLogger;
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DatabaseHelper";
     private static final String DATABASE_NAME = "nexchat.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2; // 版本升级
     
     private FileLogger logger;
     
@@ -46,7 +46,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "message_count INTEGER DEFAULT 0" +
                 ");";
         
-        // 消息表
+        // 消息表 - 扩展支持树状对话和思考过程
         String createMessagesTable = "CREATE TABLE " + TABLE_MESSAGES + " (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "chat_id INTEGER," +
@@ -55,6 +55,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "timestamp INTEGER," +
                 "tokens INTEGER DEFAULT 0," +
                 "model TEXT," +
+                "reasoning_content TEXT," +        // 新增：思考过程
+                "tool_calls TEXT," +               // 新增：工具调用
+                "parent_id INTEGER DEFAULT -1," +  // 新增：父节点ID
+                "branch_id TEXT DEFAULT 'main'," + // 新增：分支标识
+                "has_reasoning INTEGER DEFAULT 0," + // 新增：是否有思考过程
+                "status INTEGER DEFAULT 2," +      // 新增：消息状态
                 "FOREIGN KEY(chat_id) REFERENCES " + TABLE_CHAT_HISTORY + "(id)" +
                 ");";
         
@@ -69,10 +75,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         logger.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion);
         
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_API_PROVIDERS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CHAT_HISTORY);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MESSAGES);
+        if (oldVersion < 2) {
+            // 升级到版本2：添加新字段
+            logger.i(TAG, "Upgrading to version 2: adding new message fields");
+            
+            // 添加新字段到消息表
+            db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN reasoning_content TEXT");
+            db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN tool_calls TEXT");
+            db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN parent_id INTEGER DEFAULT -1");
+            db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN branch_id TEXT DEFAULT 'main'");
+            db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN has_reasoning INTEGER DEFAULT 0");
+            db.execSQL("ALTER TABLE " + TABLE_MESSAGES + " ADD COLUMN status INTEGER DEFAULT 2");
+            
+            logger.i(TAG, "Database upgraded to version 2 successfully");
+        }
         
-        onCreate(db);
+        // 未来版本升级逻辑可以在这里添加
+        if (oldVersion < 3) {
+            // 版本3的升级逻辑
+        }
     }
 }
