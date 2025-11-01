@@ -45,7 +45,7 @@ public class MessageDao {
                     ", role: " + message.getRole() + ", ID: " + id);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to insert message", e);
+logger.e(TAG, "Failed to insert message: " + e.getMessage());
         } finally {
             db.close();
         }
@@ -73,7 +73,7 @@ public class MessageDao {
             logger.i(TAG, "Retrieved " + messages.size() + " messages for chat ID: " + chatId);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to retrieve messages for chat ID: " + chatId, e);
+logger.e(TAG, "Failed to retrieve messages for chat ID: " + chatId + ", error: " + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -106,7 +106,7 @@ public class MessageDao {
             logger.i(TAG, "Retrieved " + messages.size() + " messages for branch: " + branchId);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to retrieve messages for branch: " + branchId, e);
+logger.e(TAG, "Failed to retrieve messages for branch: " + branchId + ", error: " + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -138,7 +138,7 @@ public class MessageDao {
             logger.i(TAG, "Retrieved " + messages.size() + " child messages for parent: " + parentId);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to retrieve child messages for parent: " + parentId, e);
+logger.e(TAG, "Failed to retrieve child messages for parent: " + parentId + ", error: " + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -164,7 +164,7 @@ public class MessageDao {
             }
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to get last message for chat ID: " + chatId, e);
+logger.e(TAG, "Failed to get last message for chat ID: " + chatId + ", error: " + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -200,7 +200,7 @@ public class MessageDao {
             logger.i(TAG, "Updated message ID: " + message.getId() + ", rows affected: " + rowsAffected);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to update message", e);
+logger.e(TAG, "Failed to update message: " + e.getMessage());
         } finally {
             db.close();
         }
@@ -220,7 +220,7 @@ public class MessageDao {
             logger.i(TAG, "Deleted message with ID: " + id + ", rows affected: " + rowsAffected);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to delete message with ID: " + id, e);
+logger.e(TAG, "Failed to delete message with ID: " + id + ", error: " + e.getMessage());
         } finally {
             db.close();
         }
@@ -240,7 +240,7 @@ public class MessageDao {
             logger.i(TAG, "Deleted " + rowsAffected + " messages for chat ID: " + chatId);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to delete messages for chat ID: " + chatId, e);
+logger.e(TAG, "Failed to delete messages for chat ID: " + chatId + ", error: " + e.getMessage());
         } finally {
             db.close();
         }
@@ -262,7 +262,7 @@ public class MessageDao {
             }
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to get message count for chat ID: " + chatId, e);
+logger.e(TAG, "Failed to get message count for chat ID: " + chatId + ", error: " + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();

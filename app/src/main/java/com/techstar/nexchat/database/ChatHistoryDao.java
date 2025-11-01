@@ -34,7 +34,7 @@ public class ChatHistoryDao {
             logger.i(TAG, "Inserted chat: " + chat.getTitle() + " with ID: " + id);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to insert chat", e);
+logger.e(TAG, "Failed to insert chat: " + e.getMessage());
         } finally {
             db.close();
         }
@@ -61,7 +61,7 @@ public class ChatHistoryDao {
             logger.i(TAG, "Retrieved " + chats.size() + " chats");
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to retrieve chats", e);
+logger.e(TAG, "Failed to retrieve chats: " + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -87,7 +87,7 @@ public class ChatHistoryDao {
             }
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to get chat by ID: " + id, e);
+logger.e(TAG, "Failed to get chat by ID: " + id + ", error: " + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -116,7 +116,7 @@ public class ChatHistoryDao {
             logger.i(TAG, "Updated chat: " + chat.getTitle() + ", rows affected: " + rowsAffected);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to update chat", e);
+logger.e(TAG, "Failed to update chat: " + e.getMessage());
         } finally {
             db.close();
         }
@@ -141,7 +141,7 @@ public class ChatHistoryDao {
             logger.i(TAG, "Deleted chat with ID: " + id + ", rows affected: " + rowsAffected);
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to delete chat with ID: " + id, e);
+logger.e(TAG, "Failed to delete chat with ID: " + id + ", error: " + e.getMessage());
         } finally {
             db.close();
         }
@@ -164,7 +164,7 @@ public class ChatHistoryDao {
             success = rowsAffected > 0;
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to update chat preview", e);
+logger.e(TAG, "Failed to update chat preview: " + e.getMessage());
         } finally {
             db.close();
         }
@@ -196,7 +196,7 @@ public class ChatHistoryDao {
                     new String[]{String.valueOf(chatId)});
             
         } catch (Exception e) {
-            logger.e(TAG, "Failed to increment message count", e);
+logger.e(TAG, "Failed to increment message count: " + e.getMessage());
         } finally {
             db.close();
         }
